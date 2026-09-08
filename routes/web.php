@@ -5,8 +5,8 @@ use App\Http\Controllers\Authentication\LoginController;
 use App\Http\Controllers\Authentication\SignupController;
 use App\Http\Controllers\AddressController;
 
-Route::get('/', function () {
-    return view('auth.login');
+Route::get('/index', function () {
+    return view('index');
 });
 
 Route::get('/auth/login', [LoginController::class, 'showLogin'])->name('auth.login');
@@ -32,4 +32,16 @@ Route::middleware('auth')->prefix('admin')->name('admin.')->group(function () {
     Route::get('/attendance', function () { return view('admin.attendance'); })->name('attendance');
     Route::get('/announcements', function () { return view('admin.announcements'); })->name('announcements');
     Route::get('/parent-links', function () { return view('admin.parent-links'); })->name('parent-links');
+});
+
+Route::middleware('auth')->prefix('student')->name('student.')->group(function (){
+    Route::get('/dashboard', function () { return view('student.dashboard'); })->name('dashboard');
+    Route::get('/enrollment', function () { return view('student.enrollment'); })->name('enrollment');
+    Route::get('/attendance', function () { return view('student.attendane'); })->name('attendance');
+    Route::get('/documents', function () { return view('student.documents'); })->name('documents');
+    Route::get('competencies', function () { return view('student.competencies'); })->name('competencies');
+    Route::get('/requirements', function () { return view('student.requirements'); })->name('requirements');
+    Route::get('/grades', function () { return view('student.grades'); })->name('grades');
+    Route::get('/announcements', function () { return view('student.announcements'); })->name('announcements');
+    Route::get('/profile', function () { return view('student.profile'); })->name('profile');
 });

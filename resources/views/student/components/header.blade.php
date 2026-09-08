@@ -1,0 +1,25 @@
+<header
+    class="sticky top-0 z-30 h-16 border-b bg-white/90 dark:bg-slate-950/90 dark:border-slate-800 backdrop-blur flex items-center justify-between px-4 sm:px-6">
+    <div class="flex items-center gap-3">
+        <button id="open" class="lg:hidden p-2">
+            <i data-lucide="menu"></i>
+        </button>
+        <div>
+            <p class="text-xs text-slate-400"> {{ $subtitle ?? 'Student Portal' }} </p>
+            <h1 class="font-bold"> {{ $title ?? 'Student Dashboard' }} </h1>
+        </div>
+    </div>
+    <div class="flex items-center gap-2">
+        <button onclick="APP.toggleTheme()" class="p-2.5 rounded-xl border dark:border-slate-700">
+            <i data-lucide="moon" data-theme-icon class="h-4 w-4"></i>
+        </button>
+        <button onclick="APP.showNotifications()" class="p-2.5 rounded-xl border dark:border-slate-700">
+            <i data-lucide="bell" class="h-4 w-4"></i>
+            <span id="topNotif"
+                class="fixed hidden w-4 rounded-full bg-red-500 px-1 text-[9px] font-bold text-white"></span>
+        </button>
+        <img id="avatar" data-profile-photo
+            class="w-9 h-9 rounded-full bg-green-100 text-green-700 flex items-center justify-center text-sm font-bold"
+            alt="Profile" />
+    </div>
+</header>

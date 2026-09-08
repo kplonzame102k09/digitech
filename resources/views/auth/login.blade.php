@@ -18,12 +18,12 @@
             <div class="absolute -top-32 -right-32 w-80 h-80 bg-green-300/30 rounded-full blur-3xl"></div>
             <div class="absolute -bottom-40 -left-32 w-96 h-96 bg-emerald-200/40 rounded-full blur-3xl"></div>
 
-            <a href="index.html" class="relative z-10 flex gap-3 items-center">
-                <!-- <img src="assets/images/16432.png"
-                    class="w-14 h-14 flex items-center justify-center shadow-green-600/20"> -->
-                <span class="bg-green-600 text-white rounded-lg p-2">
+            <a href="{{ ('/index') }}" class="relative z-10 flex gap-3 items-center">
+                <img src="{{ asset('images/16432.png') }}"
+                    class="w-14 h-14 flex items-center justify-center shadow-green-600/20">
+                <!-- <span class="bg-green-600 text-white rounded-lg p-2">
                     <i data-lucide="graduation-cap" class="w-8 h-8"></i>
-                </span>
+                </span> -->
 
                 <b class="text-green-900">
                     DIGITECH<br>
@@ -65,7 +65,7 @@
                         All-in-One
                     </span>
                     <div class="m-10 left-20 fixed inset-0 -z-10 pointer-events-none flex items-center justify-left">
-                        <img src="assets/images/16432.png" alt=""
+                        <img src="{{ asset('images/16432.png') }}" alt=""
                             class="w-[500px] h-[500px] object-contain opacity-[0.15]">
                     </div>
                 </div>

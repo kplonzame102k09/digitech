@@ -15,9 +15,9 @@
 </head>
 
 <body class="min-h-screen bg-slate-50 text-slate-800 dark:bg-slate-950 dark:text-slate-100">
-    @include('components.sidebar')
+    @include('admin.components.sidebar')
     <div class="lg:pl-64">
-        @include('components.header')
+        @include('admin.components.header')
         <main class="p-4 sm:p-6 lg:p-8">
             <div class="mx-auto max-w-7xl">
                 <section class="mb-7 student-hero mb-7 p-6 sm:p-8">
