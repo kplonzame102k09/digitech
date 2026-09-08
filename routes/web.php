@@ -45,3 +45,23 @@ Route::middleware('auth')->prefix('student')->name('student.')->group(function (
     Route::get('/announcements', function () { return view('student.announcements'); })->name('announcements');
     Route::get('/profile', function () { return view('student.profile'); })->name('profile');
 });
+
+Route::middleware('auth')->prefix('teacher')->name('teacher.')->group(function (){
+    Route::get('/announcements', function () { return view('teacher.announcements'); })->name('announcements');
+    Route::get('/attendance', function () { return view('teacher.attendance'); })->name('attendance');
+    Route::get('/competencies', function () { return view('teacher.compentencies'); })->name('compentencies');
+    Route::get('/dashboard', function () { return view('teacher.dashboard'); })->name('dashboard');
+    Route::get('/grades', function () { return view('teacher.grades'); })->name('grades');
+    Route::get('/profile', function () { return view('teacher.profile'); })->name('profile');
+    Route::get('/students', function () { return view('teacher.students'); })->name('students');
+});
+
+Route::middleware('auth')->prefix('parent')->name('parent.')->group(function () {
+    Route::get('/announcements', function () { return view('parent.announcements'); })->name('announcements');
+    Route::get('/attendance', function () { return view('parent.attendance'); })->name('attendance');
+    Route::get('/children', function () { return view('parent.children'); })->name('children');
+    Route::get('/dashboard', function () { return view('parent.dashboard'); })->name('dashboard');
+    Route::get('/documents', function () { return view('parent.documents'); })->name('documents');
+    Route::get('/grades', function () { return view('parent.grades'); })->name('grades');
+    Route::get('/profile', function () { return view('parent.profile'); })->name('profile');
+});

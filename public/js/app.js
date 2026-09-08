@@ -1,18 +1,3 @@
-// (function () {
-//   function ensure() {
-//     let el = document.getElementById("global-loader");
-//     if (!el) {
-//       el = document.createElement("div");
-//       el.id = "global-loader";
-//       el.innerHTML = `
-//         <div class="loader-box">
-//           <i data-lucide="loader-2"> <img src="assets/images/16432.png" alt="" class="logo"></i>
-//         </div>`;
-//       document.body.appendChild(el);
-//       if (window.lucide) lucide.createIcons();
-//     }
-//     return el;
-//   }
 (function () {
     function ensure() {
         let el = document.getElementById("global-loader");
@@ -27,20 +12,15 @@
                 </div>`;
             document.body.appendChild(el);
         }
-
         return el;
     }
-
     document.addEventListener("click", (e) => {
         const target = e.target.closest("a, button");
         if (!target) return;
-
-        // Menu controls open or close the sidebar locally; they do not navigate.
         if (target.matches("#open, #menuBtn, #sidebar-backdrop")) {
             document.getElementById("global-loader")?.classList.remove("active");
             return;
         }
-
         const loader = ensure();
         loader.classList.add("active");
 
@@ -55,7 +35,7 @@
         setTimeout(() => loader.classList.remove("active"), 600);
     });
 })();
-// ============================
+
 function getTheme() {
     const settings =
         DG.getData("settings", {});
