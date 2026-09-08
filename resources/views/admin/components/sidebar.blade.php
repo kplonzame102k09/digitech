@@ -15,125 +15,71 @@
         <nav class="flex-1 space-y-1 overflow-y-auto p-3">
             <a href="{{ route('admin.dashboard') }}" class="flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium
                 {{ request()->routeIs('admin.dashboard')
-                    ? 'nav-active'
-                    : 'text-slate-600 hover:bg-slate-100 dark:text-slate-300 dark:hover:bg-slate-800' }}">
+                ? 'nav-active' : 'text-slate-600 hover:bg-slate-100 dark:text-slate-300 dark:hover:bg-slate-800' }}">
                 <i data-lucide="layout-dashboard" class="w-4"></i>
                 Dashboard
             </a>
-
-            {{-- Users --}}
-            <a
-                href="{{ route('admin.users') }}"
-                class="flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium
+            <a href="{{ route('admin.users') }}" class="flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium
                 {{ request()->routeIs('admin.users')
-                    ? 'nav-active'
-                    : 'text-slate-600 hover:bg-slate-100 dark:text-slate-300 dark:hover:bg-slate-800' }}">
+                ? 'nav-active' : 'text-slate-600 hover:bg-slate-100 dark:text-slate-300 dark:hover:bg-slate-800' }}">
                 <i data-lucide="users" class="w-4"></i>
                 Users
             </a>
-
-            {{-- Enrollment --}}
-            <a
-                href="{{ route('admin.enrollment') }}"
-                class="flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium
+            <a href="{{ route('admin.enrollment') }}" class="flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium
                 {{ request()->routeIs('admin.enrollment')
-                    ? 'nav-active'
-                    : 'text-slate-600 hover:bg-slate-100 dark:text-slate-300 dark:hover:bg-slate-800' }}">
+                ? 'nav-active' : 'text-slate-600 hover:bg-slate-100 dark:text-slate-300 dark:hover:bg-slate-800' }}">
                 <i data-lucide="clipboard-list" class="w-4"></i>
                 Enrollment
             </a>
-
-            {{-- Documents --}}
-            <a
-                href="{{ route('admin.documents') }}"
-                class="flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium
+            <a href="{{ route('admin.documents') }}" class="flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium
                 {{ request()->routeIs('admin.documents')
-                    ? 'nav-active'
-                    : 'text-slate-600 hover:bg-slate-100 dark:text-slate-300 dark:hover:bg-slate-800' }}">
+                ? 'nav-active' : 'text-slate-600 hover:bg-slate-100 dark:text-slate-300 dark:hover:bg-slate-800' }}">
                 <i data-lucide="file-text" class="w-4"></i>
                 Documents
             </a>
-
-            {{-- Grades --}}
-            <a
-                href="{{ route('admin.grades') }}"
-                class="flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium
+            <a href="{{ route('admin.grades') }}" class="flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium
                 {{ request()->routeIs('admin.grades')
-                    ? 'nav-active'
-                    : 'text-slate-600 hover:bg-slate-100 dark:text-slate-300 dark:hover:bg-slate-800' }}">
+                ? 'nav-active' : 'text-slate-600 hover:bg-slate-100 dark:text-slate-300 dark:hover:bg-slate-800' }}">
                 <i data-lucide="chart-no-axes-combined" class="w-4"></i>
                 Grades
             </a>
-
-            {{-- Competencies --}}
-            <a
-                href="{{ route('admin.competencies') }}"
-                class="flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium
+            <a href="{{ route('admin.competencies') }}" class="flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium
                 {{ request()->routeIs('admin.competencies')
-                    ? 'nav-active'
-                    : 'text-slate-600 hover:bg-slate-100 dark:text-slate-300 dark:hover:bg-slate-800' }}">
+                ? 'nav-active' : 'text-slate-600 hover:bg-slate-100 dark:text-slate-300 dark:hover:bg-slate-800' }}">
                 <i data-lucide="award" class="w-4"></i>
                 Competencies
             </a>
-
-            {{-- Attendance --}}
-            <a
-                href="{{ route('admin.attendance') }}"
-                class="flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium
+            <a href="{{ route('admin.attendance') }}" class="flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium
                 {{ request()->routeIs('admin.attendance')
-                    ? 'nav-active'
-                    : 'text-slate-600 hover:bg-slate-100 dark:text-slate-300 dark:hover:bg-slate-800' }}">
+                ? 'nav-active' : 'text-slate-600 hover:bg-slate-100 dark:text-slate-300 dark:hover:bg-slate-800' }}">
                 <i data-lucide="calendar-check-2" class="w-4"></i>
                 Attendance
             </a>
-
-            {{-- Requirements --}}
-            <a
-                href="{{ route('admin.requirements') }}"
-                class="flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium
+            <a href="{{ route('admin.requirements') }}" class="flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium
                 {{ request()->routeIs('admin.requirements')
-                    ? 'nav-active'
-                    : 'text-slate-600 hover:bg-slate-100 dark:text-slate-300 dark:hover:bg-slate-800' }}">
+                ? 'nav-active' : 'text-slate-600 hover:bg-slate-100 dark:text-slate-300 dark:hover:bg-slate-800' }}">
                 <i data-lucide="folder-check" class="w-4"></i>
                 Requirements
             </a>
-
-            {{-- Announcements --}}
-            <a
-                href="{{ route('admin.announcements') }}"
-                class="flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium
+            <a href="{{ route('admin.announcements') }}" class="flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium
                 {{ request()->routeIs('admin.announcements')
-                    ? 'nav-active'
-                    : 'text-slate-600 dark:text-slate-300 hover:bg-slate-800' }}">
+                ? 'nav-active' : 'text-slate-600 dark:text-slate-300 hover:bg-slate-800' }}">
                 <i data-lucide="megaphone" class="w-4"></i>
                 Announcements
             </a>
-
-            {{-- Parent Links --}}
-            <a
-                href="{{ route('admin.parent-links') }}"
-                class="flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium
+            <a href="{{ route('admin.parent-links') }}" class="flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium
                 {{ request()->routeIs('admin.parent-links')
-                    ? 'nav-active'
-                    : 'text-slate-600 dark:text-slate-300 hover:bg-slate-800' }}">
+                ? 'nav-active' : 'text-slate-600 dark:text-slate-300 hover:bg-slate-800' }}">
                 <i data-lucide="users-round" class="w-4"></i>
                 Parent links
             </a>
-
-            {{-- Settings --}}
-            <a
-                href="{{ route('admin.settings') }}"
-                class="flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium
+            <a href="{{ route('admin.settings') }}" class="flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium
                 {{ request()->routeIs('admin.settings')
-                    ? 'nav-active'
-                    : 'text-slate-600 dark:text-slate-300 hover:bg-slate-800' }}">
+                ? 'nav-active' : 'text-slate-600 dark:text-slate-300 hover:bg-slate-800' }}">
                 <i data-lucide="settings" class="w-4"></i>
                 Settings
             </a>
-
         </nav>
-
-        {{-- LOGOUT --}}
         <button
             type="button"
             data-logout
