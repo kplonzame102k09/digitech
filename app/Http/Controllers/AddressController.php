@@ -2,7 +2,11 @@
 
 namespace App\Http\Controllers;
 
-use Illuminate\Support\Facades\DB;
+
+    public function regions(): IlluminateHttpJsonResponse
+    {
+        return response()->json(DB::table("philippine_regions")->orderBy("name")->get(["region_code", "name"]));
+    }
 
 class AddressController extends Controller
 {

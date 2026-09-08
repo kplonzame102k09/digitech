@@ -8,7 +8,7 @@
             el.innerHTML = `
                 <div class="loader-box">
                     <span class="spinner"></span>
-                    <img src="../assets/images/16432.png" alt="Loading" class="logo">
+                    <img src="{{ asset('images/16432.png') }}" alt="Loading" class="logo">
                 </div>`;
             document.body.appendChild(el);
         }

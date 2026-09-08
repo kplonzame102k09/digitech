@@ -11,10 +11,9 @@
     </script>
     <script src="https://unpkg.com/lucide@latest"></script>
     <link rel="stylesheet" href="{{ asset('css/custom.css') }}" />
-    @vite(['resources/css/app.css', 'resource/js/app.js'])
 </head>
 
-<body class="student-portal min-h-screen bg-slate-50 text-slate-800 dark:bg-slate-950 dark:text-slate-100">
+<body data-student-page="dashboard" class="student-portal min-h-screen bg-slate-50 text-slate-800 dark:bg-slate-950 dark:text-slate-100">
     @include('student.components.sidebar')
     <div class="lg:pl-64">
         @include('student.components.header')
@@ -154,6 +153,7 @@
         </main>
     </div>
     <div id="modalRoot"></div>
+@include('partials.portal-scripts', ['portalPage' => 'student/student.js'])
 </body>
 
 </html>

@@ -10,8 +10,7 @@
         tailwind.config = { darkMode: "class" };
     </script>
     <script src="https://unpkg.com/lucide@latest"></script>
-    <link rel="stylesheet" href="../css/custom.css" />
-    @vite(['resources/css/app.css', 'resources/js/app.js'])
+    <link rel="stylesheet" href="{{ asset('css/custom.css') }}" />
 </head>
 
 <body data-role="admin" data-feature="attendance" class="min-h-screen bg-slate-50 text-slate-800 dark:bg-slate-950 dark:text-slate-100">
@@ -104,8 +103,6 @@
         </div>
     </template>
     <div id="modalRoot"></div>
-    <script>
-        lucide.createIcons();
-    </script>
+    @include('partials.portal-scripts', ['portalPage' => 'workflows.js'])
 </body>
 </html>

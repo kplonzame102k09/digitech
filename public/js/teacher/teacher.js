@@ -280,8 +280,8 @@
     const queue = $("dashboardQueue");
     if (queue) {
       const queueItems = [
-        ...pendingGrades.slice(0, 3).map((record) => ({ icon: "file-pen-line", color: "text-amber-600", label: `${studentFor(record.studentId, data.users)?.firstName || "Student"} · ${record.subject || "Grade"}`, text: "Grade is still blank", href: "grades.html" })),
-        ...needsAssessment.slice(0, 3).map((record) => ({ icon: "award", color: "text-violet-600", label: `${studentFor(record.studentId, data.users)?.firstName || "Student"} · ${record.competency || "Competency"}`, text: record.status || "Not Started", href: "competencies.html" })),
+        ...pendingGrades.slice(0, 3).map((record) => ({ icon: "file-pen-line", color: "text-amber-600", label: `${studentFor(record.studentId, data.users)?.firstName || "Student"} · ${record.subject || "Grade"}`, text: "Grade is still blank", href: "/teacher/grades" })),
+        ...needsAssessment.slice(0, 3).map((record) => ({ icon: "award", color: "text-violet-600", label: `${studentFor(record.studentId, data.users)?.firstName || "Student"} · ${record.competency || "Competency"}`, text: record.status || "Not Started", href: "/teacher/competencies" })),
       ];
       queue.innerHTML = queueItems.length ? queueItems.map((item) => `<a href="${item.href}" class="flex items-center gap-3 rounded-2xl border border-slate-200 p-3 hover:border-emerald-300 dark:border-slate-700 dark:hover:border-emerald-700"><span class="flex h-9 w-9 items-center justify-center rounded-xl bg-slate-100 ${item.color} dark:bg-slate-800"><i data-lucide="${item.icon}" class="h-4 w-4"></i></span><span class="min-w-0 flex-1"><b class="block truncate text-sm">${esc(item.label)}</b><small class="text-xs text-slate-400">${esc(item.text)}</small></span><i data-lucide="chevron-right" class="h-4 w-4 text-slate-400"></i></a>`).join("") : `<div class="teacher-empty-state"><i data-lucide="check-check"></i><b>Your review queue is clear</b><p>There are no blank grades or competency actions waiting for you.</p></div>`;
       lucide.createIcons();
@@ -606,9 +606,9 @@
 
   function exportVisible() {
     const data = assignedData();
-    if (page() === "grades.html") {
+    if (page() === "grades") {
       downloadCsv("teacher-grades.csv", [["Student", "Student ID", "Subject", "Grade", "Remarks", "Term", "Publication"], ...visibleGrades().map((record) => [fullName(studentFor(record.studentId, data.users)), record.studentId, record.subject, record.grade ?? "", record.remarks || "", record.term || record.period || "", record.published ? "Published" : "Unpublished"])]);
-    } else if (page() === "competencies.html") {
+    } else if (page() === "competencies") {
       downloadCsv("teacher-competencies.csv", [["Student", "Student ID", "Competency", "Qualification", "Status", "Assessment Date", "Assessor", "Remarks", "Evidence"], ...visibleCompetencies().map((record) => [fullName(studentFor(record.studentId, data.users)), record.studentId, record.competency, record.qualification, record.status, record.assessmentDate, record.assessor, record.remarks, record.evidence])]);
     } else {
       downloadCsv("teacher-students.csv", [["Student", "Student ID", "Strand", "Enrollment"], ...assignedStudents(data).map((student) => [fullName(student), student.id, student.strand || student.track || "", latestEnrollment(student.id, data.enrollments)?.status || "No enrollment"])]);
@@ -697,8 +697,8 @@
   }
 
   setup();
-  if (page() === "dashboard.html") renderDashboard();
-  if (page() === "students.html") {
+  if (page() === "dashboard") renderDashboard();
+  if (page() === "students") {
     injectSearch("Search by student name, ID, strand, or track", renderStudents);
     configureToolbar(
       [
@@ -710,7 +710,7 @@
     );
     renderStudents();
   }
-  if (page() === "grades.html") {
+  if (page() === "grades") {
     $("newGrade")?.addEventListener("click", openNewGrade);
     $("closeNewGrade")?.addEventListener("click", () => $("newGradeDialog")?.close());
     $("cancelNewGrade")?.addEventListener("click", () => $("newGradeDialog")?.close());
@@ -726,7 +726,7 @@
     );
     renderGrades();
   }
-  if (page() === "competencies.html") {
+  if (page() === "competencies") {
     injectSearch("Search student, ID, competency, or qualification", renderCompetencies);
     configureToolbar(
       [
@@ -738,5 +738,5 @@
     $("teacherBulk")?.classList.remove("hidden");
     renderCompetencies();
   }
-  if (page() === "profile.html") profile();
+  if (page() === "profile") profile();
 })();

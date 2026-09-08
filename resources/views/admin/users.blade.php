@@ -10,8 +10,8 @@
         tailwind.config = { darkMode: "class" };
     </script>
     <script src="https://unpkg.com/lucide@latest"></script>
-    <link rel="stylesheet" href="../css/custom.css" />
-    @vite([ 'resources/css/app.css', 'resource/js/app.js' ])
+    <link rel="stylesheet" href="{{ asset('css/custom.css') }}" />
+    @vite([ 'resources/css/app.css', 'resources/js/app.js' ])
 </head>
 <body class="min-h-screen bg-slate-50 text-slate-800 dark:bg-slate-950 dark:text-slate-100">
     @include('admin.components.sidebar')
@@ -113,102 +113,93 @@
     </div>
     <div id="modalRoot"></div>
     <dialog id="userDialog" class="w-[min(680px,calc(100%-2rem))] rounded-2xl border-0 p-0 shadow-2xl backdrop:bg-slate-950/50">
-        <form id="userForm" class="card max-h-[90vh] overflow-y-auto p-6 dark:text-white">
+        <form id="userForm" class="card max-h-[90vh] overflow-y-auto p-6 sm:p-8 dark:text-white">
             <div class="flex items-start justify-between gap-4">
                 <div>
                     <p id="dialogEyebrow" class="text-sm font-semibold text-green-600">
                         New account
                     </p>
                     <h3 id="dialogTitle" class="mt-1 text-xl font-bold">Add user</h3>
+                    <p class="mt-1 text-xs text-slate-500 dark:text-slate-400">Enter the account details below.</p>
                 </div>
                 <button type="button" data-close-dialog class="rounded-lg p-2 text-slate-400 hover:bg-slate-100">
                     <i data-lucide="x" class="h-5 w-5"></i>
                 </button>
             </div>
             <input id="userId" type="hidden" />
-            <div class="mt-6 grid gap-4 sm:grid-cols-2">
-                <label class="text-sm font-semibold">
+            <div class="mt-6 flex items-center gap-3">
+                <div class="flex h-8 w-8 items-center justify-center rounded-lg bg-green-50 text-green-600 dark:bg-green-950/40"><i data-lucide="user-round" class="h-4 w-4"></i></div>
+                <div><h4 class="text-sm font-bold text-slate-900 dark:text-white">Account information</h4><p class="text-[11px] text-slate-400">Basic details used for portal access.</p></div>
+            </div>
+            <div class="mt-4 grid gap-3 md:grid-cols-3">
+                <label class="block text-[11px] font-medium text-slate-700 dark:text-slate-300">
                     First name
-                    <input id="firstName" required class="input mt-1.5 w-full rounded-xl border px-3 py-2.5" />
+                    <input id="firstName" required class="mt-1 w-full rounded-lg border border-slate-200 bg-white px-3 py-2.5 text-xs outline-none transition focus:border-green-500 focus:ring-2 focus:ring-green-100 dark:border-slate-700 dark:bg-slate-900"  placeholder="First name" />
                 </label>
-                <label class="text-sm font-semibold">
+                <label class="block text-[11px] font-medium text-slate-700 dark:text-slate-300">
+                    Middle Name
+                    <input id="middleName" placeholder="Middle name" class="mt-1 w-full rounded-lg border border-slate-200 bg-white px-3 py-2.5 text-xs outline-none transition focus:border-green-500 focus:ring-2 focus:ring-green-100 dark:border-slate-700 dark:bg-slate-900" />
+                </label>
+                <label class="block text-[11px] font-medium text-slate-700 dark:text-slate-300">
                     Last name
-                    <input id="lastName" required class="input mt-1.5 w-full rounded-xl border px-3 py-2.5" />
+                    <input id="lastName" required class="mt-1 w-full rounded-lg border border-slate-200 bg-white px-3 py-2.5 text-xs outline-none transition focus:border-green-500 focus:ring-2 focus:ring-green-100 dark:border-slate-700 dark:bg-slate-900"  placeholder="Last name" />
                 </label>
-                <label class="text-sm font-semibold">
+                <label class="block text-[11px] font-medium text-slate-700 dark:text-slate-300">
                     Email
-                    <input id="email" type="email" required class="input mt-1.5 w-full rounded-xl border px-3 py-2.5" />
+                    <input id="email" type="email" required class="mt-1 w-full rounded-lg border border-slate-200 bg-white px-3 py-2.5 text-xs outline-none transition focus:border-green-500 focus:ring-2 focus:ring-green-100 dark:border-slate-700 dark:bg-slate-900"  placeholder="you@example.com" />
                 </label>
-                <label class="text-sm font-semibold">
+                <label class="block text-[11px] font-medium text-slate-700 dark:text-slate-300">
                     Username
-                    <input id="username" class="input mt-1.5 w-full rounded-xl border px-3 py-2.5" />
+                    <input id="username" class="mt-1 w-full rounded-lg border border-slate-200 bg-white px-3 py-2.5 text-xs outline-none transition focus:border-green-500 focus:ring-2 focus:ring-green-100 dark:border-slate-700 dark:bg-slate-900"  placeholder="Choose a username" />
                 </label>
-                <label class="text-sm font-semibold">
+                <label class="block text-[11px] font-medium text-slate-700 dark:text-slate-300">
                     Role
-                    <select id="role" class="input mt-1.5 w-full rounded-xl border px-3 py-2.5">
+                    <select id="role" class="mt-1 w-full rounded-lg border border-slate-200 bg-white px-3 py-2.5 text-xs outline-none transition focus:border-green-500 focus:ring-2 focus:ring-green-100 dark:border-slate-700 dark:bg-slate-900">
                         <option value="student">Student</option>
                         <option value="teacher">Teacher</option>
                         <option value="parent">Parent</option>
                         <option value="admin">Admin</option>
+                        <option value="guest">Guest</option>
                     </select>
                 </label>
-                <label class="text-sm font-semibold">
+                <label class="block text-[11px] font-medium text-slate-700 dark:text-slate-300">
                     Account status
-                    <select id="accountStatus" class="input mt-1.5 w-full rounded-xl border px-3 py-2.5">
+                    <select id="accountStatus" class="mt-1 w-full rounded-lg border border-slate-200 bg-white px-3 py-2.5 text-xs outline-none transition focus:border-green-500 focus:ring-2 focus:ring-green-100 dark:border-slate-700 dark:bg-slate-900">
                         <option value="active">Active</option>
                         <option value="inactive">Inactive</option>
                     </select>
                 </label>
-                <label class="text-sm font-semibold sm:col-span-2">
+                <label class="block text-[11px] font-medium text-slate-700 dark:text-slate-300 sm:col-span-2">
                     Password
-                    <input id="password" type="password" minlength="6" class="input mt-1.5 w-full rounded-xl border px-3 py-2.5"
+                    <input id="password" type="password" minlength="6" class="mt-1 w-full rounded-lg border border-slate-200 bg-white px-3 py-2.5 text-xs outline-none transition focus:border-green-500 focus:ring-2 focus:ring-green-100 dark:border-slate-700 dark:bg-slate-900"
                         placeholder="Required for a new account; leave blank to keep current password" />
                 </label>
-                <label class="text-sm font-semibold">
+                <label class="block text-[11px] font-medium text-slate-700 dark:text-slate-300">
                     Contact number
-                    <input id="contact" class="input mt-1.5 w-full rounded-xl border px-3 py-2.5" />
+                    <input id="contact" class="mt-1 w-full rounded-lg border border-slate-200 bg-white px-3 py-2.5 text-xs outline-none transition focus:border-green-500 focus:ring-2 focus:ring-green-100 dark:border-slate-700 dark:bg-slate-900"  placeholder="09XXXXXXXXX" />
                 </label>
-                <label class="text-sm font-semibold">
+                <label class="block text-[11px] font-medium text-slate-700 dark:text-slate-300">
                     Program / strand
-                    <input id="strand" class="input mt-1.5 w-full rounded-xl border px-3 py-2.5" />
+                    <input id="strand" class="mt-1 w-full rounded-lg border border-slate-200 bg-white px-3 py-2.5 text-xs outline-none transition focus:border-green-500 focus:ring-2 focus:ring-green-100 dark:border-slate-700 dark:bg-slate-900"  placeholder="Program or strand" />
                 </label>
-                <label id="childLinkField" class="hidden text-sm font-semibold sm:col-span-2">
+                <div class="md:col-span-2 mt-4 flex items-center gap-3">
+                    <div class="flex h-8 w-8 items-center justify-center rounded-lg bg-green-50 text-green-600 dark:bg-green-950/40"><i data-lucide="graduation-cap" class="h-4 w-4"></i></div>
+                    <div><h4 class="text-sm font-bold text-slate-900 dark:text-white">Profile information</h4><p class="text-[11px] text-slate-400">Additional details for this account.</p></div>
+                </div>
+                <label id="childLinkField" class="hidden block text-[11px] font-medium text-slate-700 dark:text-slate-300 sm:col-span-2">
                     Linked student
-                    <select id="childId" class="input mt-1.5 w-full rounded-xl border px-3 py-2.5">
+                    <select id="childId" class="mt-1 w-full rounded-lg border border-slate-200 bg-white px-3 py-2.5 text-xs outline-none transition focus:border-green-500 focus:ring-2 focus:ring-green-100 dark:border-slate-700 dark:bg-slate-900">
                         <option value="">No linked student</option>
                     </select>
                 </label>
-                <label class="text-sm font-semibold sm:col-span-2">
+                <label class="block text-[11px] font-medium text-slate-700 dark:text-slate-300 sm:col-span-2">
                     Address
-                    <textarea id="address" rows="2" class="input mt-1.5 w-full rounded-xl border px-3 py-2.5"></textarea>
+                    <textarea id="address" rows="2" class="mt-1 w-full rounded-lg border border-slate-200 bg-white px-3 py-2.5 text-xs outline-none transition focus:border-green-500 focus:ring-2 focus:ring-green-100 dark:border-slate-700 dark:bg-slate-900" placeholder="Complete address" ></textarea>
                 </label>
             </div>
             <div class="mt-6 flex flex-wrap items-center justify-between gap-3">
                 <span id="formFeedback" class="text-xs text-slate-500"></span>
                 <div class="flex gap-3">
-        <main class="p-4 sm:p-6 lg:p-8">
-            <div class="mx-auto max-w-7xl">
-                <section class="student-hero mb-7 p-6 sm:p-8 mb-7 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
-                    <div>
-                        <p class="text-sm font-semibold text-purple-600">
-                            Academic Records
-                        </p>
-                        <h2 class="mt-1 text-3xl font-bold tracking-tight">
-                            Grade Management
-                        </h2>
-                        <p class="mt-2 text-white">
-                            Review, correct, and publish academic results across the portal.
-                        </p>
-                    </div>
-                    <button type="button" data-export-grades
-                        class="inline-flex items-center justify-center gap-2 rounded-xl border border-slate-200 px-4 py-2.5 text-sm font-semibold dark:border-slate-700">
-                        <i data-lucide="download" class="h-4 w-4"></i>
-                        Export CSV
-                    </button>
-                </section>
-                <div class="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-                    <div class="card p-5">
-                 
                     <button type="button" data-close-dialog
                         class="rounded-xl border border-slate-200 px-4 py-2.5 text-sm font-semibold dark:border-slate-700">
                         Cancel
@@ -221,76 +212,71 @@
             </div>
         </form>
     </dialog>
-    <dialog id="detailDialog"
-        class="w-[min(560px,calc(100%-2rem))] rounded-2xl border-0 p-0 shadow-2xl backdrop:bg-slate-950/50">
-        <section class="card p-6 dark:text-white">
-            <div class="flex items-start justify-between">
-                <div>
-                    <p class="text-sm font-semibold text-green-600">Account details</p>
-                    <h3 id="detailName" class="mt-1 text-xl font-bold"></h3>
-                </div>
-                <button type="button" data-close-detail class="rounded-lg p-2 text-slate-400 hover:bg-slate-100">
-                    <i data-lucide="x" class="h-5 w-5"></i>
-                </button>
-            </div>
-            <div id="detailBody" class="mt-6 grid gap-3 sm:grid-cols-2"></div>
-            <div class="mt-6 flex justify-end">
-                <button type="button" data-close-detail
-                    class="rounded-xl bg-slate-900 px-4 py-2.5 text-sm font-semibold text-white dark:bg-slate-100 dark:text-slate-900">
-                    Close
-                </button>
-            </div>
-        </section>
-    </dialog>
-    <template id="userRowTemplate">
-        <tr class="border-t border-slate-100 dark:border-slate-800">
-            <td class="p-4">
-                <input type="checkbox" data-select-user aria-label="Select user" />
-            </td>
-            <td class="p-4">
-                <div class="flex items-center gap-3">
-                    <span class="relative flex h-9 w-9 shrink-0 items-center justify-center">
-                        <img data-user-photo
-                            class="absolute inset-0 h-9 w-9 rounded-full object-cover"
-                            alt="User profile photo" />
-                        <span data-user-initials
-                            class="flex h-9 w-9 items-center justify-center rounded-full bg-green-50 text-xs font-bold text-green-700"></span>
-                    </span>
-                    <div>
-                        <b data-user-name class="block"></b><small data-user-username
-                            class="text-xs text-slate-400"></small>
-                    </div>
-                </div>
-            </td>
-            <td data-user-id class="p-4 font-mono text-xs"></td>
-            <td class="p-4"><span data-user-role></span></td>
-            <td data-user-email class="p-4"></td>
-            <td class="p-4"><span data-user-status></span></td>
-            <td class="p-4">
-                <div class="flex justify-end gap-2">
-                    <button type="button" data-action="details" class="rounded-lg p-2 text-slate-500 hover:bg-slate-100" title="View details">
-                        <i data-lucide="eye" class="h-4 w-4"></i>
-                    </button>
-                    <button type="button" data-action="edit" class="rounded-lg p-2 text-blue-600 hover:bg-blue-50" title="Edit user">
-                        <i data-lucide="pencil" class="h-4 w-4"></i>
-                    </button>
-                    <button type="button" data-action="toggle" class="rounded-lg p-2 text-amber-600 hover:bg-amber-50" title="Change account status">
-                        <i data-lucide="pause-circle" class="h-4 w-4"></i>
-                    </button>
-                    <button type="button" data-action="reset" class="rounded-lg p-2 text-purple-600 hover:bg-purple-50" title="Reset password">
-                        <i data-lucide="key-round" class="h-4 w-4"></i>
-                    </button>
-                    <button type="button" data-action="delete" class="rounded-lg p-2 text-red-600 hover:bg-red-50" title="Delete user">
-                        <i data-lucide="trash-2" class="h-4 w-4"></i>
-                    </button>
-                </div>
-            </td>
-        </tr>
-    </template>
-    <script>
-        lucide.createIcons();
-    </script>
-
-    
+                <dialog id="detailDialog" class="w-[min(560px,calc(100%-2rem))] rounded-2xl border-0 p-0 shadow-2xl backdrop:bg-slate-950/50">
+                    <section class="card p-6 dark:text-white">
+                        <div class="flex items-start justify-between">
+                            <div>
+                                <p class="text-sm font-semibold text-green-600">Account details</p>
+                                <h3 id="detailName" class="mt-1 text-xl font-bold"></h3>
+                            </div>
+                            <button type="button" data-close-detail class="rounded-lg p-2 text-slate-400 hover:bg-slate-100">
+                                <i data-lucide="x" class="h-5 w-5"></i>
+                            </button>
+                        </div>
+                        <div id="detailBody" class="mt-6 grid gap-3 sm:grid-cols-2"></div>
+                        <div class="mt-6 flex justify-end">
+                            <button type="button" data-close-detail
+                                class="rounded-xl bg-slate-900 px-4 py-2.5 text-sm font-semibold text-white dark:bg-slate-100 dark:text-slate-900">
+                                Close
+                            </button>
+                        </div>
+                    </section>
+                </dialog>
+                <template id="userRowTemplate">
+                    <tr class="border-t border-slate-100 dark:border-slate-800">
+                        <td class="p-4">
+                            <input type="checkbox" data-select-user aria-label="Select user" />
+                        </td>
+                        <td class="p-4">
+                            <div class="flex items-center gap-3">
+                                <span class="relative flex h-9 w-9 shrink-0 items-center justify-center">
+                                    <img data-user-photo
+                                        class="absolute inset-0 h-9 w-9 rounded-full object-cover"
+                                        alt="User profile photo" />
+                                    <span data-user-initials
+                                        class="flex h-9 w-9 items-center justify-center rounded-full bg-green-50 text-xs font-bold text-green-700"></span>
+                                </span>
+                                <div>
+                                    <b data-row-user-name class="block"></b>
+                                    <small data-user-username class="text-xs text-slate-400"></small>
+                                </div>
+                            </div>
+                        </td>
+                        <td data-row-user-id class="p-4 font-mono text-xs"></td>
+                        <td class="p-4"><span data-user-role></span></td>
+                        <td data-user-email class="p-4"></td>
+                        <td class="p-4"><span data-user-status></span></td>
+                        <td class="p-4">
+                            <div class="flex justify-end gap-2">
+                                <button type="button" data-action="details" class="rounded-lg p-2 text-slate-500 hover:bg-slate-100" title="View details">
+                                    <i data-lucide="eye" class="h-4 w-4"></i>
+                                </button>
+                                <button type="button" data-action="edit" class="rounded-lg p-2 text-blue-600 hover:bg-blue-50" title="Edit user">
+                                    <i data-lucide="pencil" class="h-4 w-4"></i>
+                                </button>
+                                <button type="button" data-action="toggle" class="rounded-lg p-2 text-amber-600 hover:bg-amber-50" title="Change account status">
+                                    <i data-lucide="pause-circle" class="h-4 w-4"></i>
+                                </button>
+                                <button type="button" data-action="reset" class="rounded-lg p-2 text-purple-600 hover:bg-purple-50" title="Reset password">
+                                    <i data-lucide="key-round" class="h-4 w-4"></i>
+                                </button>
+                                <button type="button" data-action="delete" class="rounded-lg p-2 text-red-600 hover:bg-red-50" title="Delete user">
+                                    <i data-lucide="trash-2" class="h-4 w-4"></i>
+                                </button>
+                            </div>
+                        </td>
+                    </tr>
+                </template>
+    @include('partials.portal-scripts', ['portalPage' => 'admin/users.js'])
 </body>
 </html>

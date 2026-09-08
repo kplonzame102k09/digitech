@@ -2,7 +2,7 @@
     class="sidebar fixed inset-y-0 left-0 z-50 w-64 -translate-x-full transform border-r border-slate-200 bg-white transition-transform duration-300 ease-in-out lg:translate-x-0 dark:border-slate-800 dark:bg-slate-900">
     <div class="flex h-full flex-col">
         <div class="flex h-20 items-center gap-3 border-b border-slate-200 px-5 dark:border-slate-800">
-            <img src="{{ asset('assets/images/16432.png') }}" class="h-10 w-10 rounded-xl object-cover" alt="Digitech College logo">
+            <img src="{{ asset('images/16432.png') }}" class="h-10 w-10 rounded-xl object-cover" alt="Digitech College logo">
             <div>
                 <div class="font-extrabold tracking-tight">
                     DIGITECH

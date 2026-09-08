@@ -2,23 +2,23 @@
 
 namespace Database\Seeders;
 
-use Illuminate\Database\Seeder;
 use App\Models\User;
+use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\Hash;
 
 class DatabaseSeeder extends Seeder
 {
     public function run(): void
     {
-        User::updateOrCreate(
-            [
-                'user_id' => 'ADMIN-000001',
-            ],
+        $rolePassword = env('ROLE_PASSWORD', 'ADMIN@TEACHER123');
+
+        $admin = User::updateOrCreate(
+            ['user_id' => 'ADMIN-000001'],
             [
                 'role' => 'admin',
+                'status' => 'active',
                 'firstName' => 'System',
                 'lastName' => 'Administrator',
-                'middleName' => null,
                 'contact' => '09123456789',
                 'birthDate' => '1990-01-01',
                 'birthPlace' => 'Lucena City',
@@ -28,7 +28,7 @@ class DatabaseSeeder extends Seeder
                 'region' => 'CALABARZON',
                 'email' => 'admin@digitech.edu',
                 'password' => Hash::make('admin123'),
-                'rolePassword' => Hash::make('ADMIN@TEACHER123'),
+                'rolePassword' => Hash::make($rolePassword),
             ]
         );
     }

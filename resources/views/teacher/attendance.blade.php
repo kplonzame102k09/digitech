@@ -96,6 +96,7 @@
         </main>
     </div>
     <div id="modalRoot"></div>
+@include('partials.portal-scripts', ['portalPage' => 'workflows.js'])
 </body>
 
 </html>

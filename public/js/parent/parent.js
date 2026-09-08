@@ -211,9 +211,9 @@
     const gradesLink = $("[data-grade-link]", card);
     const attendanceLink = $("[data-attendance-link]", card);
     if (gradesLink)
-      gradesLink.href = `grades.html?student=${encodeURIComponent(student.id)}`;
+      gradesLink.href = `/parent/grades?student=${encodeURIComponent(student.id)}`;
     if (attendanceLink)
-      attendanceLink.href = `attendance.html?student=${encodeURIComponent(student.id)}`;
+      attendanceLink.href = `/parent/attendance?student=${encodeURIComponent(student.id)}`;
   }
 
   function appendChildCards(container, children) {
@@ -313,7 +313,7 @@
   //   if (all) {
   //     const link = $("[data-filter-link]", all);
   //     text("[data-filter-label]", "All children", all);
-  //     if (link) link.href = `${target}.html`;
+  //     if (link) link.href = `/parent/${target}`;
   //     link?.classList.toggle("bg-green-600", !selected);
   //     link?.classList.toggle("text-white", !selected);
   //     container.append(all);
@@ -345,7 +345,7 @@
         text("[data-filter-label]", "All children", all);
 
         if (link) {
-            link.href = `${target}.html`;
+            link.href = `/parent/${target}`;
             link.removeAttribute("data-student-id");
         }
 
@@ -369,7 +369,7 @@
             const studentId = String(child.id || "").trim();
 
             link.href =
-                `${target}.html?student=${encodeURIComponent(studentId)}`;
+                `/parent/${target}?student=${encodeURIComponent(studentId)}`;
 
             link.dataset.studentId = studentId;
         }

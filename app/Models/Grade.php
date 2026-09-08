@@ -2,8 +2,8 @@
 
 namespace App\Models;
 
-use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Model;
 
 class Grade extends Model
 {
@@ -35,6 +35,7 @@ class Grade extends Model
     ];
 
     protected $keyType = 'string';
+
     public $incrementing = false;
 
     public function student()
@@ -54,9 +55,10 @@ class Grade extends Model
 
     public function getNumericGrade()
     {
-        if ($this->grade === null || $this->grade === '' || is_undefined($this->grade)) {
+        if ($this->grade === null || $this->grade === '') {
             return null;
         }
+
         return (float) $this->grade;
     }
 
@@ -67,6 +69,7 @@ class Grade extends Model
         }
 
         $numericGrade = $this->getNumericGrade();
+
         return ($numericGrade !== null && $numericGrade >= 75) ? 'Passed' : 'Failed';
     }
 

@@ -10,8 +10,7 @@
         tailwind.config = { darkMode: "class" };
     </script>
     <script src="https://unpkg.com/lucide@latest"></script>
-    <link rel="stylesheet" href="../css/custom.css" />
-    @vite([ 'resources/css/app.css', 'resources/js/app.js' ])
+    <link rel="stylesheet" href="{{ asset('css/custom.css') }}" />
 </head>
 
 <body class="min-h-screen bg-slate-50 text-slate-800 dark:bg-slate-950 dark:text-slate-100">
@@ -264,7 +263,7 @@
             <td class="p-4">
                 <div class="flex items-center gap-3">
                     <span class="relative flex h-9 w-9 shrink-0 items-center justify-center">
-                        <img data-student-photo src="../assets/images/16432.png"
+                        <img data-student-photo src="{{ asset('images/16432.png') }}"
                             class="absolute inset-0 h-9 w-9 rounded-full object-cover"
                             alt="Student profile photo" />
                         <span data-student-initials
@@ -309,10 +308,7 @@
             <p data-audit-notes class="mt-1 text-xs"></p>
         </div>
     </template>
-    <script>
-        lucide.createIcons();
-    </script>
-
+    @include('partials.portal-scripts', ['portalPage' => 'admin/enrollment.js'])
 </body>
 
 </html>

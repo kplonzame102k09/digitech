@@ -8,7 +8,6 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/lucide@latest"></script>
     <link rel="stylesheet" href="{{ asset('css/custom.css') }}">
-    @vite(['resources/css/app.css', 'resources/js/app.js'])
 </head>
 
 <body class="min-h-screen bg-slate-100 text-slate-800">
@@ -64,7 +63,7 @@
                         </span>
                         <span class="flex items-center gap-1.5">
                             <i data-lucide="database" class="h-3.5 w-3.5 text-green-600"></i>
-                            LocalStorage prototype
+                            Digitech College portal
                         </span>
                     </div>
                 </div>

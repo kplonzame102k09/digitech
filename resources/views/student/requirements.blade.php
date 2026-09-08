@@ -11,10 +11,9 @@
     </script>
     <script src="https://unpkg.com/lucide@latest"></script>
     <link rel="stylesheet" href="{{ asset('css/custom.css') }}" />
-    @vite([ 'resources/css/app.css', 'resources/js/app.js' ])
 </head>
 
-<body class="student-portal min-h-screen bg-slate-50 text-slate-800 dark:bg-slate-950 dark:text-slate-100">
+<body data-student-page="requirements" class="student-portal min-h-screen bg-slate-50 text-slate-800 dark:bg-slate-950 dark:text-slate-100">
     @include('student.components.sidebar')
     <div class="lg:pl-64">
         @include('student.components.header')
@@ -27,8 +26,7 @@
                                 checklist</p>
                             <h2 class="mt-2 text-3xl font-extrabold sm:text-4xl">Complete your requirements</h2>
                             <p class="mt-3 max-w-2xl text-sm leading-6 text-white">
-                                Upload each item when it is ready. Files are stored locally in this frontend-only
-                                prototype.
+                                Track each required item and mark it submitted when ready for registrar review.
                             </p>
                         </div>
                         <span class="text-sm font-semibold text-white backdrop-blur">
@@ -87,6 +85,7 @@
         </main>
     </div>
     <div id="modalRoot"></div>
+@include('partials.portal-scripts', ['portalPage' => 'student/student.js'])
 </body>
 
 </html>

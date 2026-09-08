@@ -8,7 +8,6 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/lucide@latest"></script>
     <link rel="stylesheet" href="{{ asset('css/custom.css') }}">
-    @vite(['resources/css/app.css', 'resources/js/app.js'])
 </head>
 
 <body class="min-h-screen bg-slate-50">
@@ -18,7 +17,7 @@
             <div class="absolute -top-32 -right-32 w-80 h-80 bg-green-300/30 rounded-full blur-3xl"></div>
             <div class="absolute -bottom-40 -left-32 w-96 h-96 bg-emerald-200/40 rounded-full blur-3xl"></div>
 
-            <a href="{{ ('/index') }}" class="relative z-10 flex gap-3 items-center">
+            <a href="{{ url('/') }}" class="relative z-10 flex gap-3 items-center">
                 <img src="{{ asset('images/16432.png') }}"
                     class="w-14 h-14 flex items-center justify-center shadow-green-600/20">
                 <!-- <span class="bg-green-600 text-white rounded-lg p-2">
@@ -89,7 +88,6 @@
                                 <option value="teacher" @selected(old('role') === 'teacher')>Teacher</option>
                                 <option value="admin" @selected(old('role') === 'admin')>Admin</option>
                                 <option value="parent" @selected(old('role') === 'parent')>Parent</option>
-                                <option value="guest" @selected(old('role') === 'guest')>Guest</option>
                             </select>
                         </label>
 
@@ -108,8 +106,12 @@
                         <label id="rolePasswordContainer" class="block text-sm font-medium hidden">
                             Role Password
                             <input type="password" name="rolePassword" id="rolePassword"
-                                class="input mt-1 w-full rounded-xl border px-3 py-3" required>
+                                class="input mt-1 w-full rounded-xl border px-3 py-3">
                         </label>
+
+                        @if (session('success'))
+                            <div class="rounded-xl bg-emerald-50 border border-emerald-200 p-3 text-sm text-emerald-700">{{ session('success') }}</div>
+                        @endif
 
                         @if ($errors->any())
                             <div class="rounded-xl bg-red-50 border border-red-200 p-3 text-sm text-red-700">
@@ -148,7 +150,7 @@
             const placeholders = {
                 student: 'STU-2026-XXXXXX',
                 teacher: 'TCH-2026-XXXXXX',
-                admin: 'ADM-2026-XXXXXX',
+                admin: 'ADMIN-000001',
                 parent: 'PRT-2026-XXXXXX',
                 guest: 'GUEST-2026-XXXXX'
             };

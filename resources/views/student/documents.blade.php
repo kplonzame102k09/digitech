@@ -11,10 +11,9 @@
     </script>
     <script src="https://unpkg.com/lucide@latest"></script>
     <link rel="stylesheet" href="{{ asset('css/custom.css') }}" />
-    @vite([ 'resources/css/app.css', 'resources/js/app.js' ])
 </head>
 
-<body class="student-portal min-h-screen bg-slate-50 text-slate-800 dark:bg-slate-950 dark:text-slate-100">
+<body data-student-page="documents" class="student-portal min-h-screen bg-slate-50 text-slate-800 dark:bg-slate-950 dark:text-slate-100">
     @include('student.components.sidebar')
     <div class="lg:pl-64">
         @include('student.components.header')
@@ -23,7 +22,7 @@
                 <section class="mb-7">
                     <div
                         class="student-hero mb-7 p-6 sm:p-8 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
-                        <div class=>
+                        <div>
                             <p class="text-xs font-bold uppercase tracking-[0.18em] text-blue-600">Student services</p>
                             <h2 class="mt-2 text-3xl font-extrabold tracking-tight">Request official documents</h2>
                             <p class="mt-2 max-w-2xl text-white">Submit a request, share its purpose, and track each
@@ -115,6 +114,7 @@
         </main>
     </div>
     <div id="modalRoot"></div>
+@include('partials.portal-scripts', ['portalPage' => 'student/student.js'])
 </body>
 
 </html>

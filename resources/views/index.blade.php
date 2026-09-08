@@ -8,7 +8,6 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/lucide@latest"></script>
     <link rel="stylesheet" href="{{ asset('css/custom.css') }}">
-    @vite([ 'resources/css/app.css', 'resources/js/app.js' ])
 </head>
 
 <body class="bg-slate-50 text-slate-800">
@@ -19,7 +18,8 @@
         <nav class="max-w-7xl mx-auto px-4">
             <div class="h-20 flex items-center justify-between">
                 <a class="flex items-center gap-3" href="{{ ('index') }}">
-                    <img src="{{ asset('images/16432.png') }}" class="w-12 h-12 rounded-xl flex items-center justify-center">
+                    <img src="{{ asset('images/16432.png') }}"
+                        class="w-12 h-12 rounded-xl flex items-center justify-center">
                     <span>
                         <b class="text-lg">DIGITECH</b>
                         <small class="block text-xs text-slate-500">COLLEGE</small>
@@ -44,18 +44,19 @@
                 <a class="block p-3" href="#services">Services</a>
                 <a class="block p-3" href="#about">About</a>
                 <a class="block p-3" href="#contact">Contact</a>
-                <a class="block p-3 bg-green-600 text-white rounded-lg text-center" href="{{ route('auth.login') }}">Portal Login</a>
+                <a class="block p-3 bg-green-600 text-white rounded-lg text-center"
+                    href="{{ route('auth.login') }}">Portal Login</a>
             </div>
         </nav>
     </header>
     <main>
         <section id="home" class="pt-20 pb-0 bg-slate-50">
-             <div class="relative overflow-hidden">
+            <div class="relative overflow-hidden">
                 <img src="{{ asset('images/digitech-college-banner.jpg') }}"
-                    alt="Digitech College — Keeping up with the Changing World"
-                    class="auto-h w-full">
+                    alt="Digitech College — Keeping up with the Changing World" class="auto-h w-full">
 
-                <div class="absolute inset-x-0 bottom-0 h-1/3 bg-gradient-to-t from-white via-white/50 to-transparent"></div>
+                <div class="absolute inset-x-0 bottom-0 h-1/3 bg-gradient-to-t from-white via-white/50 to-transparent">
+                </div>
             </div>
             <div class="max-w-7xl mt-10 mx-auto px-4 grid lg:grid-cols-2 gap-14 items-center">
                 <div>
@@ -103,7 +104,8 @@
                     <div class="relative bg-white rounded-2xl shadow p-5">
                         <div class="flex justify-between border-b pb-4">
                             <div class="flex gap-3">
-                                <img src="assets/images/16432.png" class="w-9 h-9 rounded-lg flex items-center justify-center">
+                                <img src="{{ asset('images/16432.png') }}"
+                                    class="w-9 h-9 rounded-lg flex items-center justify-center">
                                 <div>
                                     <b class="text-sm">Student Portal</b>
                                     <small class="block text-xs text-slate-400">Dashboard preview</small>
@@ -142,7 +144,7 @@
                 </div>
             </div>
         </section>
-        
+
         <section id="services" class="py-20 bg-white">
             <div class="max-w-7xl mx-auto px-4">
                 <div class="text-center max-w-2xl mx-auto">
@@ -249,11 +251,16 @@
         </section>
         <section class="py-20">
             <div class="max-w-5xl mx-auto px-4">
-                <div class="relative overflow-hidden rounded-3xl bg-gradient-to-br from-green-700 via-green-700 to-emerald-800 p-8 sm:p-12 lg:p-14 shadow-2xl shadow-green-900/20">
+                <div
+                    class="relative overflow-hidden rounded-3xl bg-gradient-to-br from-green-700 via-green-700 to-emerald-800 p-8 sm:p-12 lg:p-14 shadow-2xl shadow-green-900/20">
 
                     <!-- Decorative Background -->
-                    <div class="absolute -top-24 -right-24 w-72 h-72 rounded-full bg-emerald-400/20 blur-3xl pointer-events-none"></div>
-                    <div class="absolute -bottom-32 -left-24 w-80 h-80 rounded-full bg-green-400/20 blur-3xl pointer-events-none"></div>
+                    <div
+                        class="absolute -top-24 -right-24 w-72 h-72 rounded-full bg-emerald-400/20 blur-3xl pointer-events-none">
+                    </div>
+                    <div
+                        class="absolute -bottom-32 -left-24 w-80 h-80 rounded-full bg-green-400/20 blur-3xl pointer-events-none">
+                    </div>
                     <div class="absolute top-8 right-10 w-16 h-16 rounded-full border border-white/10"></div>
                     <div class="absolute bottom-8 left-10 w-12 h-12 rounded-full border border-white/10"></div>
 
@@ -261,12 +268,14 @@
                     <div class="relative z-10 max-w-2xl mx-auto text-center">
 
                         <!-- Icon -->
-                        <div class="mx-auto w-20 h-20 flex items-center justify-center rounded-2xl bg-white/10 border border-white/20 backdrop-blur-sm shadow-lg">
-                            <img src="assets/images/16432.png" class="w-15 h-15 text-white">
+                        <div
+                            class="mx-auto w-20 h-20 flex items-center justify-center rounded-2xl bg-white/10 border border-white/20 backdrop-blur-sm shadow-lg">
+                            <img src="{{ asset('images/16432.png') }}" class="w-15 h-15 text-white">
                         </div>
 
                         <!-- Label -->
-                        <div class="mt-6 inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-white/10 border border-white/10 text-green-50 text-sm backdrop-blur-sm">
+                        <div
+                            class="mt-6 inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-white/10 border border-white/10 text-green-50 text-sm backdrop-blur-sm">
                             <span class="w-1.5 h-1.5 rounded-full bg-green-300"></span>
                             Digitech College Portal
                         </div>
@@ -278,24 +287,29 @@
 
                         <!-- Description -->
                         <p class="mt-4 text-green-100 text-base sm:text-lg leading-relaxed max-w-xl mx-auto">
-                            Sign in to your Digitech College workspace and manage your academic services, documents, enrollment, and more.
+                            Sign in to your Digitech College workspace and manage your academic services, documents,
+                            enrollment, and more.
                         </p>
 
                         <!-- Buttons -->
                         <div class="mt-8 flex flex-col sm:flex-row items-center justify-center gap-3">
-                            <a href="{{ ('index') }}" class="group inline-flex items-center justify-center gap-2 bg-white text-green-700 px-7 py-3.5 rounded-xl font-semibold shadow-lg shadow-green-950/20 hover:bg-green-50 hover:-translate-y-0.5 transition-all duration-200">
+                            <a href="{{ ('index') }}"
+                                class="group inline-flex items-center justify-center gap-2 bg-white text-green-700 px-7 py-3.5 rounded-xl font-semibold shadow-lg shadow-green-950/20 hover:bg-green-50 hover:-translate-y-0.5 transition-all duration-200">
                                 Go to Portal
-                                <i data-lucide="arrow-right" class="w-4 h-4 group-hover:translate-x-1 transition-transform duration-200"></i>
+                                <i data-lucide="arrow-right"
+                                    class="w-4 h-4 group-hover:translate-x-1 transition-transform duration-200"></i>
                             </a>
 
-                            <a href="#services" class="inline-flex items-center justify-center gap-2 px-7 py-3.5 rounded-xl font-semibold text-white border border-white/20 bg-white/5 hover:bg-white/10 backdrop-blur-sm transition-all duration-200">
+                            <a href="#services"
+                                class="inline-flex items-center justify-center gap-2 px-7 py-3.5 rounded-xl font-semibold text-white border border-white/20 bg-white/5 hover:bg-white/10 backdrop-blur-sm transition-all duration-200">
                                 Explore Services
                                 <i data-lucide="arrow-up-right" class="w-4 h-4"></i>
                             </a>
                         </div>
 
                         <!-- Features -->
-                        <div class="mt-10 pt-6 border-t border-white/10 flex flex-wrap items-center justify-center gap-x-7 gap-y-3 text-sm text-green-100">
+                        <div
+                            class="mt-10 pt-6 border-t border-white/10 flex flex-wrap items-center justify-center gap-x-7 gap-y-3 text-sm text-green-100">
                             <span class="inline-flex items-center gap-2">
                                 <i data-lucide="shield-check" class="w-4 h-4 text-green-200"></i>
                                 Secure access
@@ -334,62 +348,64 @@
     <footer class="bg-slate-900 text-slate-400">
         <div class="max-w-7xl mx-auto px-4 py-10 flex justify-between flex-wrap gap-4">
             <a class="flex items-center gap-3" href="{{ ('index') }}">
-                    <img src="{{ asset('images/16432.png') }}" class="w-11 h-11 rounded-xl flex items-center justify-center">
-                    <span>
-                        <b class="text-lg">DIGITECH</b>
-                        <small class="block text-xs text-slate-500">COLLEGE</small>
-                    </span>
-                </a>
-            <span class="text-sm">© 2026 · Integrated Web Portal · Prototype</span></div>
+                <img src="{{ asset('images/16432.png') }}"
+                    class="w-11 h-11 rounded-xl flex items-center justify-center">
+                <span>
+                    <b class="text-lg">DIGITECH</b>
+                    <small class="block text-xs text-slate-500">COLLEGE</small>
+                </span>
+            </a>
+            <span class="text-sm">© 2026 · Integrated Web Portal · Prototype</span>
+        </div>
     </footer>
-     <script>
+    <script>
         (function () {
-    const loader = document.getElementById("loader");
+            const loader = document.getElementById("loader");
 
-    if (!loader) return;
+            if (!loader) return;
 
-    const MIN_DISPLAY = 1000; // milliseconds
-    const start = performance.now();
+            const MIN_DISPLAY = 1000; // milliseconds
+            const start = performance.now();
 
-    loader.classList.add("js-active");
+            loader.classList.add("js-active");
 
-    function hideLoader() {
-        const elapsed = performance.now() - start;
-        const delay = Math.max(0, MIN_DISPLAY - elapsed);
+            function hideLoader() {
+                const elapsed = performance.now() - start;
+                const delay = Math.max(0, MIN_DISPLAY - elapsed);
 
-        setTimeout(() => {
-            loader.classList.add("hidden");
+                setTimeout(() => {
+                    loader.classList.add("hidden");
 
-            // Remove after the fade-out transition
-            setTimeout(() => {
-                loader.remove();
-            }, 300);
+                    // Remove after the fade-out transition
+                    setTimeout(() => {
+                        loader.remove();
+                    }, 300);
 
-        }, delay);
-    }
+                }, delay);
+            }
 
-    if (document.readyState === "complete") {
-        hideLoader();
-    } else {
-        window.addEventListener("load", hideLoader, { once: true });
-    }
-})();
+            if (document.readyState === "complete") {
+                hideLoader();
+            } else {
+                window.addEventListener("load", hideLoader, { once: true });
+            }
+        })();
 
-document.addEventListener("DOMContentLoaded", () => {
-    if (window.location.hash === "#contact") {
-        const contact = document.getElementById("contact");
+        document.addEventListener("DOMContentLoaded", () => {
+            if (window.location.hash === "#contact") {
+                const contact = document.getElementById("contact");
 
-        if (contact) {
-            setTimeout(() => {
-                contact.scrollIntoView({
-                    behavior: "smooth",
-                    block: "start"
-                });
-            }, 100);
-        }
-    }
-});   
-    </script> 
+                if (contact) {
+                    setTimeout(() => {
+                        contact.scrollIntoView({
+                            behavior: "smooth",
+                            block: "start"
+                        });
+                    }, 100);
+                }
+            }
+        });   
+    </script>
     <script>lucide.createIcons(); menu.onclick = () => mobile.classList.toggle('hidden')</script>
 </body>
 

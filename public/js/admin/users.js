@@ -144,26 +144,26 @@
       const photo = $("[data-user-photo]", row);
       setText(initialsElement, initials(user));
       if (photo) {
-        photo.src = user.photo || "../assets/images/16432.png";
+        photo.src = user.photo || "/images/16432.png";
         photo.alt = `${fullName(user)} profile photo`;
         initialsElement?.classList.add("hidden");
         photo.addEventListener("error", () => {
           if (photo.dataset.fallbackApplied !== "true") {
             photo.dataset.fallbackApplied = "true";
-            photo.src = "../assets/images/16432.png";
+            photo.src = "/images/16432.png";
             return;
           }
           photo.classList.add("hidden");
           initialsElement?.classList.remove("hidden");
         });
       }
-      setText("[data-user-name]", fullName(user), row);
+      setText("[data-row-user-name]", fullName(user), row);
       setText(
         "[data-user-username]",
         user.username ? `@${user.username}` : user.email || "No username",
         row,
       );
-      setText("[data-user-id]", user.id, row);
+      setText("[data-row-user-id]", user.id, row);
       setText("[data-user-email]", user.email || "—", row);
       setStatusBadge($("[data-user-role]", row), roleLabel(user.role), "role");
       const statusElement = $("[data-user-status]", row);
@@ -202,7 +202,6 @@
     empty.value = "";
     empty.textContent = "No linked student";
     select.append(empty);
-    users
       .filter((user) => user.role === "student")
       .forEach((student) => {
         const option = document.createElement("option");
@@ -222,6 +221,7 @@
     const fields = {
       userId: user?.id || "",
       firstName: user?.firstName || "",
+      middleName: user?.middleName || "",
       lastName: user?.lastName || "",
       email: user?.email || "",
       username: user?.username || "",
@@ -255,6 +255,7 @@
     const form = event.currentTarget;
     const fields = [
       "firstName",
+      "middleName",
       "lastName",
       "email",
       "username",
@@ -298,6 +299,7 @@
     }
     Object.assign(user, {
       firstName: values.firstName,
+      middleName: values.middleName,
       lastName: values.lastName,
       email: values.email,
       username: values.username,

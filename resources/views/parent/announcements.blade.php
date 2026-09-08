@@ -11,7 +11,6 @@
     </script>
     <script src="https://unpkg.com/lucide@latest"></script>
     <link rel="stylesheet" href="{{ asset('css/custom.css') }}" />
-    @vite([ 'resources/css/app.css', 'resources/js/app.js' ])
 </head>
 
 <body data-parent-page="announcements" class="min-h-screen bg-slate-50 text-slate-800 dark:bg-slate-950 dark:text-slate-100">
@@ -58,6 +57,7 @@
             </div>
         </article>
     </template>
+@include('partials.portal-scripts', ['portalPage' => 'parent/parent.js'])
 </body>
 
 </html>

@@ -10,8 +10,7 @@
         tailwind.config = { darkMode: "class" };
     </script>
     <script src="https://unpkg.com/lucide@latest"></script>
-    <link rel="stylesheet" href="../css/custom.css" />
-    @vite(['resources/css/app.css', 'resources/js/app.js'])
+    <link rel="stylesheet" href="{{ asset('css/custom.css') }}" />
 </head>
 
 <body class="min-h-screen bg-slate-50 text-slate-800 dark:bg-slate-950 dark:text-slate-100">
@@ -298,8 +297,6 @@
             </div>
         </template>
 
-    <script>
-        lucide.createIcons();
-    </script>
+    @include('partials.portal-scripts', ['portalPage' => 'admin/dashboard.js'])
 </body>
 </html>

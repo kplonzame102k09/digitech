@@ -29,7 +29,7 @@
                 Grades
             </a>
             <a href="{{ route('teacher.competencies') }}" class="flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium 
-                {{ request()->routeIs('teacher.grades') 
+                {{ request()->routeIs('teacher.competencies') 
                 ? 'nav-active' : 'text-slate-600 hover:bg-slate-100 dark:text-slate-300 dark:hover:bg-slate-800'}}">
                 <i data-lucide="award" class="w-4"></i>
                 Competencies

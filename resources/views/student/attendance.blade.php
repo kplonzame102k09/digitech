@@ -9,13 +9,12 @@
     <script>tailwind.config = { darkMode: "class" };</script>
     <script src="https://unpkg.com/lucide@latest"></script>
     <link rel="stylesheet" href="{{ asset('css/custom.css') }}" />
-    @vite([ 'resources/css/app.css', 'resources/js/app.js' ])
 </head>
 
 <body data-role="student" data-feature="attendance" class="student-portal min-h-screen bg-slate-50 text-slate-800 dark:bg-slate-950 dark:text-slate-100">
     @include('student.components.sidebar')
     <div class="lg:pl-64">
-        @include('student.component.header')
+        @include('student.components.header')
         <main class="p-4 sm:p-6 lg:p-8">
             <div class="mx-auto max-w-7xl">
                 <section class="student-hero mb-7 p-6 sm:p-8">
@@ -64,6 +63,7 @@
         </main>
     </div>
     <div id="modalRoot"></div>
+@include('partials.portal-scripts', ['portalPage' => 'workflows.js'])
 </body>
 
 </html>

@@ -239,7 +239,7 @@
       return;
     storageKeys.forEach((key) => localStorage.removeItem(key));
     localStorage.removeItem("lastBackupAt");
-    location.href = "../index.html";
+    location.href = "/";
   }
   function init() {
     admin = AUTH.requireRole("admin");

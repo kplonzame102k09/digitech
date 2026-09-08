@@ -15,7 +15,7 @@
         <button onclick="APP.showNotifications()" class="p-2.5 rounded-xl border dark:border-slate-700">
             <i data-lucide="bell" class="h-4 w-4"></i>
             <span id="topNotif"
-                class="fixed hidden w-4 rounded-full bg-red-500 px-1 text-[9px] font-bold text-white"></span>
+                class="absolute -right-1 -top-1 hidden h-4 min-w-4 rounded-full bg-red-500 px-1 text-[9px] font-bold text-white"></span>
         </button>
         <img id="avatar" data-profile-photo class="w-9 h-9 rounded-full object-cover border-green-100" alt="Profile" />
     </div>

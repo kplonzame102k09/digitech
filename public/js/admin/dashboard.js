@@ -377,14 +377,14 @@
       "#enrollmentQueueEmpty",
       pendingEnrollments,
       users,
-      "enrollment.html",
+      "/admin/enrollment",
     );
     renderQueue(
       "#documentQueue",
       "#documentQueueEmpty",
       pendingDocuments,
       users,
-      "documents.html",
+      "/admin/documents",
     );
     renderStats(
       users,

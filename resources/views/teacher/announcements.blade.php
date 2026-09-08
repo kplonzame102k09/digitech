@@ -11,7 +11,6 @@
     </script>
     <script src="https://unpkg.com/lucide@latest"></script>
     <link rel="stylesheet" href="{{ asset('css/custom.css') }}" />
-    @vite([ 'resource/css/app.css', 'resources/js.app.js' ])
 </head>
 
 <body data-role="teacher" data-feature="announcements" class="min-h-screen bg-slate-50 text-slate-800 dark:bg-slate-950 dark:text-slate-100">
@@ -93,6 +92,7 @@
         </main>
     </div>
     <div id="modalRoot"></div>
+@include('partials.portal-scripts', ['portalPage' => 'workflows.js'])
 </body>
 
 </html>

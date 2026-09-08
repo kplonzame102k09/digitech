@@ -18,7 +18,7 @@
                 class="relative rounded-xl border border-slate-200 p-2.5 dark:border-slate-700">
                 <i data-lucide="bell" class="h-4 w-4"></i>
                 <span id="topNotif"
-                    class="fixed hidden w-4 rounded-full bg-red-500 px-1 text-[9px] font-bold text-white"></span>
+                    class="absolute -right-1 -top-1 hidden h-4 min-w-4 rounded-full bg-red-500 px-1 text-[9px] font-bold text-white"></span>
             </button>
             <img id="profilePhotoInput" data-profile-photo src="{{ asset('images/16432.png') }}"
                 class="ml-1 h-9 w-9 rounded-full object-cover border-green-100" alt="Parent profile photo" />

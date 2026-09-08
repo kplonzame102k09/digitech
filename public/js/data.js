@@ -1,65 +1,34 @@
 const DEMO = {
-  users: [
-    {
-      id: "ADM-2026-X9B7GV",
-      firstName: "Kim Philip",
-      middleName: "De Pasion",
-      lastName: "Lonzame",
-      email: "kpdplonzame@digitech.edu",
-      contact: "09123456789",
-      employeeId: "",
-      department: "",
-      password: "password",
-      role: "admin",
-      photo: ""
-    }
-  ],
-
+  users: [],
   enrollments: [],
   requirements: [],
   documentRequests: [],
-  grades: [
-  ],
+  grades: [],
   competencies: [],
-  notifications: []
+  notifications: [],
 };
 
 function seedData() {
-  const users = DG.getData("users", []);
-  const admin = DEMO.users[0];
-  const exists = users.some(user =>
-    String(user.id || "").toLowerCase() ===
-    admin.id.toLowerCase()
-  );
-  if (!exists) {
-    users.push(admin);
-    DG.saveData("users", users);
+  // MySQL is the source of truth. Only ensure settings exists in memory if missing.
+  if (window.__DIGITECH_READY__) {
+    if (!DG.getData("settings", null)) {
+      DG.saveData("settings", {
+        theme: "light",
+        teacherRegistration: true,
+        adminRegistration: false,
+        institutionName: "Digitech College",
+      });
+    }
+    return;
   }
+
   if (!DG.getData("settings", null)) {
     DG.saveData("settings", {
       theme: "light",
       teacherRegistration: true,
-      adminRegistration: false
+      adminRegistration: false,
     });
   }
-  localStorage.setItem("digitech_seeded", "1");
 }
+
 seedData();
-
-// function seedData() {
-//   if (localStorage.getItem("digitech_seeded")) return;
-
-//   Object.entries(DEMO).forEach(([key, value]) => {
-//     DG.saveData(key, value);
-//   });
-
-//   DG.saveData("settings", {
-//     theme: "light",
-//     teacherRegistration: true,
-//     adminRegistration: false
-//   });
-
-//   localStorage.setItem("digitech_seeded", "1");
-// }
-
-// seedData();

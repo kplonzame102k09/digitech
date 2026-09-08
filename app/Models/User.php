@@ -2,97 +2,88 @@
 
 namespace App\Models;
 
-use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Foundation\Auth\User as Authenticatable;
+use Illuminate\Notifications\Notifiable;
 
-class User extends Model
+class User extends Authenticatable
 {
-    use HasFactory;
+    use HasFactory, Notifiable;
 
     protected $fillable = [
-        'id',
+        'user_id',
+        'role',
+        'status',
         'firstName',
         'lastName',
+        'middleName',
+        'contact',
+        'birthDate',
+        'birthPlace',
+        'barangay',
+        'city',
+        'province',
+        'region',
         'email',
         'username',
         'password',
-        'role',
-        'status',
-        'contact',
+        'rolePassword',
+        'photo',
         'strand',
         'address',
-        'photo',
         'childId',
         'childIds',
-        'birthDate',
         'guardianName',
         'guardianContact',
         'mustChangePassword',
-        'createdAt',
-        'updatedAt',
+        'employeeId',
+        'department',
+        'profile_extra',
     ];
 
-    protected $casts = [
-        'childIds' => 'array',
-        'mustChangePassword' => 'boolean',
-        'createdAt' => 'datetime',
-        'updatedAt' => 'datetime',
+    protected $hidden = [
+        'password',
+        'rolePassword',
+        'remember_token',
     ];
 
-    protected $keyType = 'string';
-    public $incrementing = false;
-
-    /**
-     * Enrollments for this student
-     */
-    public function enrollments()
+    protected function casts(): array
     {
-        return $this->hasMany(Enrollment::class, 'studentId', 'id');
+        return [
+            'birthDate' => 'date',
+            'childIds' => 'array',
+            'profile_extra' => 'array',
+            'mustChangePassword' => 'boolean',
+            'password' => 'hashed',
+            'rolePassword' => 'hashed',
+        ];
     }
 
-    /**
-     * Document requests for this student
-     */
-    public function documentRequests()
+    public function getAuthIdentifierName(): string
     {
-        return $this->hasMany(DocumentRequest::class, 'studentId', 'id');
+        return 'id';
     }
 
-    /**
-     * Grades for this student
-     */
-    public function grades()
+    public function isAdmin(): bool
     {
-        return $this->hasMany(Grade::class, 'studentId', 'id');
+        return $this->role === 'admin';
     }
 
-    /**
-     * Competencies for this student
-     */
-    public function competencies()
+    public function isTeacher(): bool
     {
-        return $this->hasMany(Competency::class, 'studentId', 'id');
+        return $this->role === 'teacher';
     }
 
-    /**
-     * Attendance records for this student
-     */
-    public function attendance()
+    public function isStudent(): bool
     {
-        return $this->hasMany(Attendance::class, 'studentId', 'id');
+        return $this->role === 'student';
     }
 
-    /**
-     * Notifications for this user
-     */
-    public function notifications()
+    public function isParent(): bool
     {
-        return $this->hasMany(Notification::class, 'userId', 'id');
+        return $this->role === 'parent';
     }
 
-    /**
-     * Get linked children if parent
-     */
     public function linkedChildren()
     {
         if ($this->role !== 'parent') {
@@ -100,23 +91,17 @@ class User extends Model
         }
 
         $childIds = $this->childIds ?? [];
+
         if ($this->childId) {
             $childIds[] = $this->childId;
         }
 
-        return User::whereIn('id', $childIds)->get();
-    }
+        $childIds = array_values(array_unique(array_filter($childIds)));
 
-    /**
-     * Count related records
-     */
-    public function getRelatedRecordCount()
-    {
-        return $this->enrollments()->count() +
-               $this->documentRequests()->count() +
-               $this->grades()->count() +
-               $this->competencies()->count() +
-               $this->attendance()->count() +
-               $this->notifications()->count();
+        if ($childIds === []) {
+            return collect();
+        }
+
+        return self::query()->whereIn('user_id', $childIds)->get();
     }
 }
