@@ -98,6 +98,7 @@
       }),
     );
     save("notifications", notifications);
+    APP?.updateNotif?.();
   }
   function populateFilters() {
     const qualifications = [
@@ -192,7 +193,7 @@
       const initialsElement = $("[data-student-initials]", row);
 
       if (student && photo) {
-          photo.src = student.photo || "../assets/images/16432.png";
+          photo.src = student.photo || "/images/16432.png";
           photo.alt = `${fullName(student)} profile photo`;
 
           photo.classList.remove("hidden");

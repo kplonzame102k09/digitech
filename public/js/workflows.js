@@ -7,7 +7,11 @@
   const shell = () => {
     APP.applyTheme();
     APP.updateNotif();
-    $("#logout")?.addEventListener("click", () => AUTH.logout());
+    document.querySelectorAll("[data-theme-toggle]").forEach((button) => {
+      if (button.dataset.themeBound) return;
+      button.dataset.themeBound = "1";
+      button.addEventListener("click", () => APP.toggleTheme());
+    });
   };
   const users = F.users();
   const renderRows = (rows, empty = "No records yet") => {
@@ -89,6 +93,7 @@
         [r.studentId, ...F.parentIdsFor([r.studentId])],
         "Attendance updated",
         `${r.date}: ${r.status}`,
+        "attendance",
       );
       $("#attendanceDialog").classList.add("hidden");
       render();
@@ -117,6 +122,21 @@
   }
   function announcements() {
     const canCreate = U.role === "admin" || U.role === "teacher";
+    const AUDIENCE_BADGE = {
+      All: "bg-emerald-50 text-emerald-700 dark:bg-emerald-950 dark:text-emerald-300",
+      Students: "bg-blue-50 text-blue-700 dark:bg-blue-950 dark:text-blue-300",
+      Parents: "bg-amber-50 text-amber-700 dark:bg-amber-950 dark:text-amber-300",
+      Teachers: "bg-violet-50 text-violet-700 dark:bg-violet-950 dark:text-violet-300",
+      Guests: "bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-300",
+    };
+    const renderFeed = (cards, empty = "No announcements yet") => {
+      const body = $("#rows");
+      if (!body) return;
+      body.innerHTML = cards.length
+        ? cards.join("")
+        : `<div class="card p-10 text-center text-sm text-slate-500">${F.esc(empty)}</div>`;
+      lucide.createIcons();
+    };
     const render = () => {
       const audience =
         U.role === "student"
@@ -129,6 +149,7 @@
       const rows = F.get("announcements", [])
         .filter(
           (r) =>
+            r.authorId === U.id ||
             r.createdBy === U.id ||
             r.audience === "All" ||
             r.audience === audience,
@@ -137,10 +158,38 @@
           (a, b) =>
             new Date(b.createdAt || b.date) - new Date(a.createdAt || a.date),
         );
-      renderRows(
-        rows.map(
-          (r) => `<tr class="border-t"><td class="p-3 font-semibold">${F.esc(r.title)}</td><td class="p-3">${F.esc(r.audience || "All")}</td><td class="p-3">${F.esc(r.category || "General")}</td><td class="p-3">${F.esc(APP.formatDate(r.createdAt || r.date))}</td><td class="p-3">${F.esc(r.message)}</td></tr>`,
-        ),
+      renderFeed(
+        rows.map((r) => {
+          const author = users.find(
+            (u) => u.id === (r.createdBy || r.authorId),
+          );
+          const name = F.userName(author) || "College Office";
+          const initials = author
+            ? `${(author.firstName || "")[0] || ""}${(author.lastName || "")[0] || ""}`.toUpperCase() || "DG"
+            : "DT";
+          const aud = r.audience || "All";
+          const badge =
+            AUDIENCE_BADGE[aud] ||
+            "bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-300";
+          return `<article class="card p-5">
+              <div class="flex items-start gap-3">
+                <span class="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-violet-500 to-fuchsia-500 text-sm font-bold text-white">${F.esc(initials)}</span>
+                <div class="min-w-0 flex-1">
+                  <div class="flex flex-wrap items-center justify-between gap-x-2 gap-y-1">
+                    <div class="flex items-center gap-2">
+                      <span class="font-bold">${F.esc(name)}</span>
+                      <span class="text-slate-400">·</span>
+                      <time class="text-xs text-slate-400">${F.esc(APP.formatDate(r.createdAt || r.date))}</time>
+                    </div>
+                    <span class="rounded-full px-2.5 py-1 text-[11px] font-semibold ${badge}">${F.esc(aud)}</span>
+                  </div>
+                  <span class="mt-1 inline-block rounded-md bg-slate-100 px-2 py-0.5 text-[11px] font-medium text-slate-500 dark:bg-slate-800 dark:text-slate-400">${F.esc(r.category || "General")}</span>
+                </div>
+              </div>
+              <h3 class="mt-3 text-lg font-bold tracking-tight">${F.esc(r.title)}</h3>
+              <p class="mt-1 text-sm leading-relaxed text-slate-600 dark:text-slate-300">${F.esc(r.message)}</p>
+            </article>`;
+        }),
       );
     };
     $("#announcementForm")?.addEventListener("submit", (e) => {
@@ -152,13 +201,21 @@
           : users.filter((u) => u.role !== "admin").map((u) => u.id);
       const teacherParentIds =
         U.role === "teacher" ? F.parentIdsFor(assignedIds) : [];
+      const audienceRoles = {
+        All: null,
+        Students: ["student"],
+        Parents: ["parent"],
+        Teachers: ["teacher"],
+        Guests: ["guest"],
+      };
       const ids = users
         .filter((u) =>
           U.role === "teacher"
             ? u.id === U.id ||
               assignedIds.includes(u.id) ||
               teacherParentIds.includes(u.id)
-            : audience === "All" || u.role === audience.toLowerCase(),
+            : audience === "All" ||
+              (audienceRoles[audience] || []).includes(u.role),
         )
         .map((u) => u.id);
       const a = {
@@ -168,6 +225,7 @@
         category: $("#category").value.trim() || "General",
         audience,
         createdBy: U.id,
+        authorId: U.id,
         createdAt: new Date().toISOString(),
       };
       const all = F.get("announcements", []);
@@ -186,6 +244,16 @@
     render();
   }
   function requirements() {
+    const studentSelect = $("#student");
+    if (studentSelect) {
+      studentSelect.innerHTML =
+        (U.role === "admin" ? F.students() : F.teacherStudents(U))
+          .map(
+            (s) =>
+              `<option value="${F.esc(s.id)}">${F.esc(F.userName(s))}</option>`,
+          )
+          .join("");
+    }
     const render = () => {
       const all = F.get("requirements", []);
       renderRows(
@@ -212,6 +280,7 @@
                 [r.studentId, ...F.parentIdsFor([r.studentId])],
                 `Requirement ${r.status}`,
                 `${r.name} was ${r.status.toLowerCase()}.`,
+                "requirement",
               );
               render();
               APP.toast(`Requirement ${r.status.toLowerCase()}`);

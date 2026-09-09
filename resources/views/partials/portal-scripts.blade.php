@@ -18,10 +18,11 @@
 <script src="{{ asset('js/api.js') }}"></script>
 <script src="{{ asset('js/features.js') }}"></script>
 @foreach ($extraScripts as $script)
-    <script src="{{ asset($script) }}"></script>
+    <script src="{{ asset($script) . '?v=' . (file_exists(public_path($script)) ? filemtime(public_path($script)) : 1) }}"></script>
 @endforeach
 @if ($portalPage)
-    <script src="{{ asset('js/' . $portalPage) }}"></script>
+    @php($portalScriptPath = 'js/' . $portalPage)
+    <script src="{{ asset($portalScriptPath) . '?v=' . (file_exists(public_path($portalScriptPath)) ? filemtime(public_path($portalScriptPath)) : 1) }}"></script>
 @endif
 <script>
     document.addEventListener('DOMContentLoaded', () => {

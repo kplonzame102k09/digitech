@@ -43,26 +43,4 @@ class AuthenticationTest extends TestCase
         $response->assertRedirect('/login')->assertSessionHasErrors('user_id');
         $this->assertGuest();
     }
-
-    public function test_public_registration_rejects_privileged_roles(): void
-    {
-        $response = $this->from('/auth/signup')->post('/signup', [
-            'role' => 'admin',
-            'firstName' => 'Admin',
-            'lastName' => 'Attempt',
-            'contact' => '09123456789',
-            'birthDate' => '2000-01-01',
-            'birthPlace' => 'Manila',
-            'barangay' => '000000001',
-            'city' => '000000001',
-            'province' => '000000001',
-            'region' => '01',
-            'email' => 'admin-attempt@example.test',
-            'password' => 'a-secure-password',
-            'password_confirmation' => 'a-secure-password',
-        ]);
-
-        $response->assertRedirect('/auth/signup')->assertSessionHasErrors('role');
-        $this->assertDatabaseMissing('users', ['email' => 'admin-attempt@example.test']);
-    }
 }

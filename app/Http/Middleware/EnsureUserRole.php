@@ -22,6 +22,7 @@ class EnsureUserRole
                 'teacher' => '/teacher/dashboard',
                 'student' => '/student/dashboard',
                 'parent' => '/parent/dashboard',
+                'guest' => '/guest/announcements',
                 default => '/',
             };
 

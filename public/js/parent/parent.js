@@ -16,11 +16,17 @@
     Verified: ["bg-emerald-50", "text-emerald-700"],
     Competent: ["bg-emerald-50", "text-emerald-700"],
     Present: ["bg-emerald-50", "text-emerald-700"],
+    Good: ["bg-emerald-50", "text-emerald-700"],
+    "Very Good": ["bg-emerald-50", "text-emerald-700"],
+    "With Honors": ["bg-emerald-50", "text-emerald-700"],
+    "With High Honors": ["bg-emerald-50", "text-emerald-700"],
+    "With Highest Honors": ["bg-emerald-50", "text-emerald-700"],
     Submitted: ["bg-blue-50", "text-blue-700"],
     Processing: ["bg-blue-50", "text-blue-700"],
     Late: ["bg-amber-50", "text-amber-700"],
     "Under Review": ["bg-amber-50", "text-amber-700"],
     Pending: ["bg-amber-50", "text-amber-700"],
+    Incomplete: ["bg-amber-50", "text-amber-700"],
     "In Progress": ["bg-amber-50", "text-amber-700"],
     "Ready for Release": ["bg-purple-50", "text-purple-700"],
     Released: ["bg-purple-50", "text-purple-700"],
@@ -30,6 +36,23 @@
     "Not Yet Competent": ["bg-red-50", "text-red-700"],
     "Not Started": ["bg-slate-100", "text-slate-600"],
     Draft: ["bg-slate-100", "text-slate-600"],
+    Passed: ["bg-emerald-50", "text-emerald-700"],
+  };
+
+  const GT = () => window.FEATURES || {};
+  const gradeTerm = (g, term) => {
+    const v = g && g[term];
+    return v === null || v === undefined || v === "" ? null : Number(v);
+  };
+  const gradeFinal = (g) => (GT().finalGrade ? GT().finalGrade(g) : (g && g.finalGrade) || null);
+  const gradeAverage = (list) => (GT().generalAverage ? GT().generalAverage(list) : null);
+  const gradeGwa = (avg) => (GT().gwa ? GT().gwa(avg) : null);
+  const gradeGwaText = (value) => (GT().gwaText ? GT().gwaText(value) : value ?? "—");
+  const gradeInput = (value) => (value === null || value === undefined || value === "" ? "" : value);
+  const numberOrNull = (value) => {
+    if (value === undefined || value === null || value === "") return null;
+    const n = Number(value);
+    return Number.isFinite(n) ? n : null;
   };
 
   function cloneTemplate(id) {
@@ -111,15 +134,9 @@
       (grade) =>
         grade.studentId === studentId &&
         grade.published !== false &&
-        grade.grade !== null &&
-        grade.grade !== "" &&
-        !Number.isNaN(Number(grade.grade)),
+        gradeFinal(grade) !== null,
     );
-    if (!grades.length) return null;
-    return (
-      grades.reduce((sum, grade) => sum + Number(grade.grade), 0) /
-      grades.length
-    );
+    return gradeAverage(grades);
   }
 
   function setVisibility(element, visible) {
@@ -232,18 +249,12 @@
       .filter((item) => item.userId === parent.id)
       .sort((a, b) => new Date(b.date) - new Date(a.date));
     const grades = recordsForChildren("grades", children).filter(
-      (item) =>
-        item.published !== false &&
-        item.grade !== null &&
-        item.grade !== "" &&
-        Number.isFinite(Number(item.grade)),
+      (item) => item.published !== false && gradeFinal(item) !== null,
     );
-    const average = grades.length
-      ? (
-          grades.reduce((sum, item) => sum + Number(item.grade), 0) /
-          grades.length
-        ).toFixed(2)
-      : "—";
+    const average =
+      grades.length && gradeAverage(grades) !== null
+        ? gradeAverage(grades).toFixed(2)
+        : "—";
     const activeEnrollments = children.filter((child) =>
       ["Submitted", "Under Review", "Approved", "Enrolled"].includes(
         enrollmentFor(child.id)?.status,
@@ -446,70 +457,208 @@
     setVisibility($("#attendanceEmpty"), attendance.length === 0);
   }
 
+  function publishedForStudent(studentId) {
+    return DG.getData("grades", []).filter(
+      (grade) => grade.studentId === studentId && grade.published !== false,
+    );
+  }
+
+  function parentStudentById(id) {
+    return allStudents().find((student) => student.id === id);
+  }
+
   function renderGrades(children) {
     const selected = new URLSearchParams(location.search).get("student");
+    const semester = $("semesterFilter")?.value || "1st Semester";
     const visibleChildren = selected
       ? children.filter((child) => child.id === selected)
       : children;
     const groups = visibleChildren
       .map((student) => ({
         student,
-        grades: DG.getData("grades", []).filter(
-          (grade) => grade.studentId === student.id && grade.published !== false,
+        grades: publishedForStudent(student.id).filter(
+          (grade) => (grade.semester || "1st Semester") === semester,
         ),
       }))
       .filter((group) => group.grades.length);
     renderStudentFilter($("#gradesFilters"), children, selected, "grades");
-    const container = $("#gradesSections");
-    container?.replaceChildren();
+
+    const allGraded = visibleChildren.filter((student) =>
+      publishedForStudent(student.id).some(
+        (grade) => gradeFinal(grade) !== null && (grade.semester || "1st Semester") === semester,
+      ),
+    );
+    const subjects = groups.reduce(
+      (sum, group) => sum + group.grades.filter((grade) => gradeFinal(grade) !== null).length,
+      0,
+    );
+    const averages = groups
+      .map(({ grades }) => gradeAverage(grades))
+      .filter((value) => value !== null);
+    const overall = averages.length
+      ? Math.round((averages.reduce((sum, value) => sum + value, 0) / averages.length) * 100) / 100
+      : null;
+
+    text("#gradeStudents", allGraded.length);
+    text("#gradeSubjects", subjects);
+    text("#gradeGwa", overall === null ? "—" : gradeGwaText(gradeGwa(overall)));
+    text("#gradeAttention", Math.max(visibleChildren.length - allGraded.length, 0));
+
+    const container = $("#gradesTable");
+    const tbody = $("#gradesRows");
+    tbody?.replaceChildren();
     groups.forEach(({ student, grades }) => {
-      const group = cloneTemplate("gradeGroupTemplate");
-      if (!group) return;
-      const published = grades.filter(
-        (grade) =>
-          grade.grade !== null &&
-          grade.grade !== "" &&
-          Number.isFinite(Number(grade.grade)),
-      );
-      const average = published.length
-        ? (
-            published.reduce((sum, grade) => sum + Number(grade.grade), 0) /
-            published.length
-          ).toFixed(2)
-        : "—";
-      text("[data-grade-student]", studentName(student), group);
+      const row = cloneTemplate("gradesRowTemplate");
+      if (!row) return;
+      const avg = gradeAverage(grades);
+      text("[data-grade-initials]", initials(student), row);
+      text("[data-grade-student]", studentName(student), row);
+      text("[data-grade-student-id]", student.id, row);
       text(
-        "[data-grade-student-id]",
-        `${student.id}${student.strand ? ` · ${student.strand}` : ""}`,
-        group,
+        "[data-grade-average]",
+        avg === null ? "—" : gradeGwaText(gradeGwa(avg)),
+        row,
       );
-      text("[data-published-average]", average, group);
-      const rows = $("[data-grade-rows]", group);
-      grades.forEach((grade) => {
-        const row = cloneTemplate("gradeRowTemplate");
-        if (!row) return;
-        text("[data-grade-subject]", grade.subject || grade.course || "—", row);
-        text(
-          "[data-grade-term]",
-          grade.term || grade.period || "Current term",
-          row,
-        );
-        text(
-          "[data-grade-value]",
-          grade.grade === null || grade.grade === ""
-            ? "Not released"
-            : Number(grade.grade).toFixed(2),
-          row,
-        );
-        if (grade.remarks)
-          statusBadge($("[data-grade-remarks]", row), grade.remarks);
-        else text("[data-grade-remarks]", "—", row);
-        rows.append(row);
-      });
-      container.append(group);
+      $("[data-view-grade]", row)?.addEventListener("click", () =>
+        openGradeModal(student.id),
+      );
+      tbody?.append(row);
     });
     setVisibility(container, groups.length > 0);
     setVisibility($("#gradesEmpty"), groups.length === 0);
+  }
+
+  function openGradeModal(studentId) {
+    const student = parentStudentById(studentId);
+    if (!student) return;
+    const years = [...new Set(DG.getData("grades", []).map((g) => g.schoolYear).filter(Boolean))].sort().reverse();
+    const yearSelect = $("#modalYear");
+    yearSelect?.replaceChildren();
+    (years.length ? years : ["2026-2027"]).forEach((year) => {
+      const option = document.createElement("option");
+      option.value = year;
+      option.textContent = year;
+      yearSelect.append(option);
+    });
+    const enrollment = enrollmentFor(student.id);
+    text("#gradesModal [data-grade-student]", studentName(student));
+    text("#gradesModal [data-grade-student-id]", `${student.id}${student.strand ? ` · ${student.strand}` : ""}`);
+    if (yearSelect) yearSelect.value = years[0] || "2026-2027";
+    $("#modalSemester").value = $("semesterFilter")?.value || "1st Semester";
+    const photo = $("#gradesModal [data-grade-photo]");
+    const initialsEl = $("#gradesModal [data-grade-initials]");
+    if (photo) {
+      photo.classList.add("hidden");
+      const fallback = () => {
+        if (initialsEl) {
+          initialsEl.textContent = initials(student);
+          initialsEl.classList.remove("hidden");
+        }
+      };
+      initialsEl?.classList.add("hidden");
+      const src = DG.getProfilePhoto(student);
+      if (src) {
+        photo.src = src;
+        photo.classList.remove("hidden");
+        photo.onerror = fallback;
+      } else fallback();
+    }
+    renderGradeModalRows();
+    $("#gradesModal")?.showModal();
+    lucide.createIcons();
+  }
+
+  function modalGradeRecords() {
+    const student = parentStudentById(
+      ($("#gradesModal [data-grade-student-id]")?.textContent || "").split("·")[0].trim(),
+    );
+    const year = $("#modalYear")?.value || "";
+    const semester = $("#modalSemester")?.value || "1st Semester";
+    if (!student) return [];
+    return publishedForStudent(student.id)
+      .filter(
+        (record) =>
+          (!record.schoolYear || record.schoolYear === year) &&
+          (record.semester || "1st Semester") === semester,
+      )
+      .sort((a, b) => String(a.subject || "").localeCompare(String(b.subject || "")));
+  }
+
+  function renderGradeModalRows() {
+    const body = $("#modalGradeRows");
+    body?.replaceChildren();
+    const records = modalGradeRecords();
+    if (!records.length) {
+      body.innerHTML =
+        '<tr><td colspan="7" class="p-8 text-center text-slate-500">No published grades for this semester yet.</td></tr>';
+      renderGradeModalSummary(records);
+      return;
+    }
+    records.forEach((record) => {
+      const row = cloneTemplate("gradeRowTemplate");
+      if (!row) return;
+      const final = gradeFinal(record);
+      text("[data-grade-subject]", record.subject || "—", row);
+      text("[data-grade-units]", Number(record.units || 0).toFixed(0), row);
+      text("[data-grade-prelim]", record.prelim === null || record.prelim === undefined || record.prelim === "" ? "—" : Number(record.prelim).toFixed(2), row);
+      text("[data-grade-midterm]", record.midterm === null || record.midterm === undefined || record.midterm === "" ? "—" : Number(record.midterm).toFixed(2), row);
+      text("[data-grade-finals]", record.finals === null || record.finals === undefined || record.finals === "" ? "—" : Number(record.finals).toFixed(2), row);
+      text("[data-grade-final]", final === null ? "—" : final.toFixed(2), row);
+      const remarks = $("[data-grade-remarks]", row);
+      if (record.remarks) statusBadge(remarks, record.remarks);
+      else text("[data-grade-remarks]", "—", row);
+      body?.append(row);
+    });
+    renderGradeModalSummary(records);
+  }
+
+  function renderGradeModalSummary(records) {
+    const studentId = ($("#gradesModal [data-grade-student-id]")?.textContent || "").split("·")[0].trim();
+    const year = $("#modalYear")?.value || "";
+    const annual = GT().studentAverages
+      ? GT().studentAverages(DG.getData("grades", []), studentId, year)
+      : null;
+    text("#annualFirstGwa", annual ? gradeGwaText(annual.firstGwa) : "—");
+    text("#annualSecondGwa", annual ? gradeGwaText(annual.secondGwa) : "—");
+    text("#annualAverage", annual && annual.annual !== null ? annual.annual.toFixed(2) : "—");
+    text("#annualGwa", annual ? gradeGwaText(annual.annualGwa) : "—");
+  }
+
+  function exportGrades() {
+    const semester = $("semesterFilter")?.value || "1st Semester";
+    const selected = new URLSearchParams(location.search).get("student");
+    const children = linkedChildren(currentParent());
+    const visibleChildren = selected
+      ? children.filter((child) => child.id === selected)
+      : children;
+    const rows = [];
+    visibleChildren.forEach((student) => {
+      publishedForStudent(student.id)
+        .filter((grade) => (grade.semester || "1st Semester") === semester)
+        .forEach((grade) => {
+          const final = gradeFinal(grade);
+          rows.push([
+            studentName(student),
+            student.id,
+            grade.subject || "",
+            Number(grade.units || 0).toFixed(0),
+            gradeInput(grade.prelim),
+            gradeInput(grade.midterm),
+            gradeInput(grade.finals),
+            final === null ? "" : final.toFixed(2),
+            grade.remarks || "",
+            semester,
+          ]);
+        });
+    });
+    const headers = ["Student", "Student ID", "Subject", "Units", "Prelim", "Midterm", "Finals", "Final Grade", "Remarks", "Semester"];
+    const content = (GT().csv || ((h, r) => [h, ...r].map((line) => line.map((cell) => `"${String(cell ?? "").replaceAll('"', '""')}"`).join(",")).join("\n")))(headers, rows);
+    (GT().download || ((name, text) => {
+      const a = document.createElement("a");
+      a.href = URL.createObjectURL(new Blob([text], { type: "text/csv" }));
+      a.download = name;
+      a.click();
+    }))("parent-grades.csv", content);
   }
 
   function renderDocuments(children) {
@@ -645,7 +794,16 @@
     if (page() === "dashboard") renderDashboard(parent, children);
     if (page() === "children") renderChildren(children);
     if (page() === "attendance") renderAttendance(children);
-    if (page() === "grades") renderGrades(children);
+    if (page() === "grades") {
+      renderGrades(children);
+      $("#semesterFilter")?.addEventListener("change", () => renderGrades(children));
+      $("#exportVisible")?.addEventListener("click", exportGrades);
+      $$("[data-close-grades]").forEach((button) =>
+        button.addEventListener("click", () => $("#gradesModal")?.close()),
+      );
+      $("#modalSemester")?.addEventListener("change", renderGradeModalRows);
+      $("#modalYear")?.addEventListener("change", renderGradeModalRows);
+    }
     if (page() === "documents") renderDocuments(children);
     if (page() === "announcements") renderAnnouncements(parent);
     if (page() === "profile") renderProfile(parent);
@@ -656,7 +814,7 @@
     const input = document.getElementById("profilePhotoInput");
     const photos = document.querySelectorAll("[data-profile-photo]");
     if (!input) return;
-    input.addEventListener("change", () => {
+    input.addEventListener("change", async () => {
       const file = input.files?.[0];
       if (!file) return;
       if (!["image/jpeg", "image/png", "image/webp"].includes(file.type)) {
@@ -669,15 +827,15 @@
         input.value = "";
         return;
       }
-      const reader = new FileReader();
-      reader.onload = () => {
-        const photo = reader.result;
-        photos.forEach(img => {
-          img.src = photo;
-        });
-        DG.setProfilePhoto(photo, DG.getCurrentUser());
-      };
-      reader.readAsDataURL(file);
+      try {
+        await DG.uploadProfilePhoto(file);
+      } catch (error) {
+        alert(error.message || "Failed to update photo.");
+        return;
+      } finally {
+        input.value = "";
+      }
+      DG.loadProfileElements();
     });
     const savedPhoto = DG.getProfilePhoto(DG.getCurrentUser());
     if (savedPhoto) {

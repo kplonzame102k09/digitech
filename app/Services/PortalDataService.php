@@ -55,11 +55,11 @@ class PortalDataService
     private const WRITE_FIELDS = [
         'enrollments' => ['id', 'studentId', 'status', 'programType', 'gradeLevel', 'strand', 'track', 'schoolYear', 'trainingLevel', 'assignedTeacherId', 'assignedSection', 'reviewNotes', 'rejectionReason', 'reviewedAt', 'reviewedBy'],
         'documentRequests' => ['id', 'studentId', 'documentType', 'purpose', 'copies', 'notes', 'status', 'requestDate', 'reviewNotes', 'rejectionReason', 'releaseMethod', 'releaseDate', 'reviewedAt', 'reviewedBy', 'createdBy'],
-        'grades' => ['id', 'studentId', 'subject', 'teacherId', 'grade', 'remarks', 'term', 'period', 'published', 'publishedAt', 'publishedBy', 'notes', 'updatedBy'],
+        'grades' => ['id', 'studentId', 'subject', 'semester', 'prelim', 'midterm', 'finals', 'finalGrade', 'units', 'schoolYear', 'teacherId', 'remarks', 'published', 'publishedAt', 'publishedBy', 'notes', 'updatedBy'],
         'competencies' => ['id', 'studentId', 'competency', 'qualification', 'status', 'assessmentDate', 'assessor', 'evidence', 'remarks', 'createdBy', 'updatedBy'],
         'notifications' => ['id', 'userId', 'title', 'message', 'read', 'source', 'recordId'],
         'announcements' => ['id', 'title', 'message', 'category', 'audience', 'authorId'],
-        'attendance' => ['id', 'studentId', 'date', 'status', 'remarks'],
+        'attendance' => ['id', 'studentId', 'date', 'status', 'subject', 'recordedBy', 'remarks'],
         'auditLogs' => ['id', 'entity', 'recordId', 'action', 'from', 'to', 'notes', 'reason', 'actorId', 'createdAt'],
         'requirements' => ['id', 'studentId', 'name', 'type', 'status', 'dueDate', 'submittedAt', 'notes'],
         'parentLinkRequests' => ['id', 'parentId', 'studentId', 'status', 'reviewedAt', 'reviewedBy'],
@@ -123,7 +123,7 @@ class PortalDataService
 
         if ($key === 'settings') {
             abort_unless($actor?->isAdmin(), 403);
-            $validated = is_array($value) ? $value : [];
+            $validated = is_array($value) ? $value : (json_decode(json_encode($value), true) ?? []);
 
             return $this->applySettings($validated, $actor);
         }
@@ -222,9 +222,11 @@ class PortalDataService
         $portalIds = [];
 
         foreach ($users as $raw) {
-            if (! is_array($raw) || empty($raw['id'])) {
+            if (! is_array($raw)) {
                 continue;
             }
+
+            $raw = $this->normalizeImportedUser($raw);
 
             $portalId = (string) $raw['id'];
             $portalIds[] = $portalId;
@@ -242,6 +244,60 @@ class PortalDataService
         }
 
         return $portalIds;
+    }
+
+    /**
+     * Make an incoming user row tolerant to missing columns, values, or aliases.
+     *
+     * @param  array<string, mixed>  $raw
+     * @return array<string, mixed>
+     */
+    protected function normalizeImportedUser(array $raw): array
+    {
+        $role = strtolower(trim((string) ($raw['role'] ?? '')));
+        $allowedRoles = ['admin', 'teacher', 'student', 'parent', 'guest'];
+        $role = in_array($role, $allowedRoles, true) ? $role : 'student';
+
+        $status = strtolower(trim((string) ($raw['status'] ?? '')));
+        $status = in_array($status, ['active', 'inactive'], true) ? $status : 'active';
+
+        $email = strtolower(trim((string) ($raw['email'] ?? '')));
+        $email = $email !== '' && filter_var($email, FILTER_VALIDATE_EMAIL) ? $email : null;
+
+        $password = (string) ($raw['password'] ?? '');
+        $password = strlen($password) >= 6 ? $password : '';
+
+        foreach (['firstName', 'lastName', 'middleName'] as $name) {
+            if (isset($raw[$name]) && trim((string) $raw[$name]) === '') {
+                $raw[$name] = null;
+            }
+        }
+
+        $raw['role'] = $role;
+        $raw['status'] = $status;
+        $raw['email'] = $email;
+        $raw['password'] = $password;
+        $raw['id'] = ! empty($raw['id']) ? (string) $raw['id'] : $this->generateUserId($role);
+
+        return $raw;
+    }
+
+    protected function generateUserId(string $role): string
+    {
+        $prefix = match ($role) {
+            'student' => 'STU',
+            'teacher' => 'TCH',
+            'admin' => 'ADM',
+            'parent' => 'PRT',
+            'guest' => 'GST',
+            default => 'USR',
+        };
+
+        do {
+            $id = sprintf('%s-%s-%s', $prefix, now()->year, strtoupper(str()->random(6)));
+        } while (User::query()->where('user_id', $id)->exists());
+
+        return $id;
     }
 
     protected function syncOwnProfile(?User $actor, array $users): array
@@ -412,6 +468,29 @@ class PortalDataService
                     $data['teacherId'] = $actor->user_id;
                     $data['publishedBy'] = $data['published'] ? $actor->user_id : ($data['publishedBy'] ?? null);
                 }
+
+                if (! isset($data['semester'])) {
+                    $data['semester'] = Grade::SEMESTER_FIRST;
+                }
+
+                if (! in_array($data['semester'], [Grade::SEMESTER_FIRST, Grade::SEMESTER_SECOND], true)) {
+                    $data['semester'] = Grade::SEMESTER_FIRST;
+                }
+
+                // Recompute the weighted final grade whenever term grades change.
+                $prelim = $data['prelim'] ?? null;
+                $midterm = $data['midterm'] ?? null;
+                $finals = $data['finals'] ?? null;
+
+                if ($prelim !== null || $midterm !== null || $finals !== null) {
+                    $data['finalGrade'] = round(
+                        ((float) ($prelim ?? 0) * Grade::PRELIM_WEIGHT) +
+                        ((float) ($midterm ?? 0) * Grade::MIDTERM_WEIGHT) +
+                        ((float) ($finals ?? 0) * Grade::FINALS_WEIGHT),
+                        2
+                    );
+                }
+
                 break;
 
             case 'competencies':
@@ -526,6 +605,7 @@ class PortalDataService
             'teacher' => in_array($key, ['announcements', 'attendance', 'competencies', 'grades', 'notifications', 'auditLogs'], true),
             'student' => in_array($key, ['documentRequests', 'enrollments', 'notifications', 'requirements', 'users', 'auditLogs'], true),
             'parent' => in_array($key, ['notifications', 'parentLinkRequests', 'users', 'auditLogs'], true),
+            'guest' => in_array($key, ['documentRequests', 'notifications'], true),
             default => false,
         };
     }
@@ -556,12 +636,16 @@ class PortalDataService
                 'id' => $row->id,
                 'studentId' => $row->studentId,
                 'subject' => $row->subject,
+                'semester' => $row->semester,
+                'prelim' => $row->prelim !== null ? (float) $row->prelim : null,
+                'midterm' => $row->midterm !== null ? (float) $row->midterm : null,
+                'finals' => $row->finals !== null ? (float) $row->finals : null,
+                'finalGrade' => $row->finalGrade !== null ? (float) $row->finalGrade : null,
+                'units' => $row->units !== null ? (float) $row->units : 1.00,
+                'schoolYear' => $row->schoolYear,
                 'teacher' => $row->teacherUserId?->firstName.($row->teacherUserId?->lastName !== null ? ' '.$row->teacherUserId->lastName : ''),
                 'teacherId' => $row->teacherId,
-                'grade' => $row->grade !== null ? (float) $row->grade : null,
                 'remarks' => $row->remarks,
-                'term' => $row->term,
-                'period' => $row->period,
                 'published' => (bool) $row->published,
                 'publishedAt' => $this->dateToIso($row->publishedAt),
                 'publishedBy' => $row->publishedBy,
@@ -575,6 +659,8 @@ class PortalDataService
                 'studentId' => $row->studentId,
                 'date' => $this->dateToString($row->date),
                 'status' => $row->status,
+                'subject' => $row->subject,
+                'recordedBy' => $row->recordedBy,
                 'remarks' => $row->remarks,
                 'createdAt' => $this->dateToIso($row->created_at),
                 'updatedAt' => $this->dateToIso($row->updated_at),
@@ -676,7 +762,7 @@ class PortalDataService
 
     protected function publicPhotoUrl(string $path): string
     {
-        if (Str::startsWith($path, ['http://', 'https://'])) {
+        if (Str::startsWith($path, ['http://', 'https://', 'data:'])) {
             return $path;
         }
 

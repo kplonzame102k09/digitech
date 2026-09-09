@@ -19,7 +19,7 @@
         @include('admin.components.header')
         <main class="p-4 sm:p-6 lg:p-8">
             <div class="mx-auto max-w-7xl">
-                <section class="student-hero mb-7 p-6 sm:p-8 mb-7 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+                <section class="student-hero mb-7 p-6 sm:p-8">
                     <div>
                         <p class="text-sm font-semibold text-purple-600">TVET</p>
                         <h2 class="mt-1 text-3xl font-bold tracking-tight">
@@ -29,19 +29,17 @@
                             Review assessments, evidence, outcomes, and reassessment needs.
                         </p>
                     </div>
-                    <div class="flex flex-wrap justify-end gap-3">
-                        <button type="button" data-add-competency class="inline-flex items-center justify-center gap-2 rounded-xl bg-green-600 px-4 py-2.5 
-                            text-sm font-semibold text-white hover:bg-green-700">
-                            <i data-lucide="plus" class="h-4 w-4"></i>
-                            Add competency
-                        </button>
-                        <button type="button" data-export-competencies class="inline-flex items-center justify-center gap-2 rounded-xl border border-slate-200 px-4 
-                            py-2.5 text-sm font-semibold dark:border-slate-700">
-                            <i data-lucide="download" class="h-4 w-4"></i>
-                            Export CSV
-                        </button>
-                    </div>
                 </section>
+                <!-- <div class="mb-6 flex flex-wrap items-center gap-2 rounded-2xl border border-slate-200 bg-white p-3 dark:border-slate-700 dark:bg-slate-900">
+                    <button type="button" data-add-competency class="inline-flex items-center justify-center gap-2 rounded-xl bg-green-600 px-4 py-3 text-sm font-semibold text-white hover:bg-green-700">
+                        <i data-lucide="plus" class="h-4 w-4"></i>
+                        Add competency
+                    </button>
+                    <button type="button" data-export-competencies class="inline-flex items-center justify-center gap-2 rounded-xl border border-slate-200 px-4 py-3 text-sm font-semibold dark:border-slate-700">
+                        <i data-lucide="download" class="h-4 w-4"></i>
+                        Export CSV
+                    </button>
+                </div> -->
                 <div class="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
                     <div class="card p-5">
                         <p class="text-xs text-slate-500">All records</p>
@@ -61,10 +59,12 @@
                     </div>
                 </div>
                 <section class="card mt-6 p-4">
-                    <div class="grid gap-3 lg:grid-cols-[1fr_auto_auto_auto] lg:items-center">
+                    <div>
                         <input id="q" class="input w-full rounded-xl border px-3 py-3"
                             placeholder="Search by student, competency, qualification, or ID"
-                            aria-label="Search competencies" /><select id="statusFilter"
+                            aria-label="Search competencies" />
+                        <div class="mt-3 grid gap-3 sm:grid-cols-2 xl:grid-cols-[auto_auto_auto_auto_auto] xl:items-center">
+                            <select id="statusFilter"
                             class="input rounded-xl border px-3 py-3">
                             <option value="">All statuses</option>
                             <option>Not Started</option>
@@ -81,6 +81,14 @@
                             <option value="date">Sort: Assessment date</option>
                             <option value="qualification">Sort: Qualification</option>
                         </select>
+                    <button type="button" data-add-competency class="inline-flex items-center justify-center gap-2 rounded-xl bg-green-600  py-3 text-sm font-semibold text-white hover:bg-green-700">
+                        <i data-lucide="plus" class="h-4 w-4"></i>
+                        Add competency
+                    </button>
+                    <button type="button" data-export-competencies class="inline-flex items-center justify-center gap-2 rounded-xl bg-red-600 border border-slate-200 py-3 text-sm font-semibold dark:border-slate-700">
+                        <i data-lucide="download" class="h-4 w-4"></i>
+                        Export CSV
+                    </button>
                     </div>
                     <div class="mt-3 flex flex-wrap items-center gap-3 text-xs text-slate-500">
                         <span id="resultCount"></span>

@@ -20,7 +20,7 @@
                 <span id="topNotif"
                     class="absolute -right-1 -top-1 hidden h-4 min-w-4 rounded-full bg-red-500 px-1 text-[9px] font-bold text-white"></span>
             </button>
-            <img id="profilePhotoInput" data-profile-photo src="{{ asset('images/16432.png') }}"
+            <img id="avatar" data-profile-photo src="{{ asset('images/16432.png') }}"
                 class="ml-1 h-9 w-9 rounded-full object-cover border-green-100" alt="Parent profile photo" />
             <div class="hidden sm:block">
                 <div class="text-sm font-semibold" data-parent-full-name></div>

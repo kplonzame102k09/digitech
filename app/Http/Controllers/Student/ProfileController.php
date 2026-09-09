@@ -8,6 +8,7 @@ use App\Models\User;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Str;
 
 class ProfileController extends Controller
 {
@@ -137,7 +138,7 @@ class ProfileController extends Controller
 
     private function publicPhotoUrl(string $path): string
     {
-        return str_starts_with($path, ['http://', 'https://'])
+        return Str::startsWith($path, ['http://', 'https://'])
             ? $path
             : asset('storage/'.ltrim($path, '/'));
     }

@@ -62,7 +62,7 @@ function hydrateFromBoot(boot) {
 function generateId(prefix = "REC") { return `${prefix}-${new Date().getFullYear()}-${Math.random().toString(36).slice(2, 8).toUpperCase()}`; }
 function userIdExists(id) { return getData("users", []).some((u) => u.id === id); }
 function generateUserId(role) {
-  const prefixes = { student: "STU", parent: "PRT", teacher: "TCH", admin: "ADM" };
+  const prefixes = { student: "STU", parent: "PRT", teacher: "TCH", admin: "ADM", guest: "GST" };
   let id;
   do { id = `${prefixes[role] || "USR"}-${new Date().getFullYear()}-${Math.random().toString(36).slice(2, 8).toUpperCase()}`; } while (userIdExists(id));
   return id;
@@ -98,6 +98,37 @@ function setProfilePhoto(photo, user = getCurrentUser()) {
   }
   return updated;
 }
+async function uploadProfilePhoto(file) {
+  if (!file) throw new Error("No photo selected");
+  const form = new FormData();
+  form.append("photo", file);
+  const response = await fetch(`${apiBase}/photo`, {
+    method: "POST",
+    headers: { Accept: "application/json", "X-CSRF-TOKEN": csrfToken, "X-Requested-With": "XMLHttpRequest" },
+    credentials: "same-origin",
+    body: form,
+  });
+  const data = await response.json().catch(() => ({}));
+  if (!response.ok) throw new Error(data.error || `Upload failed (${response.status})`);
+  if (data.photo) {
+    setProfilePhoto(data.photo);
+  }
+  return data;
+}
+async function uploadImage(file) {
+  if (!file) throw new Error("No image selected");
+  const form = new FormData();
+  form.append("image", file);
+  const response = await fetch(`${apiBase}/uploads`, {
+    method: "POST",
+    headers: { Accept: "application/json", "X-CSRF-TOKEN": csrfToken, "X-Requested-With": "XMLHttpRequest" },
+    credentials: "same-origin",
+    body: form,
+  });
+  const data = await response.json().catch(() => ({}));
+  if (!response.ok) throw new Error(data.error || `Upload failed (${response.status})`);
+  return data;
+}
 function loadProfileElements() {
   const user = getCurrentUser();
   if (!user) return;
@@ -105,4 +136,4 @@ function loadProfileElements() {
   document.querySelectorAll("[data-user-name]").forEach((el) => { el.textContent = `${user.firstName} ${user.lastName}`; });
   document.querySelectorAll("[data-user-id]").forEach((el) => { el.textContent = user.id; });
 }
-window.DG = { saveData, getData, removeData, clearData, generateId, generateUserId, userIdExists, getCurrentUser, setCurrentUser, logoutUser, getProfilePhoto, setProfilePhoto, loadProfileElements, hydrateFromBoot, flushSync, STORAGE_KEYS };
+window.DG = { saveData, getData, removeData, clearData, generateId, generateUserId, userIdExists, getCurrentUser, setCurrentUser, logoutUser, getProfilePhoto, setProfilePhoto, uploadProfilePhoto, uploadImage, loadProfileElements, hydrateFromBoot, flushSync, STORAGE_KEYS };

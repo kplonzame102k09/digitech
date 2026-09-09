@@ -3,7 +3,6 @@
 use App\Http\Controllers\AddressController;
 use App\Http\Controllers\Authentication\LoginController;
 use App\Http\Controllers\Authentication\PasswordController;
-use App\Http\Controllers\Authentication\SignupController;
 use App\Http\Controllers\PortalDataController;
 use App\Http\Controllers\Student\DocumentRequestController;
 use App\Http\Controllers\Student\EnrollmentController;
@@ -19,8 +18,6 @@ Route::get('/auth/login', [LoginController::class, 'showLogin'])->name('auth.log
 Route::get('/login', [LoginController::class, 'showLogin'])->name('login');
 Route::post('/login', [LoginController::class, 'login'])->middleware('throttle:login')->name('login.submit');
 Route::post('/logout', [LoginController::class, 'logout'])->name('logout');
-Route::get('/auth/signup', [SignupController::class, 'showSignup'])->name('auth.signup');
-Route::post('/signup', [SignupController::class, 'signup'])->name('signup.submit');
 Route::get('/auth/password/change', [PasswordController::class, 'show'])->middleware('auth')->name('auth.password.change');
 Route::post('/auth/password/change', [PasswordController::class, 'update'])->middleware('auth')->name('auth.password.update');
 
@@ -34,6 +31,8 @@ Route::middleware('auth')->prefix('api/portal')->group(function () {
     Route::get('/boot', [PortalDataController::class, 'boot']);
     Route::post('/users/import', [PortalDataController::class, 'importUsers']);
     Route::get('/users/import/{batchId}', [PortalDataController::class, 'importStatus']);
+    Route::post('/photo', [PortalDataController::class, 'uploadPhoto']);
+    Route::post('/uploads', [PortalDataController::class, 'uploadImage']);
     Route::get('/{key}', [PortalDataController::class, 'show']);
     Route::put('/{key}', [PortalDataController::class, 'update']);
 });
@@ -65,6 +64,7 @@ Route::middleware(['auth', 'password.updated', 'role:student'])->prefix('student
 
     // API routes for student operations
     Route::apiResource('api/enrollments', EnrollmentController::class);
+    Route::get('api/grades/summary', [GradeController::class, 'summary'])->name('grades.summary');
     Route::apiResource('api/grades', GradeController::class)->only(['index', 'show']);
     Route::apiResource('api/document-requests', DocumentRequestController::class);
     Route::get('/api/profile', [ProfileController::class, 'show'])->name('api.profile.show');
@@ -90,4 +90,10 @@ Route::middleware(['auth', 'password.updated', 'role:parent'])->prefix('parent')
     Route::get('/documents', fn () => view('parent.documents'))->name('documents');
     Route::get('/grades', fn () => view('parent.grades'))->name('grades');
     Route::get('/profile', fn () => view('parent.profile'))->name('profile');
+});
+
+Route::middleware(['auth', 'password.updated', 'role:guest'])->prefix('guest')->name('guest.')->group(function () {
+    Route::get('/announcements', fn () => view('guest.announcements'))->name('announcements');
+    Route::get('/documents', fn () => view('guest.documents'))->name('documents');
+    Route::get('/profile', fn () => view('guest.profile'))->name('profile');
 });

@@ -23,7 +23,7 @@ class AuthenticateUserRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'role' => ['required', Rule::in(['student', 'teacher', 'admin', 'parent'])],
+            'role' => ['required', Rule::in(['student', 'teacher', 'admin', 'parent', 'guest'])],
             'user_id' => ['required', 'string', 'max:255'],
             'password' => ['required', 'string'],
         ];

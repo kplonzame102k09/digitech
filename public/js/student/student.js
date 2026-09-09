@@ -4,6 +4,7 @@
 
   const $ = (sel, root = document) =>
     typeof sel === "string" ? root.querySelector(sel) : sel;
+  const $$ = (sel, root = document) => [...root.querySelectorAll(sel)];
   const text = (sel, value, root = document) => {
     const el = $(sel, root);
     if (el) el.textContent = value ?? "";
@@ -13,6 +14,11 @@
     document.body.dataset.studentPage || location.pathname.split("/").pop();
   const fullName = (user = U) =>
     `${user?.firstName || ""} ${user?.middleName || ""} ${user?.lastName || ""}`.trim() || user?.id || "Student";
+
+  const get = (key, fallback = []) => DG.getData(key, fallback);
+  const save = (key, value) => DG.saveData(key, value);
+  const mine = (key) =>
+    get(key, []).filter((row) => row.studentId === U.id || row.userId === U.id);
 
   // Cache for API responses
   const cache = {
@@ -107,7 +113,10 @@
       cache.grades = gradesResponse.grades || [];
       
       const grades = cache.grades;
-      const avg = average(grades);
+      const activeSemester = currentSemester();
+      const avg = semesterAverage(
+        grades.filter((g) => (g.semester || "1st Semester") === activeSemester),
+      );
       text("#currentgpa", avg == null ? "—" : avg.toFixed(2));
       text(
         "#currentgpadetail",
@@ -119,7 +128,7 @@
     }
 
     // Competencies load from the MySQL-backed boot collection
-    const comps = DG.getData("competencies", []);
+    const comps = mine("competencies");
     const competent = comps.filter((c) => c.status === "Competent").length;
     text(
       "#competencyprogress",
@@ -150,7 +159,7 @@
 
     // Announcements load from the MySQL-backed boot collection
     const announce = DG.getData("announcements", [])
-      .filter((a) => !a.audience || a.audience === "all" || a.audience === "student")
+      .filter((a) => !a.audience || /^(all|students?)$/i.test(String(a.audience)))
       .slice(0, 4);
     const list = $("#announcementList") || $("#announcements") || $("#recentAnnouncements");
     if (list) {
@@ -279,37 +288,102 @@
     }
   };
 
+  const currentSemester = () => "1st Semester";
+  const gradeTerm = (g, term) => {
+    const v = g && g[term];
+    return v === null || v === undefined || v === "" ? null : Number(v);
+  };
+  const weightedFinal = (g) => {
+    const terms = ["prelim", "midterm", "finals"];
+    const values = terms.map((t) => gradeTerm(g, t));
+    if (values.every((v) => v === null)) {
+      const f = g?.finalGrade;
+      return f === null || f === undefined || f === "" ? null : Number(f);
+    }
+    return Math.round((values[0] * 0.2 + values[1] * 0.3 + values[2] * 0.5) * 100) / 100;
+  };
+  const semesterAverage = (list) => {
+    const eligible = list.filter((g) => weightedFinal(g) !== null && Number(g?.units || 0) > 0);
+    if (!eligible.length) return null;
+    const totalUnits = eligible.reduce((sum, g) => sum + Number(g.units), 0);
+    return Math.round(eligible.reduce((sum, g) => sum + weightedFinal(g) * Number(g.units), 0) / totalUnits * 100) / 100;
+  };
+  const chedGwa = (avg) => {
+    if (avg === null || avg === undefined) return null;
+    if (avg >= 97) return 1.0;
+    if (avg >= 94) return 1.25;
+    if (avg >= 91) return 1.5;
+    if (avg >= 88) return 1.75;
+    if (avg >= 85) return 2.0;
+    if (avg >= 82) return 2.25;
+    if (avg >= 79) return 2.5;
+    if (avg >= 76) return 2.75;
+    if (avg >= 75) return 3.0;
+    return 5.0;
+  };
+  const gwaLabel = (value) => (value === null || value === undefined ? "—" : value.toFixed(2));
+  const gradeCell = (g, term) => {
+    const v = gradeTerm(g, term);
+    return v === null ? '<span class="text-slate-300 dark:text-slate-600">—</span>' : v.toFixed(2);
+  };
+
   async function renderGrades() {
     try {
-      // Load grades from API if not cached
-      if (!cache.grades) {
-        const gradesResponse = await API.student.grades.list();
-        cache.grades = gradesResponse.grades || [];
-      }
-
-      const grades = cache.grades;
-      const avg = average(grades);
-      text("#gradeTotal", grades.length);
-      text("#gradeAverage", avg == null ? "—" : avg.toFixed(2));
-      text("#gradeYear", DG.getData("settings", {})?.schoolYear || grades[0]?.schoolYear || "—");
-      
-      const body = $("#rows");
-      if (!body) return;
-      body.innerHTML = grades.length
-        ? grades
-            .map(
-              (g) => `<tr class="border-t border-slate-200 dark:border-slate-800">
+      const summaryResponse = await API.student.grades.summary();
+      const allGrades = summaryResponse.grades || [];
+      cache.grades = allGrades;
+      let active = currentSemester();
+      const tabs = $$("#semesterTabs [data-tab]");
+      const reload = () => {
+        const grades = allGrades.filter((g) => (g.semester || "1st Semester") === active);
+        const avg = semesterAverage(grades);
+        const gwa = chedGwa(avg);
+        const year = summaryResponse.schoolYear || grades[0]?.schoolYear || allGrades[0]?.schoolYear || DG.getData("settings", {})?.schoolYear || "—";
+        text("#gradeTotal", grades.length);
+        text("#gradeAverage", avg == null ? "—" : avg.toFixed(2));
+        text("#gradeGwa", gwaLabel(gwa));
+        tabs.forEach((tab) => {
+          const isActive = tab.dataset.tab === active;
+          tab.classList.toggle("bg-blue-600", isActive);
+          tab.classList.toggle("text-white", isActive);
+          tab.classList.toggle("border-blue-600", isActive);
+          tab.classList.toggle("border-slate-200", !isActive);
+          tab.classList.toggle("dark:border-slate-700", !isActive);
+        });
+        const body = $("#rows");
+        if (!body) return;
+        body.innerHTML = grades.length
+          ? grades
+              .map((g) => {
+                const final = weightedFinal(g);
+                const remark = g.remarks || (final === null ? "Pending" : final >= 75 ? "Passed" : "Failed");
+                return `<tr class="border-t border-slate-200 dark:border-slate-800">
                 <td class="p-4 font-semibold">${esc(g.subject || "—")}</td>
-                <td class="p-4">${esc(g.code || "—")}</td>
-                <td class="p-4">${esc(g.teacher || g.teacherId || "—")}</td>
-                <td class="p-4">${esc(g.term || g.period || "—")}</td>
-                <td class="p-4">${esc(g.schoolYear || "—")}</td>
-                <td class="p-4 font-bold">${esc(g.grade ?? "—")}</td>
-                <td class="p-4">${badge(g.remarks || (Number(g.grade) >= 75 ? "Passed" : "Failed"))}</td>
-              </tr>`,
-            )
-            .join("")
-        : `<tr><td colspan="7" class="p-8 text-center text-slate-500">No published grades yet.</td></tr>`;
+                <td class="p-4 text-center">${esc(g.units ?? 1)}</td>
+                <td class="p-4 text-center">${gradeCell(g, "prelim")}</td>
+                <td class="p-4 text-center">${gradeCell(g, "midterm")}</td>
+                <td class="p-4 text-center">${gradeCell(g, "finals")}</td>
+                <td class="p-4 text-center font-bold">${final === null ? "—" : final.toFixed(2)}</td>
+                <td class="p-4">${badge(remark)}</td>
+              </tr>`;
+              })
+              .join("")
+          : `<tr><td colspan="7" class="p-8 text-center text-slate-500">No published grades for this semester yet.</td></tr>`;
+        const annual = summaryResponse.annual || {};
+        const annualReady = annual.annualGeneralAverage !== null && annual.firstSemester?.generalAverage !== null;
+        $("#annualSection")?.classList.toggle("hidden", !annualReady);
+        const fmt = (value) => (value === null || value === undefined ? "—" : Number(value).toFixed(2));
+        text("#annualFirstGwa", fmt(annual.firstSemester?.gwa));
+        text("#annualSecondGwa", fmt(annual.secondSemester?.gwa));
+        text("#annualAverage", fmt(annual.annualGeneralAverage));
+        text("#annualGwa", fmt(annual.annualGwa));
+        lucide.createIcons();
+      };
+      tabs.forEach((tab) => tab.addEventListener("click", () => {
+        active = tab.dataset.tab;
+        reload();
+      }));
+      reload();
     } catch (error) {
       showError("Failed to load grades");
       const body = $("#rows");
@@ -407,21 +481,36 @@
 
   function renderCompetencies() {
     const rows = mine("competencies");
-    const body = $("#rows");
-    if (!body) return;
-    body.innerHTML = rows.length
+    const competent = rows.filter((c) => c.status === "Competent").length;
+    const remaining = rows.length - competent;
+    const pct = rows.length ? Math.round((competent / rows.length) * 100) : 0;
+    text("#pct", `${pct}%`);
+    text("#competentCount", competent);
+    text("#remainingCount", remaining);
+    text("#progressLabel", `${competent} of ${rows.length}`);
+    const bar = $("#bar");
+    if (bar) bar.style.width = `${pct}%`;
+    const cards = $("#cards");
+    if (!cards) return;
+    cards.innerHTML = rows.length
       ? rows
-          .map(
-            (c) => `<tr class="border-t border-slate-200 dark:border-slate-800">
-              <td class="p-4 font-semibold">${esc(c.competency)}</td>
-              <td class="p-4">${esc(c.qualification || "—")}</td>
-              <td class="p-4">${badge(c.status)}</td>
-              <td class="p-4">${esc(c.assessor || "—")}</td>
-              <td class="p-4">${esc((c.assessmentDate || "").toString().slice(0, 10) || "—")}</td>
-            </tr>`,
-          )
+          .map((c) => {
+            const status = c.status || "Not Started";
+            const color =
+              status === "Competent"
+                ? "bg-emerald-500"
+                : status === "In Progress"
+                  ? "bg-amber-500"
+                  : status === "Not Yet Competent"
+                    ? "bg-rose-500"
+                    : "bg-slate-300";
+            const mini = (label, value) =>
+              `<div class="teacher-mini-detail"><span>${esc(label)}</span><b>${esc(value)}</b></div>`;
+            return `<article class="card overflow-hidden"><div class="h-1.5 ${color}"></div><div class="p-5"><div class="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between"><div class="min-w-0"><div class="flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.14em] text-slate-400"><span>${esc(c.qualification || "TVET")}</span><span class="h-1 w-1 rounded-full bg-slate-300"></span><span>${esc(c.assessor || "Pending assessor")}</span></div><h3 class="mt-2 text-lg font-extrabold">${esc(c.competency || "Competency")}</h3></div><div class="shrink-0">${badge(status)}</div></div><div class="mt-5 grid gap-3 sm:grid-cols-3">${mini("Assessment date", APP?.formatDate?.(c.assessmentDate) ?? (c.assessmentDate || "—"))}${mini("Assessor", c.assessor || "Not assigned")}${mini("Outcome", status)}</div><p class="mt-4 rounded-xl bg-slate-50 p-3 text-sm text-slate-500 dark:bg-slate-800 dark:text-slate-400">${esc(c.remarks || "No assessment notes recorded by your teacher yet.")}</p></div></article>`;
+          })
           .join("")
-      : `<tr><td colspan="5" class="p-8 text-center text-slate-500">No competencies recorded yet.</td></tr>`;
+      : `<div class="lg:col-span-2"><div class="teacher-empty-state"><i data-lucide="award"></i><b>No competencies recorded yet</b><p>Your teacher's assessments will appear here.</p></div></div>`;
+    lucide.createIcons();
   }
 
   function renderRequirements() {
@@ -498,22 +587,14 @@
         return;
       }
 
-      const formData = new FormData();
-      formData.append("photo", file);
-
       try {
-        const response = await API.student.profile.uploadPhoto(formData);
-        if (response.ok) {
-          // Update local user object
-          U.photo = response.photo;
-          DG.setCurrentUser(U);
-          APP?.toast?.("Profile photo updated");
-          DG.loadProfileElements();
-        } else {
-          showError(response.error || "Failed to upload photo");
-        }
+        await DG.uploadProfilePhoto(file);
+        DG.loadProfileElements();
+        APP?.toast?.("Profile photo updated");
       } catch (error) {
         showError("Failed to upload photo: " + error.message);
+      } finally {
+        event.target.value = "";
       }
     });
 
@@ -557,6 +638,11 @@
   APP?.applyTheme?.();
   APP?.updateNotif?.();
   DG.loadProfileElements();
+  $$("[data-theme-toggle]").forEach((button) => {
+    if (button.dataset.themeBound) return;
+    button.dataset.themeBound = "1";
+    button.addEventListener("click", () => APP?.toggleTheme?.());
+  });
 
   // Initialize the page
   async function init() {

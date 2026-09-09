@@ -19,31 +19,25 @@
         @include('admin.components.header')
         <main class="p-4 sm:p-6 lg:p-8">
             <div class="mx-auto max-w-7xl">
-                <section class="student-hero mb-7 p-6 sm:p-8 mb-7 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
-                    <div>
-                        <p class="text-sm font-semibold text-purple-600">
-                            Administration
-                        </p>
-                        <h2 class="mt-1 text-3xl font-bold tracking-tight">
-                            User Management
-                        </h2>
-                        <p class="mt-2 text-white">
-                            Create, review, secure, and maintain portal accounts.
-                        </p>
-                    </div>
-                    <button type="button" data-create-user 
-                        class="inline-flex items-center justify-center gap-2 rounded-xl bg-green-600 px-4 py-2.5 text-sm font-semibold text-white shadow-sm hover:bg-green-700">
-                        <i data-lucide="user-plus" class="h-4 w-4"></i>
-                        Add user
-                    </button>
+                <section class="student-hero mb-7 p-6 sm:p-8">
+                    <p class="text-sm font-semibold text-purple-600">
+                        Administration
+                    </p>
+                    <h2 class="mt-1 text-3xl font-bold tracking-tight">
+                        User Management
+                    </h2>
+                    <p class="mt-2 text-white">
+                        Create, review, secure, and maintain portal accounts.
+                    </p>
                 </section>
                 <section class="card p-4">
-                    <div class="grid gap-3 lg:grid-cols-[1fr_auto_auto_auto_auto] lg:items-center">
+                    <div>
                         <label class="sr-only" for="q">
                             Search users
                         </label>
                         <input id="q" class="input w-full rounded-xl border px-3 py-3" placeholder="Search by name, email, username, or User ID" />
-                        <select id="filter" class="input rounded-xl border px-3 py-3">
+                        <div class="mt-3 grid gap-3 sm:grid-cols-2 xl:grid-cols-[auto_auto_auto_auto_auto] xl:items-center">
+                            <select id="filter" class="input rounded-xl border px-3 py-3">
                             <option value="">All roles</option>
                             <option value="student">Students</option>
                             <option value="teacher">Teachers</option>
@@ -65,7 +59,11 @@
                             <i data-lucide="download" class="h-4 w-4"></i>
                             Export CSV
                         </button>
-                        
+                        <button type="button" data-create-user
+                            class="inline-flex items-center justify-center gap-2 rounded-xl bg-green-600 px-4 py-3 text-sm font-semibold text-white shadow-sm hover:bg-green-700">
+                            <i data-lucide="user-plus" class="h-4 w-4"></i>
+                            Add user
+                        </button>
                     </div>
                     <div class="mt-3 flex flex-wrap items-center gap-3 text-xs text-slate-500">
                         <select id="sortBy" class="input rounded-lg border px-2.5 py-2">
@@ -131,7 +129,7 @@
                 <div class="flex h-8 w-8 items-center justify-center rounded-lg bg-green-50 text-green-600 dark:bg-green-950/40"><i data-lucide="user-round" class="h-4 w-4"></i></div>
                 <div><h4 class="text-sm font-bold text-slate-900 dark:text-white">Account information</h4><p class="text-[11px] text-slate-400">Basic details used for portal access.</p></div>
             </div>
-            <div class="mt-4 grid gap-3 md:grid-cols-3">
+            <div class="mt-4 grid gap-3 sm:grid-cols-2">
                 <label class="block text-[11px] font-medium text-slate-700 dark:text-slate-300">
                     First name
                     <input id="firstName" required class="mt-1 w-full rounded-lg border border-slate-200 bg-white px-3 py-2.5 text-xs outline-none transition focus:border-green-500 focus:ring-2 focus:ring-green-100 dark:border-slate-700 dark:bg-slate-900"  placeholder="First name" />
@@ -144,7 +142,7 @@
                     Last name
                     <input id="lastName" required class="mt-1 w-full rounded-lg border border-slate-200 bg-white px-3 py-2.5 text-xs outline-none transition focus:border-green-500 focus:ring-2 focus:ring-green-100 dark:border-slate-700 dark:bg-slate-900"  placeholder="Last name" />
                 </label>
-                <label class="block text-[11px] font-medium text-slate-700 dark:text-slate-300">
+                <label class="block text-[11px] font-medium text-slate-700 dark:text-slate-300 sm:col-span-2">
                     Email
                     <input id="email" type="email" required class="mt-1 w-full rounded-lg border border-slate-200 bg-white px-3 py-2.5 text-xs outline-none transition focus:border-green-500 focus:ring-2 focus:ring-green-100 dark:border-slate-700 dark:bg-slate-900"  placeholder="you@example.com" />
                 </label>
@@ -169,7 +167,7 @@
                         <option value="inactive">Inactive</option>
                     </select>
                 </label>
-                <label class="block text-[11px] font-medium text-slate-700 dark:text-slate-300 sm:col-span-2">
+                <label class="block text-[11px] font-medium text-slate-700 dark:text-slate-300">
                     Password
                     <input id="password" type="password" minlength="6" class="mt-1 w-full rounded-lg border border-slate-200 bg-white px-3 py-2.5 text-xs outline-none transition focus:border-green-500 focus:ring-2 focus:ring-green-100 dark:border-slate-700 dark:bg-slate-900"
                         placeholder="Required for a new account; leave blank to keep current password" />
@@ -182,7 +180,7 @@
                     Program / strand
                     <input id="strand" class="mt-1 w-full rounded-lg border border-slate-200 bg-white px-3 py-2.5 text-xs outline-none transition focus:border-green-500 focus:ring-2 focus:ring-green-100 dark:border-slate-700 dark:bg-slate-900"  placeholder="Program or strand" />
                 </label>
-                <div class="md:col-span-2 mt-4 flex items-center gap-3">
+                <div class="mt-6 flex items-center gap-3 sm:col-span-2">
                     <div class="flex h-8 w-8 items-center justify-center rounded-lg bg-green-50 text-green-600 dark:bg-green-950/40"><i data-lucide="graduation-cap" class="h-4 w-4"></i></div>
                     <div><h4 class="text-sm font-bold text-slate-900 dark:text-white">Profile information</h4><p class="text-[11px] text-slate-400">Additional details for this account.</p></div>
                 </div>

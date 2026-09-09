@@ -64,6 +64,10 @@ const API = {
     grades: {
       list: () => API.get('/student/api/grades'),
       get: (id) => API.get(`/student/api/grades/${id}`),
+      summary: (params = {}) => {
+        const query = new URLSearchParams(params).toString();
+        return API.get(`/student/api/grades/summary${query ? `?${query}` : ''}`);
+      },
     },
     documentRequests: {
       list: () => API.get('/student/api/document-requests'),

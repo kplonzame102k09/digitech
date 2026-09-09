@@ -30,6 +30,7 @@ class AppServiceProvider extends ServiceProvider
                 'student.*',
                 'teacher.*',
                 'parent.*',
+                'guest.*',
             ],
             function ($view) {
                 if (! Auth::check()) {

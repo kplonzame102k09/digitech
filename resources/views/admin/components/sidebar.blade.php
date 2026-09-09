@@ -30,12 +30,14 @@
                 ? 'nav-active' : 'text-slate-600 hover:bg-slate-100 dark:text-slate-300 dark:hover:bg-slate-800' }}">
                 <i data-lucide="clipboard-list" class="w-4"></i>
                 Enrollment
+                <span data-nav-notif="enrollment" class="ml-auto hidden min-w-5 rounded-full bg-red-500 px-1.5 py-0.5 text-center text-[10px] font-bold leading-4 text-white"></span>
             </a>
             <a href="{{ route('admin.documents') }}" class="flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium
                 {{ request()->routeIs('admin.documents')
                 ? 'nav-active' : 'text-slate-600 hover:bg-slate-100 dark:text-slate-300 dark:hover:bg-slate-800' }}">
                 <i data-lucide="file-text" class="w-4"></i>
                 Documents
+                <span data-nav-notif="document" class="ml-auto hidden min-w-5 rounded-full bg-red-500 px-1.5 py-0.5 text-center text-[10px] font-bold leading-4 text-white"></span>
             </a>
             <a href="{{ route('admin.grades') }}" class="flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium
                 {{ request()->routeIs('admin.grades')
@@ -60,12 +62,14 @@
                 ? 'nav-active' : 'text-slate-600 hover:bg-slate-100 dark:text-slate-300 dark:hover:bg-slate-800' }}">
                 <i data-lucide="folder-check" class="w-4"></i>
                 Requirements
+                <span data-nav-notif="requirement" class="ml-auto hidden min-w-5 rounded-full bg-red-500 px-1.5 py-0.5 text-center text-[10px] font-bold leading-4 text-white"></span>
             </a>
             <a href="{{ route('admin.announcements') }}" class="flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium
                 {{ request()->routeIs('admin.announcements')
                 ? 'nav-active' : 'text-slate-600 dark:text-slate-300 hover:bg-slate-800' }}">
                 <i data-lucide="megaphone" class="w-4"></i>
                 Announcements
+                <span data-nav-notif="announcement" class="ml-auto hidden min-w-5 rounded-full bg-red-500 px-1.5 py-0.5 text-center text-[10px] font-bold leading-4 text-white"></span>
             </a>
             <a href="{{ route('admin.parent-links') }}" class="flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium
                 {{ request()->routeIs('admin.parent-links')

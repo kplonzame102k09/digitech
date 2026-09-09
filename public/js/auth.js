@@ -3,6 +3,7 @@ const DASH = {
   parent: "/parent/dashboard",
   teacher: "/teacher/dashboard",
   admin: "/admin/dashboard",
+  guest: "/guest/announcements",
 };
 
 function requireRole(roles) {

@@ -20,34 +20,31 @@
         <main class="p-4 sm:p-6 lg:p-8">
             <div class="mx-auto max-w-7xl">
                 <section class="family-hero mb-7 p-6 sm:p-8">
-                    <div class="relative z-10 flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between">
-                        <div>
-                            <div class="mb-4 flex items-center gap-2 text-xs font-bold uppercase tracking-[0.2em] text-cyan-100">
-                                <span class="h-2 w-2 rounded-full bg-amber-300"></span>
-                                Family workspace
-                            </div>
-                            <h2 class="text-3xl font-extrabold tracking-tight sm:text-4xl">
-                                Welcome, 
-                                <span data-welcome-name>Parent</span>.
-                            </h2>
-                            <p class="mt-3 max-w-2xl text-sm leading-6 text-white">
-                                Stay connected to your children’s enrollment,
-                                grades, attendance, documents, and college updates.
-                            </p>
+                    <div class="relative z-10">
+                        <div class="mb-4 flex items-center gap-2 text-xs font-bold uppercase tracking-[0.2em] text-cyan-100">
+                            <span class="h-2 w-2 rounded-full bg-amber-300"></span>
+                            Family workspace
                         </div>
-                        <div class="flex flex-wrap gap-2">
-                            <a href="{{ route('parent.children') }}" class="inline-flex items-center gap-2 text-sm font-semibold text-cyan-800 underline hover:text-blue-300">
-                                <i data-lucide="users-round" class="h-4 w-4"></i>
-                                View children
-                            </a>
-                            <button type="button" data-notifications
-                                class="inline-flex items-center gap-2 rounded-xl bg-white/15 px-4 py-2.5 text-sm font-semibold text-white backdrop-blur hover:bg-white/25">
-                                <i data-lucide="bell" class="h-4 w-4"></i>
-                                Updates
-                            </button>
-                        </div>
+                        <h2 class="text-3xl font-extrabold tracking-tight sm:text-4xl">
+                            Welcome, 
+                            <span data-welcome-name>Parent</span>.
+                        </h2>
+                        <p class="mt-3 max-w-2xl text-sm leading-6 text-white">
+                            Stay connected to your children’s enrollment,
+                            grades, attendance, documents, and college updates.
+                        </p>
                     </div>
                 </section>
+                <div class="mb-6 flex flex-wrap items-center gap-2 rounded-2xl border border-slate-200 bg-white p-3 dark:border-slate-700 dark:bg-slate-900">
+                    <a href="{{ route('parent.children') }}" class="inline-flex items-center gap-2 rounded-xl bg-cyan-600 px-4 py-3 text-sm font-semibold text-white hover:bg-cyan-700">
+                        <i data-lucide="users-round" class="h-4 w-4"></i>
+                        View children
+                    </a>
+                    <button type="button" data-notifications class="inline-flex items-center gap-2 rounded-xl border border-slate-200 px-4 py-3 text-sm font-semibold dark:border-slate-700">
+                        <i data-lucide="bell" class="h-4 w-4"></i>
+                        Updates
+                    </button>
+                </div>
                 <div class="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
                     <div class="portal-stat card p-5">
                         <span class="portal-stat-icon bg-cyan-50 text-cyan-600 dark:bg-cyan-950/50 dark:text-cyan-300">

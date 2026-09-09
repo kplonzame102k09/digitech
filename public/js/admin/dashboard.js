@@ -274,7 +274,7 @@
         const row = clone("announcementRowTemplate");
         if (!row) return;
         text("[data-announcement-title]", announcement.title, row);
-        text("[data-announcement-date]", formatDate(announcement.date), row);
+        text("[data-announcement-date]", formatDate(announcement.date || announcement.createdAt), row);
         text(
           "[data-announcement-meta]",
           `${announcement.category || "General"} · ${announcement.audience === "all" ? "Everyone" : announcement.audience}`,
@@ -301,6 +301,7 @@
         category,
         audience,
         date: new Date().toISOString(),
+        createdAt: new Date().toISOString(),
         authorId: parent.id,
       };
       const announcements = DG.getData("announcements", []);

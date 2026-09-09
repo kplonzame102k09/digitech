@@ -16,6 +16,8 @@ class Attendance extends Model
         'studentId',
         'date',
         'status',
+        'subject',
+        'recordedBy',
         'remarks',
     ];
 

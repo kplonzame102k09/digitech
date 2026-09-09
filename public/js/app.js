@@ -8,7 +8,7 @@
             el.innerHTML = `
                 <div class="loader-box">
                     <span class="spinner"></span>
-                    <img src="{{ asset('images/16432.png') }}" alt="Loading" class="logo">
+                    <img src="/images/16432.png" alt="Loading" class="logo">
                 </div>`;
             document.body.appendChild(el);
         }
@@ -36,56 +36,65 @@
     });
 })();
 
+function themeStorageKey(userId) {
+  return `dg-theme-${String(userId || "guest").toLowerCase()}`;
+}
+function savedTheme() {
+  try {
+    const user = window.DG ? DG.getCurrentUser() : null;
+    const perUser = localStorage.getItem(themeStorageKey(user?.id));
+    if (perUser === "dark" || perUser === "light") return perUser;
+    const last = localStorage.getItem("dg-theme-last");
+    if (last === "dark" || last === "light") return last;
+  } catch (_) {}
+  return "";
+}
 function getTheme() {
-    const settings =
-        DG.getData("settings", {});
-    return settings.theme || "light";
+  const saved = savedTheme();
+  if (saved === "dark" || saved === "light") return saved;
+  const settings = (window.DG ? DG.getData("settings", {}) : {}) || {};
+  return settings.theme || "light";
 }
 function applyTheme() {
-    const theme = getTheme();
-    const isDark = theme === "dark";
-    document.documentElement.classList.toggle(
-        "dark",
-        isDark
-    );
-    updateThemeIcon(isDark);
+  const theme = getTheme();
+  const isDark = theme === "dark";
+  document.documentElement.classList.toggle("dark", isDark);
+  document.documentElement.style.colorScheme = theme;
+  updateThemeIcon(isDark);
 }
 function updateThemeIcon(isDark) {
-    document
-        .querySelectorAll("[data-theme-icon]")
-        .forEach(icon => {
-            icon.setAttribute(
-                "data-lucide",
-                isDark ? "sun" : "moon"
-            );
-        });
-    if (window.lucide) {
-        lucide.createIcons();
-    }
+  document
+    .querySelectorAll("[data-theme-icon]")
+    .forEach((icon) => {
+      icon.setAttribute("data-lucide", isDark ? "sun" : "moon");
+    });
+  if (window.lucide) {
+    lucide.createIcons();
+  }
 }
 function toggleTheme() {
-    const settings =
-        DG.getData("settings", {});
-    settings.theme =
-        settings.theme === "dark"
-            ? "light"
-            : "dark";
-    DG.saveData(
-        "settings",
-        settings
-    );
-    applyTheme();
+  const next = getTheme() === "dark" ? "light" : "dark";
+  const user = window.DG ? DG.getCurrentUser() : null;
+  try {
+    localStorage.setItem(themeStorageKey(user?.id), next);
+    localStorage.setItem("dg-theme-last", next);
+  } catch (_) {}
+  const settings = window.DG ? DG.getData("settings", {}) : {};
+  if (settings && typeof settings === "object") {
+    settings.theme = next;
+    if (user?.role === "admin") {
+      DG.saveData("settings", settings);
+    }
   }
+  applyTheme();
+}
 function setupThemeToggle() {
-    const button =
-        document.querySelector(
-            "[data-theme-toggle]"
-        );
-    if (!button) return;
-    button.addEventListener(
-        "click",
-        toggleTheme
-    );
+  const button = document.querySelector("[data-theme-toggle]");
+  if (!button) return;
+  button.addEventListener("click", toggleTheme);
+}
+if (window.DG && window.APP === undefined) {
+  applyTheme();
 }
 function esc(v = "") {
   return String(v).replace(
@@ -148,15 +157,24 @@ function formatDate(d) {
 function updateNotif() {
   const u = DG.getCurrentUser();
   if (!u) return;
-  const n = DG.getData("notifications", []).filter(
+  const unread = DG.getData("notifications", []).filter(
     (x) => x.userId === u.id && !x.read,
-  ).length;
+  );
+  const n = unread.length;
   const a =
       document.getElementById("notifCount") || document.getElementById("count"),
     b = document.getElementById("topNotif");
   if (a) a.textContent = n;
-  b?.classList.toggle("hidden", n === 0);
-  if (b) b.textContent = n;
+  if (b) {
+    b.textContent = n;
+    b.classList.toggle("hidden", n === 0);
+  }
+  document.querySelectorAll("[data-nav-notif]").forEach((el) => {
+    const sources = (el.dataset.navNotif || "portal").split(" ").filter(Boolean);
+    const count = unread.filter((x) => sources.includes(x.source || "portal")).length;
+    el.textContent = count;
+    el.classList.toggle("hidden", count === 0);
+  });
 }
 function notifyAdmins(title, message, source = "portal", recordId) {
   const currentUser = DG.getCurrentUser();
@@ -195,6 +213,28 @@ function notifyAdmins(title, message, source = "portal", recordId) {
 // Generic alias for pages that only need to create an admin-facing alert.
 function createAdminNotification(title, message, source = "portal", recordId) {
   return notifyAdmins(title, message, source, recordId);
+}
+
+// Create notifications for an explicit list of user ids (any role).
+function notifyUsers(userIds, title, message, source = "portal", recordId) {
+  const notifications = DG.getData("notifications", []);
+  [...new Set((userIds || []).filter(Boolean))].forEach((userId) => {
+    const notification = {
+      id: DG.generateId("NOT"),
+      userId,
+      title: String(title || "Portal update"),
+      message: String(message || ""),
+      date: new Date().toISOString(),
+      read: false,
+      source,
+    };
+    if (recordId) notification[`${source}Id`] = recordId;
+    notifications.push(notification);
+  });
+  DG.saveData("notifications", notifications);
+  const currentUser = DG.getCurrentUser();
+  if (currentUser && (userIds || []).includes(currentUser.id)) updateNotif();
+  return notifications;
 }
 
 function installNotificationDialog() {
@@ -398,5 +438,6 @@ window.APP = {
   updateNotif,
   notifyAdmins,
   createAdminNotification,
+  notifyUsers,
   generateId: DG.generateId,
 };

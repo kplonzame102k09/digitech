@@ -17,31 +17,52 @@ class GradeController extends Controller
         $user = $request->user();
         abort_unless($user?->isStudent(), 403);
 
-        $grades = Grade::query()
+        $query = Grade::query()
             ->where('studentId', $user->user_id)
             ->where('published', true)
-            ->orderBy('created_at', 'desc')
-            ->get();
+            ->orderBy('subject')
+            ->orderBy('semester');
+
+        if ($request->filled('semester')) {
+            $query->where('semester', $request->string('semester'));
+        }
+
+        $grades = $query->get();
 
         return response()->json([
             'ok' => true,
-            'grades' => $grades->map(fn (Grade $grade): array => [
-                'id' => $grade->id,
-                'studentId' => $grade->studentId,
-                'subject' => $grade->subject,
-                'teacherId' => $grade->teacherId,
-                'grade' => $grade->grade,
-                'remarks' => $grade->remarks,
-                'term' => $grade->term,
-                'period' => $grade->period,
-                'published' => $grade->published,
-                'publishedAt' => $grade->publishedAt?->toIso8601String(),
-                'publishedBy' => $grade->publishedBy,
-                'notes' => $grade->notes,
-                'updatedBy' => $grade->updatedBy,
-                'createdAt' => $grade->created_at?->toIso8601String(),
-                'updatedAt' => $grade->updated_at?->toIso8601String(),
-            ])->values(),
+            'grades' => $grades->map(fn (Grade $grade): array => $this->serialize($grade))->values(),
+        ]);
+    }
+
+    /**
+     * Return the authenticated student's grade summary with averages and GWA.
+     */
+    public function summary(Request $request): JsonResponse
+    {
+        $user = $request->user();
+        abort_unless($user?->isStudent(), 403);
+
+        $grades = Grade::query()
+            ->where('studentId', $user->user_id)
+            ->where('published', true)
+            ->orderBy('subject')
+            ->orderBy('semester')
+            ->get();
+
+        $schoolYear = $request->string('schoolYear')->toString() ?: ($grades->first()?->schoolYear ?? '');
+
+        $summary = Grade::gwaForStudent($user->user_id, $schoolYear ?: null);
+        $annual = Grade::annualGwa($user->user_id, $schoolYear ?: '');
+
+        return response()->json([
+            'ok' => true,
+            'grades' => $grades->map(fn (Grade $grade): array => $this->serialize($grade))->values(),
+            'schoolYear' => $schoolYear,
+            'generalAverage' => $summary['generalAverage'],
+            'gwa' => $summary['gwa'],
+            'totalUnits' => $summary['totalUnits'],
+            'annual' => $annual,
         ]);
     }
 
@@ -61,23 +82,7 @@ class GradeController extends Controller
 
         return response()->json([
             'ok' => true,
-            'grade' => [
-                'id' => $grade->id,
-                'studentId' => $grade->studentId,
-                'subject' => $grade->subject,
-                'teacherId' => $grade->teacherId,
-                'grade' => $grade->grade,
-                'remarks' => $grade->remarks,
-                'term' => $grade->term,
-                'period' => $grade->period,
-                'published' => $grade->published,
-                'publishedAt' => $grade->publishedAt?->toIso8601String(),
-                'publishedBy' => $grade->publishedBy,
-                'notes' => $grade->notes,
-                'updatedBy' => $grade->updatedBy,
-                'createdAt' => $grade->created_at?->toIso8601String(),
-                'updatedAt' => $grade->updated_at?->toIso8601String(),
-            ],
+            'grade' => $this->serialize($grade),
         ]);
     }
 
@@ -112,5 +117,30 @@ class GradeController extends Controller
             'ok' => false,
             'error' => 'Students cannot delete grades.',
         ], 403);
+    }
+
+    private function serialize(Grade $grade): array
+    {
+        return [
+            'id' => $grade->id,
+            'studentId' => $grade->studentId,
+            'subject' => $grade->subject,
+            'semester' => $grade->semester,
+            'prelim' => $grade->prelim !== null ? (float) $grade->prelim : null,
+            'midterm' => $grade->midterm !== null ? (float) $grade->midterm : null,
+            'finals' => $grade->finals !== null ? (float) $grade->finals : null,
+            'finalGrade' => $grade->finalGrade !== null ? (float) $grade->finalGrade : null,
+            'units' => (float) $grade->units,
+            'schoolYear' => $grade->schoolYear,
+            'teacherId' => $grade->teacherId,
+            'remarks' => $grade->remarks,
+            'published' => (bool) $grade->published,
+            'publishedAt' => $grade->publishedAt?->toIso8601String(),
+            'publishedBy' => $grade->publishedBy,
+            'notes' => $grade->notes,
+            'updatedBy' => $grade->updatedBy,
+            'createdAt' => $grade->created_at?->toIso8601String(),
+            'updatedAt' => $grade->updated_at?->toIso8601String(),
+        ];
     }
 }

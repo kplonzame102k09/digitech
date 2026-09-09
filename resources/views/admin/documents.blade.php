@@ -19,25 +19,13 @@
         @include('admin.components.header')
                 <main class="p-4 sm:p-6 lg:p-8">
             <div class="mx-auto max-w-7xl">
-                <section class="student-hero mb-7 p-6 sm:p-8 mb-7 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+                <section class="student-hero mb-7 p-6 sm:p-8">
                     <div>
                         <p class="text-sm font-semibold text-purple-600">Records</p>
                         <h2 class="mt-1 text-3xl font-bold tracking-tight">Document Requests</h2>
                         <p class="mt-2 text-white">
                             Review, process, and release student document requests.
                         </p>
-                    </div>
-                    <div class="flex flex-wrap gap-3">
-                        <button type="button" data-export-documents class="inline-flex items-center gap-2 rounded-xl border border-slate-200 px-4 py-2.5 
-                            text-sm font-semibold dark:border-slate-700">
-                            <i data-lucide="download" class="h-4 w-4"></i>
-                            Export CSV
-                        </button>
-                        <button type="button" data-new-document class="inline-flex items-center gap-2 rounded-xl bg-green-600 px-4 py-2.5 text-sm font-semibold 
-                            text-white">
-                            <i data-lucide="plus" class="h-4 w-4"></i>
-                            New request
-                        </button>
                     </div>
                 </section>
                 <div class="grid gap-4 sm:grid-cols-2 xl:grid-cols-5">
@@ -63,9 +51,10 @@
                     </div>
                 </div>
                 <section class="card mt-6 p-4">
-                    <div class="grid gap-3 lg:grid-cols-[1fr_auto_auto_auto] lg:items-center">
+                    <div>
                         <input id="q" class="input w-full rounded-xl border px-3 py-3" placeholder="Search by student, request ID, or document type"
                             aria-label="Search document requests" />
+                        <div class="mt-3 grid gap-3 sm:grid-cols-2 xl:grid-cols-[auto_auto_auto_auto_auto] xl:items-center">
                             <select id="statusFilter" class="input rounded-xl border px-3 py-3">
                             <option value="">All statuses</option>
                             <option>Pending</option>
@@ -83,6 +72,15 @@
                             <option value="status">Sort: Status</option>
                             <option value="type">Sort: Document type</option>
                         </select>
+
+                    <button type="button" data-new-document class="inline-flex items-center justify-center gap-2 rounded-xl bg-green-600 px-4 py-3 text-center text-sm font-semibold text-white">
+                            <i data-lucide="plus" class="h-4 w-4"></i>
+                            New request
+                        </button>
+                        <button type="button" data-export-documents class="inline-flex items-center justify-center gap-2 rounded-xl bg-red-600 border border-slate-200 px-4 py-3 text-center text-sm font-semibold dark:border-slate-700">
+                            <i data-lucide="download" class="h-4 w-4"></i>
+                            Export CSV
+                        </button>
                     </div>
                     <div class="mt-3 flex flex-wrap items-center gap-3 text-xs text-slate-500">
                         <span id="resultCount"></span>

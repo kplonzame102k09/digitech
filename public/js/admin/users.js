@@ -51,6 +51,7 @@
       teacher: "Teacher",
       student: "Student",
       parent: "Parent",
+      guest: "Guest",
     })[role] ||
     role ||
     "Unknown";
@@ -578,7 +579,9 @@ function generateUserId(role, existingUsers) {
         ? "TCH-2026"
         : role.toLowerCase() === "admin"
           ? "ADM-2026"
-          : "PRT-2026";
+          : role.toLowerCase() === "guest"
+            ? "GST-2026"
+            : "PRT-2026";
 
   let id;
 
@@ -649,6 +652,52 @@ function importUsers() {
   input.type = "file";
   input.accept = ".csv,text/csv";
 
+  const FIELD_ALIASES = {
+    id: ["id", "userid", "user_id", "user-id"],
+    name: ["name", "fullname", "full_name", "names", "fullnames"],
+    firstname: ["firstname", "first_name", "first", "givenname", "given_name"],
+    middlename: ["middlename", "middle_name", "middle"],
+    lastname: ["lastname", "last_name", "last", "familyname", "surname"],
+    role: ["role", "type", "userrole", "account_type"],
+    email: ["email", "emailaddress", "email_address"],
+    status: ["status", "accountstatus", "account_status"],
+    password: ["password", "pass", "pin", "pincode"],
+    contact: ["contact", "phone", "mobilenumber", "mobile_number", "cellphone"],
+    username: ["username", "user_name", "login"],
+    strand: ["strand", "program", "track", "programstrand", "strandprogram"],
+    address: ["address", "homeaddress", "home_address"],
+  };
+
+  const normalizeRole = (value) => {
+    const map = {
+      administrator: "admin",
+      admin: "admin",
+      teacher: "teacher",
+      faculty: "teacher",
+      staff: "teacher",
+      instructor: "teacher",
+      professor: "teacher",
+      student: "student",
+      learner: "student",
+      students: "student",
+      parent: "parent",
+      guardian: "parent",
+      guest: "guest",
+      visitor: "guest",
+      viewer: "guest",
+    };
+    return map[String(value).toLowerCase().replace(/[\s_-]+/g, "")] || "student";
+  };
+
+  const normalizeStatus = (value) => {
+    const k = String(value).toLowerCase().trim();
+    if (["inactive", "0", "no", "false", "disabled"].includes(k)) return "inactive";
+    return "active";
+  };
+
+  const validEmail = (value) =>
+    /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(String(value).trim());
+
   input.onchange = (event) => {
     const file = event.target.files[0];
 
@@ -668,84 +717,160 @@ function importUsers() {
         return;
       }
 
-      // Parse CSV
-      const rows = lines.map((line) => {
+      // Parse CSV (handles quoted values and empty fields)
+      const parseCsvLine = (line) => {
         const values = [];
-        const regex = /("([^"]|"")*"|[^,]+)/g;
-        let match;
-
-        while ((match = regex.exec(line)) !== null) {
-          let value = match[0].trim();
-
-          if (value.startsWith('"') && value.endsWith('"')) {
-            value = value.slice(1, -1).replaceAll('""', '"');
+        let current = "";
+        let inQuotes = false;
+        for (let i = 0; i < line.length; i++) {
+          const ch = line[i];
+          if (inQuotes) {
+            if (ch === '"') {
+              if (line[i + 1] === '"') {
+                current += '"';
+                i++;
+              } else {
+                inQuotes = false;
+              }
+            } else {
+              current += ch;
+            }
+          } else if (ch === '"') {
+            inQuotes = true;
+          } else if (ch === ",") {
+            values.push(current);
+            current = "";
+          } else {
+            current += ch;
           }
-
-          values.push(value);
         }
+        values.push(current);
+        return values.map((value) => value.trim());
+      };
+      const rows = lines.map(parseCsvLine);
 
-        return values;
+      // Map CSV headers onto canonical field names, tolerating aliases
+      const colIndex = {};
+      rows[0].forEach((header, index) => {
+        const key = header
+          .trim()
+          .toLowerCase()
+          .replace(/[^a-z0-9]+/g, "");
+        for (const [canon, aliases] of Object.entries(FIELD_ALIASES)) {
+          if (aliases.includes(key)) colIndex[canon] = index;
+        }
       });
 
-      // CSV headers
-      const headers = rows[0].map((header) =>
-        header.trim().toLowerCase()
-      );
+      const cell = (row, canon) => {
+        const index = colIndex[canon];
+        if (index === undefined || index >= row.length) return "";
+        return (row[index] ?? "").trim();
+      };
 
       const importedUsers = [];
 
       let importedCount = 0;
       let generatedCount = 0;
+      let skippedCount = 0;
 
       rows.slice(1).forEach((row) => {
-        const data = {};
+        const role = normalizeRole(cell(row, "role") || "student");
+        let firstName = cell(row, "firstname");
+        let lastName = cell(row, "lastname");
+        let middleName = cell(row, "middlename");
+        const email = validEmail(cell(row, "email"))
+          ? cell(row, "email").toLowerCase()
+          : "";
+        const csvId = cell(row, "id");
+        const password = cell(row, "password");
 
-        headers.forEach((header, index) => {
-          data[header] = row[index] || "";
-        });
+        // Split a single full-name column (e.g. "Kim Philip Lonzame") into
+        // first / middle / last when separate name columns are absent.
+        if ((!firstName || !lastName) && cell(row, "name")) {
+          const parts = cell(row, "name").trim().split(/\s+/);
+          if (parts.length) {
+            firstName = firstName || parts[0];
+            if (!lastName && parts.length >= 2) {
+              if (parts.length === 2) lastName = parts[1];
+              else if (parts.length >= 3) {
+                middleName = middleName || parts[1];
+                lastName = parts.slice(2).join(" ");
+              }
+            }
+          }
+        }
 
-        const role = (data["role"] || "student").toLowerCase();
+        // Skip rows that carry no usable information at all
+        if (
+          !firstName &&
+          !lastName &&
+          !email &&
+          !csvId &&
+          !cell(row, "contact") &&
+          !cell(row, "username")
+        ) {
+          skippedCount++;
+          return;
+        }
 
-        // Use CSV User ID if provided
-        let userId = data["user id"];
-
-        // Generate one if missing
-        if (!userId || userId.trim() === "") {
+        // Use CSV User ID if provided, otherwise generate one
+        let userId = csvId;
+        if (!userId) {
           userId = DG.generateUserId(role);
           generatedCount++;
         }
 
-        // Create user object
+        // Create user object; omit empty values so the server applies defaults
         const newUser = {
           id: userId,
-          firstName: data["firstname"] || "",
-          middleName: data["middlename"] || "",
-          lastName: data["lastname"] || "",
+          role: role,
+          status: normalizeStatus(cell(row, "status")),
           createdAt: new Date().toISOString(),
           updatedAt: new Date().toISOString(),
-          role: role,
-          email: data["email"] || "",
-          status: data["status"] || "active",
-          password: data["password"] || "",
-          contact: data["contact"] || "",
         };
+        if (firstName) newUser.firstName = firstName;
+        if (lastName) newUser.lastName = lastName;
+        if (middleName) newUser.middleName = middleName;
+        if (email) newUser.email = email;
+        if (password.length >= 6) newUser.password = password;
+        if (cell(row, "contact")) newUser.contact = cell(row, "contact");
+        if (cell(row, "username")) newUser.username = cell(row, "username");
+        if (cell(row, "strand")) newUser.strand = cell(row, "strand");
+        if (cell(row, "address")) newUser.address = cell(row, "address");
 
         importedUsers.push(newUser);
         importedCount++;
       });
 
       if (importedUsers.length === 0) {
-        APP.toast("CSV file contains no users");
+        APP.toast("CSV file contains no usable users");
         return;
       }
+
+      const nameSource =
+        colIndex.name !== undefined &&
+        colIndex.firstname === undefined &&
+        colIndex.lastname === undefined
+          ? "single Name column"
+          : colIndex.firstname !== undefined || colIndex.lastname !== undefined
+            ? "first/last name columns"
+            : "no name column";
+
+      console.info("[User Import]", {
+        headers: rows[0],
+        colIndex,
+        nameSource,
+        sample: importedUsers.slice(0, 3),
+        skipped: skippedCount,
+      });
 
       queueUserImport(importedUsers)
         .then((result) => {
           APP.toast(
             `${result.users} users queued for import` +
-              (generatedCount > 0
-                ? `, ${generatedCount} User IDs generated`
-                : ""),
+              ` (names from ${nameSource})` +
+              (generatedCount > 0 ? `, ${generatedCount} User IDs generated` : "") +
+              (skippedCount > 0 ? `, ${skippedCount} empty rows skipped` : ""),
           );
           watchImport(result.batchId, result.users);
         })

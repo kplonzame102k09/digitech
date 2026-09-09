@@ -3,6 +3,10 @@
   if (!U) return;
 
   const $ = (id) => document.getElementById(id);
+  const q = (selector, root = document) => root.querySelector(selector);
+  const qq = (selector, root = document) => [...root.querySelectorAll(selector)];
+  let gradesQuery = "";
+  let gradesSort = "name";
   const get = (key, fallback = []) => DG.getData(key, fallback);
   const save = (key, value) => DG.saveData(key, value);
   const esc = (value) => APP.esc(value ?? "");
@@ -14,6 +18,36 @@
     `${user?.firstName || ""} ${user?.lastName || ""}`.trim() ||
     user?.id ||
     "Unknown";
+
+  const studentInitials = (student) =>
+    `${student?.firstName?.[0] || ""}${student?.lastName?.[0] || ""}`.toUpperCase() || "ST";
+
+  const avatarFallbackClass =
+    "flex shrink-0 items-center justify-center bg-gradient-to-br from-emerald-100 to-blue-100 text-xs font-extrabold text-emerald-700 dark:from-emerald-950 dark:to-blue-950 dark:text-emerald-300";
+
+  const studentAvatarHtml = (
+    student,
+    shape = "rounded-xl",
+    size = "h-10 w-10",
+    fallbackClass = avatarFallbackClass,
+  ) => {
+    const initials = studentInitials(student);
+    if (!student?.photo) {
+      return `<span class="${fallbackClass} ${size} ${shape}">${esc(initials)}</span>`;
+    }
+    return `<img data-student-avatar="${esc(student.id || "")}" data-initials="${esc(initials)}" data-shape="${shape}" data-size="${size}" data-fallback-class="${esc(fallbackClass)}" src="${esc(student.photo)}" alt="${esc(fullName(student))}" loading="lazy" class="shrink-0 object-cover ${size} ${shape}" />`;
+  };
+
+  const bindAvatarFallbacks = (root) => {
+    qq("[data-student-avatar]", root).forEach((img) => {
+      img.onerror = () => {
+        const span = document.createElement("span");
+        span.className = `${img.dataset.fallbackClass || avatarFallbackClass} ${img.dataset.size || "h-10 w-10"} ${img.dataset.shape || "rounded-xl"}`;
+        span.textContent = img.dataset.initials || "ST";
+        img.replaceWith(span);
+      };
+    });
+  };
 
   const latestEnrollment = (studentId, enrollments) =>
     enrollments
@@ -96,6 +130,7 @@
       }),
     );
     save("notifications", notifications);
+    APP?.updateNotif?.();
   };
 
   const audit = (entity, record, action, notes) => {
@@ -199,9 +234,9 @@
     const competencies = data.competencies.filter(
       (record) => record.studentId === studentId,
     );
-    const average = grades.filter((record) => Number.isFinite(Number(record.grade)));
+    const average = grades.filter((record) => gFinal(record) !== null);
     const averageGrade = average.length
-      ? (average.reduce((sum, record) => sum + Number(record.grade), 0) / average.length).toFixed(2)
+      ? (average.reduce((sum, record) => sum + gFinal(record), 0) / average.length).toFixed(2)
       : "—";
     const root = $("modalRoot") || document.body;
     root.replaceChildren();
@@ -209,10 +244,10 @@
       <div class="teacher-modal-backdrop fixed inset-0 z-[90] flex items-center justify-center p-4" role="dialog" aria-modal="true" aria-label="Student details">
         <div class="teacher-modal-panel max-h-[92vh] w-full max-w-4xl overflow-y-auto rounded-3xl bg-white p-6 shadow-2xl dark:bg-slate-900 sm:p-8">
           <div class="flex items-start justify-between gap-4">
-            <div class="flex items-center gap-4">
-              <div class="flex h-14 w-14 items-center justify-center rounded-2xl bg-gradient-to-br from-emerald-500 to-blue-600 text-lg font-extrabold text-white">${esc(`${student.firstName?.[0] || ""}${student.lastName?.[0] || ""}`.toUpperCase() || "ST")}</div>
-              <div><p class="text-xs font-semibold uppercase tracking-[0.16em] text-emerald-600">Student snapshot</p><h2 class="mt-1 text-2xl font-extrabold">${esc(fullName(student))}</h2><p class="mt-1 text-sm text-slate-500">${esc(student.id)} · ${esc(student.email || "No email")}</p></div>
-            </div>
+<div class="flex items-center gap-4">
+                ${studentAvatarHtml(student, "rounded-2xl", "h-14 w-14", "flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-emerald-500 to-blue-600 text-lg font-extrabold text-white")}
+                <div><p class="text-xs font-semibold uppercase tracking-[0.16em] text-emerald-600">Student snapshot</p><h2 class="mt-1 text-2xl font-extrabold">${esc(fullName(student))}</h2><p class="mt-1 text-sm text-slate-500">${esc(student.id)} · ${esc(student.email || "No email")}</p></div>
+              </div>
             <button type="button" data-close-modal class="rounded-xl p-2 text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800" aria-label="Close student details"><i data-lucide="x"></i></button>
           </div>
           <div class="mt-7 grid gap-3 sm:grid-cols-4">
@@ -222,12 +257,13 @@
             <div class="teacher-detail-card"><p>Competencies</p><b>${competencies.length}</b><small>${competencies.filter((record) => record.status === "Competent").length} competent</small></div>
           </div>
           <div class="mt-8 grid gap-8 lg:grid-cols-2">
-            <section><div class="flex items-center justify-between"><h3 class="font-bold">Academic records</h3><span class="text-xs text-slate-400">${grades.length} total</span></div><div class="mt-3 space-y-2">${grades.map((record) => `<div class="flex items-center justify-between gap-3 rounded-2xl border border-slate-200 p-3 dark:border-slate-700"><div><p class="font-semibold">${esc(record.subject || "Subject")}</p><p class="text-xs text-slate-400">${esc(record.term || record.period || "No term")}</p></div><b class="text-lg ${record.grade === null || record.grade === undefined || record.grade === "" ? "text-slate-400" : "text-blue-600"}">${esc(record.grade ?? "—")}</b></div>`).join("") || '<p class="rounded-2xl bg-slate-50 p-4 text-sm text-slate-400 dark:bg-slate-800">No grade records yet.</p>'}</div></section>
+            <section><div class="flex items-center justify-between"><h3 class="font-bold">Academic records</h3><span class="text-xs text-slate-400">${grades.length} total</span></div><div class="mt-3 space-y-2">${grades.map((record) => `<div class="flex items-center justify-between gap-3 rounded-2xl border border-slate-200 p-3 dark:border-slate-700"><div><p class="font-semibold">${esc(record.subject || "Subject")}</p><p class="text-xs text-slate-400">${esc(record.semester || "1st Semester")}</p></div><b class="text-lg ${gFinal(record) === null ? "text-slate-400" : "text-blue-600"}">${gFinal(record) === null ? "—" : gFinal(record).toFixed(2)}</b></div>`).join("") || '<p class="rounded-2xl bg-slate-50 p-4 text-sm text-slate-400 dark:bg-slate-800">No grade records yet.</p>'}</div></section>
             <section><div class="flex items-center justify-between"><h3 class="font-bold">Competency progress</h3><span class="text-xs text-slate-400">${competencies.length} total</span></div><div class="mt-3 space-y-2">${competencies.map((record) => `<div class="rounded-2xl border border-slate-200 p-3 dark:border-slate-700"><div class="flex items-start justify-between gap-3"><div><p class="font-semibold">${esc(record.competency || "Competency")}</p><p class="text-xs text-slate-400">${esc(record.qualification || "No qualification")}</p></div>${statusBadge(record.status)}</div><p class="mt-2 text-xs text-slate-500">${esc(record.remarks || record.evidence || "No assessment notes")}</p></div>`).join("") || '<p class="rounded-2xl bg-slate-50 p-4 text-sm text-slate-400 dark:bg-slate-800">No competency records yet.</p>'}</div></section>
           </div>
           <div class="mt-8 flex justify-end"><button type="button" data-close-modal class="rounded-xl bg-slate-900 px-5 py-2.5 text-sm font-semibold text-white hover:bg-slate-700 dark:bg-slate-100 dark:text-slate-900">Close details</button></div>
         </div>
       </div>`;
+    bindAvatarFallbacks(root);
     root.querySelectorAll("[data-close-modal]").forEach((button) =>
       button.addEventListener("click", () => root.replaceChildren()),
     );
@@ -269,11 +305,12 @@
         const enrollment = latestEnrollment(student.id, data.enrollments);
         const studentGrades = data.grades.filter((record) => record.studentId === student.id);
         const studentComps = data.competencies.filter((record) => record.studentId === student.id);
-        return `<button type="button" data-student="${esc(student.id)}" class="teacher-student-card group w-full rounded-2xl border border-slate-200 p-4 text-left hover:border-emerald-300 dark:border-slate-700 dark:hover:border-emerald-700"><div class="flex items-center justify-between gap-3"><div class="flex min-w-0 items-center gap-3"><span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-emerald-100 to-blue-100 text-sm font-extrabold text-emerald-700 dark:from-emerald-950 dark:to-blue-950 dark:text-emerald-300">${esc(`${student.firstName?.[0] || ""}${student.lastName?.[0] || ""}`.toUpperCase() || "ST")}</span><div class="min-w-0"><p class="truncate font-semibold">${esc(fullName(student))}</p><p class="truncate text-xs text-slate-400">${esc(student.id)}</p></div></div><i data-lucide="arrow-up-right" class="h-4 w-4 text-slate-400 transition-transform group-hover:-translate-y-0.5 group-hover:translate-x-0.5"></i></div><div class="mt-4 flex flex-wrap gap-2 text-xs"><span class="rounded-full bg-slate-100 px-2.5 py-1 text-slate-500 dark:bg-slate-800">${esc(enrollment?.status || "No enrollment")}</span><span class="rounded-full bg-blue-50 px-2.5 py-1 text-blue-600 dark:bg-blue-950/50 dark:text-blue-300">${studentGrades.length} grade${studentGrades.length === 1 ? "" : "s"}</span><span class="rounded-full bg-violet-50 px-2.5 py-1 text-violet-600 dark:bg-violet-950/50 dark:text-violet-300">${studentComps.length} competency${studentComps.length === 1 ? "" : "ies"}</span></div></button>`;
+        return `<button type="button" data-student="${esc(student.id)}" class="teacher-student-card group w-full rounded-2xl border border-slate-200 p-4 text-left hover:border-emerald-300 dark:border-slate-700 dark:hover:border-emerald-700"><div class="flex items-center justify-between gap-3"><div class="flex min-w-0 items-center gap-3">${studentAvatarHtml(student, "rounded-xl")}<div class="min-w-0"><p class="truncate font-semibold">${esc(fullName(student))}</p><p class="truncate text-xs text-slate-400">${esc(student.id)}</p></div></div><i data-lucide="arrow-up-right" class="h-4 w-4 text-slate-400 transition-transform group-hover:-translate-y-0.5 group-hover:translate-x-0.5"></i></div><div class="mt-4 flex flex-wrap gap-2 text-xs"><span class="rounded-full bg-slate-100 px-2.5 py-1 text-slate-500 dark:bg-slate-800">${esc(enrollment?.status || "No enrollment")}</span><span class="rounded-full bg-blue-50 px-2.5 py-1 text-blue-600 dark:bg-blue-950/50 dark:text-blue-300">${studentGrades.length} grade${studentGrades.length === 1 ? "" : "s"}</span><span class="rounded-full bg-violet-50 px-2.5 py-1 text-violet-600 dark:bg-violet-950/50 dark:text-violet-300">${studentComps.length} competency${studentComps.length === 1 ? "" : "ies"}</span></div></button>`;
       }).join("") || `<div class="teacher-empty-state md:col-span-2"><i data-lucide="users-round"></i><b>No assigned students yet</b><p>Students connected to your enrollment, grade, or competency records will appear here.</p></div>`;
       list.querySelectorAll("[data-student]").forEach((button) =>
         button.addEventListener("click", () => studentModal(button.dataset.student)),
       );
+      bindAvatarFallbacks(list);
       lucide.createIcons();
     }
 
@@ -342,13 +379,35 @@
       const enrollment = latestEnrollment(student.id, data.enrollments);
       const grades = data.grades.filter((record) => record.studentId === student.id);
       const competencies = data.competencies.filter((record) => record.studentId === student.id);
-      return `<tr class="teacher-table-row border-t border-slate-100 dark:border-slate-800"><td class="p-4"><div class="flex items-center gap-3"><span class="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-emerald-100 to-blue-100 text-xs font-extrabold text-emerald-700 dark:from-emerald-950 dark:to-blue-950 dark:text-emerald-300">${esc(`${student.firstName?.[0] || ""}${student.lastName?.[0] || ""}`.toUpperCase() || "ST")}</span><div><p class="font-semibold">${esc(fullName(student))}</p><p class="text-xs text-slate-400">${esc(student.email || "No email")}</p></div></div></td><td class="p-4 font-mono text-xs text-slate-500">${esc(student.id)}</td><td class="p-4">${esc(student.strand || student.track || "—")}</td><td class="p-4">${APP.statusBadge(enrollment?.status || "No enrollment")}</td><td class="p-4"><div class="flex flex-wrap gap-1.5 text-xs"><span class="rounded-full bg-blue-50 px-2 py-1 text-blue-600 dark:bg-blue-950/50 dark:text-blue-300">${grades.length} grades</span><span class="rounded-full bg-violet-50 px-2 py-1 text-violet-600 dark:bg-violet-950/50 dark:text-violet-300">${competencies.length} competencies</span></div></td><td class="p-4 text-right"><button data-student="${esc(student.id)}" class="inline-flex items-center gap-1.5 rounded-xl bg-slate-900 px-3 py-2 text-xs font-semibold text-white hover:bg-emerald-600 dark:bg-slate-100 dark:text-slate-900"><i data-lucide="eye" class="h-3.5 w-3.5"></i>View details</button></td></tr>`;
+      return `<tr class="teacher-table-row border-t border-slate-100 dark:border-slate-800"><td class="p-4"><div class="flex items-center gap-3">${studentAvatarHtml(student, "rounded-xl")}<div><p class="font-semibold">${esc(fullName(student))}</p><p class="text-xs text-slate-400">${esc(student.email || "No email")}</p></div></div></td><td class="p-4 font-mono text-xs text-slate-500">${esc(student.id)}</td><td class="p-4">${esc(student.strand || student.track || "—")}</td><td class="p-4">${APP.statusBadge(enrollment?.status || "No enrollment")}</td><td class="p-4"><div class="flex flex-wrap gap-1.5 text-xs"><span class="rounded-full bg-blue-50 px-2 py-1 text-blue-600 dark:bg-blue-950/50 dark:text-blue-300">${grades.length} grades</span><span class="rounded-full bg-violet-50 px-2 py-1 text-violet-600 dark:bg-violet-950/50 dark:text-violet-300">${competencies.length} competencies</span></div></td><td class="p-4 text-right"><button data-student="${esc(student.id)}" class="inline-flex items-center gap-1.5 rounded-xl bg-slate-900 px-3 py-2 text-xs font-semibold text-white hover:bg-emerald-600 dark:bg-slate-100 dark:text-slate-900"><i data-lucide="eye" class="h-3.5 w-3.5"></i>View details</button></td></tr>`;
     }).join("");
+    bindAvatarFallbacks(table);
     table.querySelectorAll("[data-student]").forEach((button) =>
       button.addEventListener("click", () => studentModal(button.dataset.student)),
     );
     lucide.createIcons();
   }
+
+  const teacherSemester = () => $("semesterFilter")?.value || "1st Semester";
+  const GT = () => window.FEATURES || {};
+  const gTerm = (g, term) => {
+    const v = g && g[term];
+    return v === null || v === undefined || v === "" ? null : Number(v);
+  };
+  const gFinal = (g) => (GT().finalGrade ? GT().finalGrade(g) : (g && g.finalGrade) || null);
+  const gAverage = (list) => (GT().generalAverage ? GT().generalAverage(list) : null);
+  const gGwa = (avg) => (GT().gwa ? GT().gwa(avg) : null);
+  const gGwaText = (value) => (GT().gwaText ? GT().gwaText(value) : value ?? "—");
+  const gradeInput = (value) => (value === null || value === undefined || value === "" ? "" : value);
+  const gFinalFrom = (prelim, midterm, finals) => {
+    if (prelim === null && midterm === null && finals === null) return null;
+    return Math.round(((prelim || 0) * 0.2 + (midterm || 0) * 0.3 + (finals || 0) * 0.5) * 100) / 100;
+  };
+  const numberOrNull = (value) => {
+    if (value === undefined || value === null || value === "") return null;
+    const n = Number(value);
+    return Number.isFinite(n) ? n : null;
+  };
 
   function openNewGrade() {
     const dialog = $("newGradeDialog");
@@ -367,7 +426,10 @@
       return;
     }
     $("newGradeForm")?.reset();
-    $("newGradeYear").value = "";
+    $("newGradeUnits").value = "1";
+    $("newGradeSemester").value = teacherSemester();
+    const years = [...new Set(get("grades", []).map((g) => g.schoolYear).filter(Boolean))].sort().reverse();
+    $("newGradeYear").value = years[0] || "";
     dialog.showModal();
     lucide.createIcons();
   }
@@ -376,10 +438,17 @@
     event.preventDefault();
     const studentId = $("newGradeStudent")?.value;
     const subject = $("newGradeSubject")?.value.trim();
-    const term = $("newGradeTerm")?.value.trim();
-    const value = Number($("newGradeValue")?.value);
-    if (!studentId || !subject || !term || !Number.isFinite(value) || value < 0 || value > 100) {
-      APP.toast("Complete the required fields and enter a grade from 0 to 100", "error");
+    const semester = $("newGradeSemester")?.value || "1st Semester";
+    const prelim = numberOrNull($("newGradePrelim")?.value);
+    const midterm = numberOrNull($("newGradeMidterm")?.value);
+    const finals = numberOrNull($("newGradeFinals")?.value);
+    const units = Number($("newGradeUnits")?.value || 1);
+    if (!studentId || !subject) {
+      APP.toast("Select a student and enter a subject", "error");
+      return;
+    }
+    if ([prelim, midterm, finals].some((value) => value !== null && (value < 0 || value > 100))) {
+      APP.toast("Term grades must be numbers from 0 to 100", "error");
       return;
     }
     const data = assignedData();
@@ -389,28 +458,32 @@
       return;
     }
     const now = new Date().toISOString();
+    const final = gFinalFrom(prelim, midterm, finals);
     const record = {
       id: DG.generateId("GRD"),
       studentId,
       teacherId: U.id,
-      teacher: fullName(U),
       subject,
-      subjectCode: $("newGradeCode")?.value.trim() || "",
-      grade: value,
-      remarks: value >= 75 ? "Passed" : "Failed",
-      term,
-      period: term,
+      semester,
+      prelim,
+      midterm,
+      finals,
+      finalGrade: final,
+      units,
       schoolYear: $("newGradeYear")?.value.trim() || "",
+      remarks: final === null ? null : final >= 75 ? "Passed" : "Failed",
       notes: $("newGradeNotes")?.value.trim() || "",
       published: false,
+      publishedAt: null,
+      publishedBy: null,
+      updatedBy: U.id,
       createdAt: now,
       updatedAt: now,
-      updatedBy: U.id,
     };
     const grades = get("grades", []);
     grades.push(record);
     save("grades", grades);
-    audit("grade", record, "Grade created", `Created ${record.grade} / ${record.remarks}`);
+    audit("grade", record, "Grade created", `Created final ${record.finalGrade ?? "blank"} / ${record.remarks}`);
     notify(studentId, "Grade added", `${subject} grade was added and is awaiting publication.`, "grade", record.id);
     $("newGradeDialog")?.close();
     APP.toast("Grade saved as unpublished");
@@ -419,76 +492,283 @@
 
   function visibleGrades() {
     const data = assignedData();
-    const query = ($( "teacherSearch")?.value || "").trim().toLowerCase();
-    const filter = $("teacherFilter")?.value || "all";
-    return data.grades.filter((record) => {
-      const student = studentFor(record.studentId, data.users);
-      const haystack = `${fullName(student)} ${record.studentId} ${record.subject || ""} ${record.term || record.period || ""}`.toLowerCase();
-      return data.ids.has(record.studentId) && (!query || haystack.includes(query)) && (filter === "all" || (record.published ? "published" : "unpublished") === filter);
-    });
+    const semester = teacherSemester();
+    return data.grades.filter((record) => data.ids.has(record.studentId) && (record.semester || "1st Semester") === semester);
   }
 
   function renderGrades() {
     const data = assignedData();
     const list = visibleGrades();
-    const numeric = list.filter((record) => Number.isFinite(Number(record.grade)));
-    const average = numeric.length
-      ? (numeric.reduce((sum, record) => sum + Number(record.grade), 0) / numeric.length).toFixed(2)
-      : "—";
+    const semester = teacherSemester();
+    const qValue = gradesQuery.trim().toLowerCase();
+    let students = assignedStudents(data).filter((student) =>
+      data.grades.some((record) => record.studentId === student.id && (record.semester || "1st Semester") === semester),
+    );
+    if (qValue) {
+      students = students.filter((student) => [fullName(student), student.id].some((value) => value.toLowerCase().includes(qValue)));
+    }
+    const avgBy = (student) => gAverage(data.grades.filter((record) => record.studentId === student.id && (record.semester || "1st Semester") === semester));
+    students.sort((a, b) => {
+      if (gradesSort === "name") return fullName(a).localeCompare(fullName(b));
+      if (gradesSort === "nameDesc") return fullName(b).localeCompare(fullName(a));
+      if (gradesSort === "id") return String(a.id).localeCompare(String(b.id));
+      const ga = avgBy(a) ?? -1;
+      const gb = avgBy(b) ?? -1;
+      return gradesSort === "gwa" ? ga - gb || fullName(a).localeCompare(fullName(b)) : gb - ga || fullName(a).localeCompare(fullName(b));
+    });
+    const averages = students
+      .map((student) => avgBy(student))
+      .filter((value) => value !== null);
+    const overall = averages.length ? Math.round(averages.reduce((sum, value) => sum + value, 0) / averages.length * 100) / 100 : null;
+    const published = list.filter((record) => record.published).length;
     renderMetricCards("gradeSummary", [
-      { label: "Visible records", value: list.length, note: "Current filter", icon: "rows-3", iconClass: "bg-blue-50 text-blue-600 dark:bg-blue-950/50 dark:text-blue-300" },
-      { label: "Needs grade", value: list.filter((record) => record.grade === null || record.grade === undefined || record.grade === "").length, note: "Blank values", icon: "circle-alert", iconClass: "bg-amber-50 text-amber-600 dark:bg-amber-950/50 dark:text-amber-300" },
-      { label: "Class average", value: average, note: "Visible numeric grades", icon: "chart-no-axes-combined", iconClass: "bg-emerald-50 text-emerald-600 dark:bg-emerald-950/50 dark:text-emerald-300" },
-      { label: "Published", value: list.filter((record) => record.published).length, note: "Student-visible", icon: "send", iconClass: "bg-violet-50 text-violet-600 dark:bg-violet-950/50 dark:text-violet-300" },
+      { label: "Students with grades", value: students.length, note: teacherSemester(), icon: "rows-3", iconClass: "bg-blue-50 text-blue-600 dark:bg-blue-950/50 dark:text-blue-300" },
+      { label: "Needs grades", value: assignedStudents(data).length - students.length, note: "No records this sem", icon: "circle-alert", iconClass: "bg-amber-50 text-amber-600 dark:bg-amber-950/50 dark:text-amber-300" },
+      { label: "General average", value: overall === null ? "—" : overall.toFixed(2), note: "Across students", icon: "chart-no-axes-combined", iconClass: "bg-emerald-50 text-emerald-600 dark:bg-emerald-950/50 dark:text-emerald-300" },
+      { label: "Published", value: published, note: "Student-visible", icon: "send", iconClass: "bg-violet-50 text-violet-600 dark:bg-violet-950/50 dark:text-violet-300" },
     ]);
-    setText("teacherResultCount", `${list.length} grade record${list.length === 1 ? "" : "s"}`);
     const tbody = $("rows");
-    if (!list.length) {
-      emptyRows(tbody, "No grade records found", "Assigned grade records will appear here when available.", 8);
+    if (!students.length) {
+      emptyRows(tbody, "No graded students", qValue ? "No students match your search for the selected semester." : "Students with grades for the selected semester will appear here.", 4);
       return;
     }
-    tbody.innerHTML = list.map((record) => {
-      const student = studentFor(record.studentId, data.users);
-      return `<tr class="teacher-table-row border-t border-slate-100 dark:border-slate-800"><td class="p-4"><p class="font-semibold">${esc(fullName(student) || record.studentId)}</p><p class="text-xs text-slate-400">${esc(record.studentId)}</p></td><td class="p-4"><p class="font-semibold">${esc(record.subject || "—")}</p><p class="text-xs text-slate-400">${esc(record.subjectCode || "No subject code")}</p></td><td class="p-4"><input data-grade="${esc(record.id)}" value="${esc(record.grade ?? "")}" type="number" min="0" max="100" step="0.01" class="teacher-inline-input input w-24 rounded-xl border px-3 py-2 font-semibold" aria-label="Grade for ${esc(record.subject || "subject")}" /></td><td class="p-4"><span data-grade-preview="${esc(record.id)}" class="text-sm font-semibold ${record.grade === null || record.grade === undefined || record.grade === "" ? "text-slate-400" : Number(record.grade) >= 75 ? "text-emerald-600" : "text-rose-600"}">${record.grade === null || record.grade === undefined || record.grade === "" ? "Pending" : Number(record.grade) >= 75 ? "Passed" : "Needs support"}</span></td><td class="p-4"><input data-term="${esc(record.id)}" value="${esc(record.term || record.period || "")}" placeholder="Term" class="teacher-inline-input input w-28 rounded-xl border px-3 py-2" aria-label="Term" /></td><td class="p-4"><select data-published="${esc(record.id)}" class="teacher-inline-input input rounded-xl border px-3 py-2" aria-label="Publication state"><option value="false" ${!record.published ? "selected" : ""}>Unpublished</option><option value="true" ${record.published ? "selected" : ""}>Published</option></select></td><td class="p-4">${publicationBadge(record.published)}</td><td class="p-4 text-right"><button data-save-grade="${esc(record.id)}" class="inline-flex items-center gap-1.5 rounded-xl bg-blue-600 px-3 py-2 text-xs font-semibold text-white hover:bg-blue-700"><i data-lucide="save" class="h-3.5 w-3.5"></i>Save</button><p class="mt-1 text-[11px] text-slate-400">${esc(APP.formatDate(record.updatedAt))}</p></td></tr>`;
+    tbody.innerHTML = students.map((student) => {
+      const avg = avgBy(student);
+      return `<tr class="teacher-table-row border-t border-slate-100 dark:border-slate-800"><td class="p-4"><div class="flex items-center gap-3">${studentAvatarHtml(student, "rounded-full")}<b class="font-semibold">${esc(fullName(student))}</b></div></td><td class="p-4 font-mono text-xs text-slate-500">${esc(student.id)}</td><td class="p-4 font-bold text-blue-600">${gGwaText(gGwa(avg))}</td><td class="p-4 text-right"><button data-student="${esc(student.id)}" class="inline-flex items-center gap-1.5 rounded-xl bg-slate-900 px-3 py-2 text-xs font-semibold text-white hover:bg-emerald-600 dark:bg-slate-100 dark:text-slate-900"><i data-lucide="eye" class="h-3.5 w-3.5"></i>View</button></td></tr>`;
     }).join("");
-    tbody.querySelectorAll("[data-grade]").forEach((input) =>
-      input.addEventListener("input", () => {
-        const value = input.value === "" ? null : Number(input.value);
-        const preview = tbody.querySelector(`[data-grade-preview="${CSS.escape(input.dataset.grade)}"]`);
-        if (!preview) return;
-        preview.textContent = value === null ? "Pending" : Number.isFinite(value) && value >= 75 ? "Passed" : "Needs support";
-      }),
-    );
-    tbody.querySelectorAll("[data-save-grade]").forEach((button) =>
-      button.addEventListener("click", () => saveGrade(button.dataset.saveGrade)),
+    bindAvatarFallbacks(tbody);
+    tbody.querySelectorAll("[data-student]").forEach((button) =>
+      button.addEventListener("click", () => openGradeModal(button.dataset.student)),
     );
     lucide.createIcons();
   }
 
-  function saveGrade(id) {
-    const all = get("grades", []);
-    const record = all.find((item) => item.id === id);
-    const input = document.querySelector(`[data-grade="${CSS.escape(id)}"]`);
-    if (!record || !input) return;
-    const value = input.value === "" ? null : Number(input.value);
-    if (value !== null && (!Number.isFinite(value) || value < 0 || value > 100)) {
-      APP.toast("Grade must be between 0 and 100", "error");
-      input.focus();
+  function setElText(element, value) {
+    if (element) element.textContent = value ?? "";
+  }
+
+  function studentById(id) {
+    return studentFor(id) || get("users", []).find((user) => user.id === id);
+  }
+
+  function openGradeModal(studentId) {
+    const student = studentById(studentId);
+    if (!student) return;
+    const years = [...new Set(get("grades", []).map((g) => g.schoolYear).filter(Boolean))].sort().reverse();
+    const yearSelect = $("modalYear");
+    yearSelect.replaceChildren();
+    (years.length ? years : ["2026-2027"]).forEach((year) => {
+      const option = document.createElement("option");
+      option.value = year;
+      option.textContent = year;
+      yearSelect.append(option);
+    });
+    const enrollment = latestEnrollment(studentId, get("enrollments", []));
+    setText("modalStudentName", fullName(student));
+    setText("modalStudentId", student.id);
+    setText("modalStudentClass", [enrollment?.gradeLevel, enrollment?.strand || enrollment?.track].filter(Boolean).join(" · ") || "");
+    yearSelect.value = years[0] || "2026-2027";
+    $("modalSemester").value = teacherSemester();
+    const photo = document.querySelector("#gradesModal [data-grade-photo]");
+    const fallback = document.querySelector("#gradesModal [data-grade-initials]");
+    if (photo) photo.classList.add("hidden");
+    if (fallback) fallback.classList.add("hidden");
+    if (student.photo) {
+      photo.src = student.photo;
+      photo.classList.remove("hidden");
+      photo.onerror = () => {
+        photo.classList.add("hidden");
+        if (fallback) {
+          fallback.textContent = `${student.firstName?.[0] || ""}${student.lastName?.[0] || ""}`.toUpperCase() || "ST";
+          fallback.classList.remove("hidden");
+          fallback.classList.add("flex");
+        }
+      };
+    } else if (fallback) {
+      fallback.textContent = `${student.firstName?.[0] || ""}${student.lastName?.[0] || ""}`.toUpperCase() || "ST";
+      fallback.classList.remove("hidden");
+      fallback.classList.add("flex");
+    }
+    renderGradeModalRows();
+    $("gradesModal")?.showModal();
+    lucide.createIcons();
+  }
+
+  function modalGradeRecords() {
+    const student = studentById($("modalStudentId")?.textContent);
+    const year = $("modalYear")?.value || "";
+    const semester = $("modalSemester")?.value || "1st Semester";
+    if (!student) return [];
+    return get("grades", [])
+      .filter((record) => record.studentId === student.id && ((record.schoolYear || "") === year || !record.schoolYear) && (record.semester || "1st Semester") === semester)
+      .map((record) => ({ ...record, published: record.published === true || record.published === "true" }));
+  }
+
+  function renderGradeModalRows() {
+    const body = $("modalGradeRows");
+    body?.replaceChildren();
+    const records = modalGradeRecords();
+    if (!records.length) {
+      body.innerHTML = `<tr><td colspan="7" class="p-8 text-center text-slate-500">No grades for this semester yet. Add a subject grade below.</td></tr>`;
+      renderGradeModalSummary(records);
       return;
     }
-    const term = document.querySelector(`[data-term="${CSS.escape(id)}"]`);
-    const published = document.querySelector(`[data-published="${CSS.escape(id)}"]`);
-    record.grade = value;
-    record.remarks = value === null ? "Pending" : value >= 75 ? "Passed" : "Failed";
-    record.term = term?.value.trim() || "";
-    record.period = record.term;
-    record.published = published?.value === "true";
-    record.updatedAt = new Date().toISOString();
-    record.updatedBy = U.id;
+    const template = document.getElementById("modalGradeRowTemplate");
+    records.forEach((record) => {
+      const row = template.content.cloneNode(true).firstElementChild;
+      row._record = record;
+      q("[data-row-subject]", row).value = record.subject || "";
+      q("[data-row-units]", row).value = record.units ?? 1;
+      q("[data-row-prelim]", row).value = gradeInput(gTerm(record, "prelim"));
+      q("[data-row-midterm]", row).value = gradeInput(gTerm(record, "midterm"));
+      q("[data-row-finals]", row).value = gradeInput(gTerm(record, "finals"));
+      q("[data-row-published]", row).value = record.published ? "true" : "false";
+      const finalCell = q("[data-row-final]", row);
+      if (finalCell) finalCell.textContent = gFinal(record) === null ? "—" : gFinal(record).toFixed(2);
+      [
+        "[data-row-subject]", "[data-row-units]", "[data-row-prelim]", "[data-row-midterm]", "[data-row-finals]",
+      ].forEach((sel) =>
+        q(sel, row)?.addEventListener("input", () => {
+          record.subject = q("[data-row-subject]", row).value.trim();
+          record.units = Number(q("[data-row-units]", row).value || 1);
+          record.prelim = numberOrNull(q("[data-row-prelim]", row).value);
+          record.midterm = numberOrNull(q("[data-row-midterm]", row).value);
+          record.finals = numberOrNull(q("[data-row-finals]", row).value);
+          const final = gFinal(record);
+          if (finalCell) finalCell.textContent = final === null ? "—" : final.toFixed(2);
+          renderGradeModalSummary(records);
+        }),
+      );
+      q("[data-row-published]", row)?.addEventListener("change", (event) => {
+        record.published = event.target.value === "true";
+        if (record.published) {
+          record.publishedAt = new Date().toISOString();
+          record.publishedBy = U.id;
+        }
+      });
+      q("[data-row-remove]", row)?.addEventListener("click", () => {
+        const all = get("grades", []);
+        const index = all.findIndex((item) => item.id === record.id);
+        if (index !== -1) {
+          all.splice(index, 1);
+          save("grades", all);
+        }
+        renderGradeModalRows();
+        renderGrades();
+      });
+      body?.append(row);
+    });
+    renderGradeModalSummary(records);
+    lucide.createIcons();
+  }
+
+  function renderGradeModalSummary(records) {
+    const avg = gAverage(records);
+    const units = records.reduce((sum, record) => sum + Number(record.units || 0), 0);
+    setText("modalUnits", units.toFixed(2));
+    setText("modalAverage", avg === null ? "—" : avg.toFixed(2));
+    setText("modalGwa", gGwaText(gGwa(avg)));
+    const student = studentById($("modalStudentId")?.textContent);
+    const year = $("modalYear")?.value || "";
+    const annual = GT().studentAverages ? GT().studentAverages(get("grades", []), student?.id, year) : null;
+    setText("annualFirstGwa", gGwaText(annual?.firstGwa));
+    setText("annualSecondGwa", gGwaText(annual?.secondGwa));
+    setText("annualAverage", annual?.annual === null || annual?.annual === undefined ? "—" : annual.annual.toFixed(2));
+    setText("annualGwa", gGwaText(annual?.annualGwa));
+    $("annualSummary")?.classList.toggle("hidden", !annual || (annual.annual === null && annual.first === null));
+  }
+
+  function addGradeModalRow() {
+    const body = $("modalGradeRows");
+    if (!body) return;
+    const template = document.getElementById("modalGradeRowTemplate");
+    const row = template.content.cloneNode(true).firstElementChild;
+    const record = {
+      id: null,
+      subject: "",
+      units: 1,
+      prelim: null,
+      midterm: null,
+      finals: null,
+      finalGrade: null,
+      published: false,
+      publishedAt: null,
+      publishedBy: null,
+      schoolYear: $("modalYear")?.value || "",
+      semester: $("modalSemester")?.value || "1st Semester",
+    };
+    row._record = record;
+    const finalCell = q("[data-row-final]", row);
+    if (finalCell) finalCell.textContent = "—";
+    q("[data-row-published]", row).value = "false";
+    [
+      "[data-row-subject]", "[data-row-units]", "[data-row-prelim]", "[data-row-midterm]", "[data-row-finals]",
+    ].forEach((sel) =>
+      q(sel, row)?.addEventListener("input", () => {
+        record.subject = q("[data-row-subject]", row).value.trim();
+        record.units = Number(q("[data-row-units]", row).value || 1);
+        record.prelim = numberOrNull(q("[data-row-prelim]", row).value);
+        record.midterm = numberOrNull(q("[data-row-midterm]", row).value);
+        record.finals = numberOrNull(q("[data-row-finals]", row).value);
+        const final = gFinal(record);
+        if (finalCell) finalCell.textContent = final === null ? "—" : final.toFixed(2);
+      }),
+    );
+    q("[data-row-published]", row)?.addEventListener("change", (event) => {
+      record.published = event.target.value === "true";
+    });
+    q("[data-row-remove]", row)?.addEventListener("click", () => row.remove());
+    body?.append(row);
+    renderGradeModalSummary(modalGradeRecords());
+    lucide.createIcons();
+  }
+
+  function saveGradeModal() {
+    const student = studentById($("modalStudentId")?.textContent);
+    if (!student) return;
+    const year = $("modalYear")?.value || "";
+    const semester = $("modalSemester")?.value || "1st Semester";
+    const all = get("grades", []);
+    const now = new Date().toISOString();
+    const description = {};
+    qq("#modalGradeRows tr").forEach((row) => {
+      const input = q("[data-row-subject]", row);
+      if (!input) return;
+      const subjectName = input.value.trim();
+      if (!subjectName) return;
+      const record = { ...(row._record || {}) };
+      const existing = modalGradeRecords().find((item) => item.subject === subjectName);
+      Object.assign(record, existing || {});
+      record.studentId = student.id;
+      record.teacherId = U.id;
+      record.subject = subjectName;
+      record.semester = semester;
+      record.schoolYear = year;
+      record.units = Number(q("[data-row-units]", row)?.value || 1);
+      record.prelim = numberOrNull(q("[data-row-prelim]", row)?.value);
+      record.midterm = numberOrNull(q("[data-row-midterm]", row)?.value);
+      record.finals = numberOrNull(q("[data-row-finals]", row)?.value);
+      record.finalGrade = gFinalFrom(record.prelim, record.midterm, record.finals);
+      record.remarks = record.finalGrade === null ? (record.remarks || null) : record.finalGrade >= 75 ? "Passed" : "Failed";
+      record.published = q("[data-row-published]", row)?.value === "true";
+      record.publishedAt = record.published ? record.publishedAt || now : null;
+      record.publishedBy = record.published ? record.publishedBy || U.id : null;
+      record.updatedBy = U.id;
+      record.updatedAt = now;
+      const existingIndex = all.findIndex((item) => item.id === record.id);
+      if (existingIndex !== -1) {
+        all[existingIndex] = record;
+      } else {
+        record.id = DG.generateId("GRD");
+        record.createdAt = now;
+        all.push(record);
+      }
+      description[subjectName] = record.finalGrade;
+    });
     save("grades", all);
-    audit("grade", record, "Grade updated", `Saved ${record.grade ?? "blank"} / ${record.remarks}`);
-    notify(record.studentId, record.published ? "Grade published" : "Grade updated", `${record.subject || "A subject"} grade was ${record.published ? "published" : "updated"}.`, "grade", record.id);
-    APP.toast(record.published ? "Grade saved and published" : "Grade saved");
+    audit("grade", { studentId: student.id, subject: Object.keys(description).join(", ") }, "Grades saved", JSON.stringify(description));
+    $("gradesModal")?.close();
+    APP.toast("Grades saved");
     renderGrades();
   }
 
@@ -607,7 +887,7 @@
   function exportVisible() {
     const data = assignedData();
     if (page() === "grades") {
-      downloadCsv("teacher-grades.csv", [["Student", "Student ID", "Subject", "Grade", "Remarks", "Term", "Publication"], ...visibleGrades().map((record) => [fullName(studentFor(record.studentId, data.users)), record.studentId, record.subject, record.grade ?? "", record.remarks || "", record.term || record.period || "", record.published ? "Published" : "Unpublished"])]);
+      downloadCsv("teacher-grades.csv", [["Student", "Student ID", "Subject", "Semester", "Units", "Prelim", "Midterm", "Finals", "Final Grade", "Publication"], ...visibleGrades().map((record) => [fullName(studentFor(record.studentId, data.users)), record.studentId, record.subject, record.semester || "1st Semester", record.units ?? 1, gTerm(record, "prelim"), gTerm(record, "midterm"), gTerm(record, "finals"), gFinal(record) ?? "", record.published ? "Published" : "Unpublished"])]);
     } else if (page() === "competencies") {
       downloadCsv("teacher-competencies.csv", [["Student", "Student ID", "Competency", "Qualification", "Status", "Assessment Date", "Assessor", "Remarks", "Evidence"], ...visibleCompetencies().map((record) => [fullName(studentFor(record.studentId, data.users)), record.studentId, record.competency, record.qualification, record.status, record.assessmentDate, record.assessor, record.remarks, record.evidence])]);
     } else {
@@ -643,7 +923,7 @@
       }
       const photoInput = $("profilePhotoInput");
       if (photoInput) {
-          photoInput.addEventListener("change", () => {
+          photoInput.addEventListener("change", async () => {
               const file = photoInput.files?.[0];
               if (!file) return;
               if (file.size > 2 * 1024 * 1024) {
@@ -654,20 +934,15 @@
                   photoInput.value = "";
                   return;
               }
-              const reader = new FileReader();
-              reader.onload = () => {
-                  DG.setProfilePhoto(reader.result, U);
-                  if (photo) {
-                      photo.src = reader.result;
-                  }
-                  document
-                      .querySelectorAll("[data-profile-photo]")
-                      .forEach(img => {
-                          img.src = reader.result;
-                      });
+              try {
+                  await DG.uploadProfilePhoto(file);
+                  DG.loadProfileElements();
                   APP.toast("Profile photo updated");
-              };
-              reader.readAsDataURL(file);
+              } catch (error) {
+                  APP.toast(error.message || "Failed to update photo", "error");
+              } finally {
+                  photoInput.value = "";
+              }
           });
       }
       $("profileForm")?.addEventListener("submit", saveProfile);
@@ -715,15 +990,21 @@
     $("closeNewGrade")?.addEventListener("click", () => $("newGradeDialog")?.close());
     $("cancelNewGrade")?.addEventListener("click", () => $("newGradeDialog")?.close());
     $("newGradeForm")?.addEventListener("submit", saveNewGrade);
-    injectSearch("Search student, ID, subject, or term", renderGrades);
-    configureToolbar(
-      [
-        { value: "all", label: "All publication states" },
-        { value: "unpublished", label: "Unpublished" },
-        { value: "published", label: "Published" },
-      ],
-      renderGrades,
-    );
+    $("semesterFilter")?.addEventListener("change", renderGrades);
+    $("searchInput")?.addEventListener("input", (event) => {
+      gradesQuery = event.target.value;
+      renderGrades();
+    });
+    $("sortBy")?.addEventListener("change", (event) => {
+      gradesSort = event.target.value;
+      renderGrades();
+    });
+    $("exportVisible")?.addEventListener("click", exportVisible);
+    qq("[data-close-grades]").forEach((button) => button.addEventListener("click", () => $("gradesModal")?.close()));
+    $("modalSemester")?.addEventListener("change", () => { renderGradeModalRows(); });
+    $("modalYear")?.addEventListener("change", () => { renderGradeModalRows(); });
+    $("[data-save-grades]")?.addEventListener("click", saveGradeModal);
+    $("[data-add-subject]")?.addEventListener("click", addGradeModalRow);
     renderGrades();
   }
   if (page() === "competencies") {
@@ -739,4 +1020,9 @@
     renderCompetencies();
   }
   if (page() === "profile") profile();
+  qq("[data-theme-toggle]").forEach((button) => {
+    if (button.dataset.themeBound) return;
+    button.dataset.themeBound = "1";
+    button.addEventListener("click", () => APP.toggleTheme());
+  });
 })();

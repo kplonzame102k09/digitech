@@ -82,7 +82,7 @@
     const initialsElement = $("[data-student-initials]", row);
     if (!photo) return;
 
-    const defaultPhoto = "../assets/images/16432.png";
+    const defaultPhoto = "/images/16432.png";
     const photoUrl = student?.photo || defaultPhoto;
 
     photo.src = photoUrl;

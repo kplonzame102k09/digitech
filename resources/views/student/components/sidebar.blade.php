@@ -18,42 +18,49 @@
           {{ request()->routeIs('student.enrollment') ? 'nav-active' : 'text-slate-600 hover:bg-slate-100 dark:text-slate-300 dark:hover:bg-slate-800'}}">
           <i data-lucide="clipboard-list" class="w-4"></i>
             Enrollment
+            <span data-nav-notif="enrollment" class="ml-auto hidden min-w-5 rounded-full bg-red-500 px-1.5 py-0.5 text-center text-[10px] font-bold leading-4 text-white"></span>
         </a>
         <a href="{{ route('student.requirements') }}"
           class="flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium
           {{ request()->routeIs('student.requirements') ? 'nav-active' : 'text-slate-600 hover:bg-slate-100 dark:text-slate-300 dark:hover:bg-slate-800'}}">
           <i data-lucide="folder-check" class="w-4"></i>
             Requirements
+            <span data-nav-notif="requirement" class="ml-auto hidden min-w-5 rounded-full bg-red-500 px-1.5 py-0.5 text-center text-[10px] font-bold leading-4 text-white"></span>
         </a>
         <a href="{{ route('student.documents') }}"
           class="flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium
           {{ request()->routeIs('student.documents') ? 'nav-active' : 'text-slate-600 hover:bg-slate-100 dark:text-slate-300 dark:hover:bg-slate-800'}}">
           <i data-lucide="file-text" class="w-4"></i>
             Documents
+            <span data-nav-notif="document" class="ml-auto hidden min-w-5 rounded-full bg-red-500 px-1.5 py-0.5 text-center text-[10px] font-bold leading-4 text-white"></span>
         </a>
         <a href="{{ route('student.grades') }}"
           class="flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium
           {{ request()->routeIs('student.grades') ? 'nav-active' : 'text-slate-600 hover:bg-slate-100 dark:text-slate-300 dark:hover:bg-slate-800'}}">
           <i data-lucide="chart-no-axes-combined" class="w-4"></i>
             Grades
+            <span data-nav-notif="grade" class="ml-auto hidden min-w-5 rounded-full bg-red-500 px-1.5 py-0.5 text-center text-[10px] font-bold leading-4 text-white"></span>
         </a>
         <a href="{{ route('student.competencies') }}"
           class="flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium
           {{ request()->routeIs('student.competencies') ? 'nav-active' : 'text-slate-600 hover:bg-slate-100 dark:text-slate-300 dark:hover:bg-slate-800'}}">
           <i data-lucide="award" class="w-4"></i>
             Competencies
+            <span data-nav-notif="competency" class="ml-auto hidden min-w-5 rounded-full bg-red-500 px-1.5 py-0.5 text-center text-[10px] font-bold leading-4 text-white"></span>
         </a>
         <a href="{{ route('student.attendance') }}"
           class="flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium
           {{ request()->routeIs('student.attendance') ? 'nav-active' : 'text-slate-600 hover:bg-slate-100 dark:text-slate-300 dark:hover:bg-slate-800'}}">
           <i data-lucide="calendar-check-2" class="w-4"></i>
             Attendance
+            <span data-nav-notif="attendance" class="ml-auto hidden min-w-5 rounded-full bg-red-500 px-1.5 py-0.5 text-center text-[10px] font-bold leading-4 text-white"></span>
         </a>
         <a href="{{ route('student.announcements') }}"
           class="flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium
           {{ request()->routeIs('student.announcements') ? 'nav-active' : 'text-slate-600 hover:bg-slate-100 dark:text-slate-300 dark:hover:bg-slate-800'}}">
           <i data-lucide="megaphone" class="w-4"></i>
             Announcements
+            <span data-nav-notif="announcement" class="ml-auto hidden min-w-5 rounded-full bg-red-500 px-1.5 py-0.5 text-center text-[10px] font-bold leading-4 text-white"></span>
         </a>
         <a href="{{ route('student.profile') }}"
           class="flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium

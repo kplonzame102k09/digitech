@@ -88,6 +88,7 @@
                                 <option value="teacher" @selected(old('role') === 'teacher')>Teacher</option>
                                 <option value="admin" @selected(old('role') === 'admin')>Admin</option>
                                 <option value="parent" @selected(old('role') === 'parent')>Parent</option>
+                                <option value="guest" @selected(old('role') === 'guest')>Guest</option>
                             </select>
                         </label>
 
@@ -126,11 +127,7 @@
                     <p class="text-center text-sm text-slate-500 mt-6">
                         No account?
                         <br>
-                        <a class="font-semibold text-green-700" href="{{ route('auth.signup') }}">Signup</a>
-                        <br>
-                        -----------------------------------or-----------------------------------
-                        <br>
-                        Go to the nearest Digitech College branch.
+                        Go to the nearest Digitech College branch to get your credentials.
                     </p>
                 </div>
             </div>

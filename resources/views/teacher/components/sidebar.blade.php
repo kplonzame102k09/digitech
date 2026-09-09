@@ -27,24 +27,28 @@
                 ? 'nav-active' : 'text-slate-600 hover:bg-slate-100 dark:text-slate-300 dark:hover:bg-slate-800'}}"><i
                 data-lucide="chart-no-axes-combined" class="w-4"></i>
                 Grades
+                <span data-nav-notif="grade" class="ml-auto hidden min-w-5 rounded-full bg-red-500 px-1.5 py-0.5 text-center text-[10px] font-bold leading-4 text-white"></span>
             </a>
             <a href="{{ route('teacher.competencies') }}" class="flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium 
                 {{ request()->routeIs('teacher.competencies') 
                 ? 'nav-active' : 'text-slate-600 hover:bg-slate-100 dark:text-slate-300 dark:hover:bg-slate-800'}}">
                 <i data-lucide="award" class="w-4"></i>
                 Competencies
+                <span data-nav-notif="competency" class="ml-auto hidden min-w-5 rounded-full bg-red-500 px-1.5 py-0.5 text-center text-[10px] font-bold leading-4 text-white"></span>
             </a>
             <a href="{{ route('teacher.attendance') }}" class="flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium 
                 {{ request()->routeIs('teacher.attendance')
                 ? 'nav-active' : 'text-slate-600 hover:bg-slate-100 dark:text-slate-300 dark:hover:bg-slate-800'}}">
                 <i data-lucide="calendar-check-2" class="w-4"></i>
                 Attendance
+                <span data-nav-notif="attendance" class="ml-auto hidden min-w-5 rounded-full bg-red-500 px-1.5 py-0.5 text-center text-[10px] font-bold leading-4 text-white"></span>
             </a>
             <a href="{{ route('teacher.announcements') }}" class="flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium 
                 {{ request()->routeIs('teacher.announcements')
                 ? 'nav-active' : 'text-slate-600 hover:bg-slate-100 dark:text-slate-300 dark:hover:bg-slate-800'}}">
                 <i data-lucide="megaphone" class="w-4"></i>
                 Announcements
+                <span data-nav-notif="announcement" class="ml-auto hidden min-w-5 rounded-full bg-red-500 px-1.5 py-0.5 text-center text-[10px] font-bold leading-4 text-white"></span>
             </a>
             <a href="{{ route('teacher.profile') }}" class="flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium
                 {{ request()->routeIs('teacher.profile')

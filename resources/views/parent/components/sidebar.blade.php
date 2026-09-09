@@ -23,30 +23,35 @@
                 ? 'nav-active' : 'text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800'}}">
                 <i data-lucide="users-round" class="w-4"></i>
                 My Children
+                <span data-nav-notif="enrollment" class="ml-auto hidden min-w-5 rounded-full bg-red-500 px-1.5 py-0.5 text-center text-[10px] font-bold leading-4 text-white"></span>
             </a>
             <a href="{{ route('parent.attendance') }}" class="flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium
                 {{ request()->routeIs('parent.attendance')
                 ? 'nav-active' : 'text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800'}}">
                 <i data-lucide="calendar-check-2" class="w-4"></i>
                 Attendance
+                <span data-nav-notif="attendance" class="ml-auto hidden min-w-5 rounded-full bg-red-500 px-1.5 py-0.5 text-center text-[10px] font-bold leading-4 text-white"></span>
             </a>
             <a href="{{ route('parent.grades') }}" class="flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium
                 {{ request()->routeIs('parent.grades')
                 ? 'nav-active' : 'text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800'}}">
                 <i data-lucide="chart-no-axes-combined" class="w-4"></i>
                 Grades
+                <span data-nav-notif="grade" class="ml-auto hidden min-w-5 rounded-full bg-red-500 px-1.5 py-0.5 text-center text-[10px] font-bold leading-4 text-white"></span>
             </a>
             <a href="{{ route('parent.documents') }}" class="flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium
                 {{ request()->routeIs('parent.documents')
                 ? 'nav-active' : 'text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800'}}">
                 <i data-lucide="file-text" class="w-4"></i>
                 Documents
+                <span data-nav-notif="document" class="ml-auto hidden min-w-5 rounded-full bg-red-500 px-1.5 py-0.5 text-center text-[10px] font-bold leading-4 text-white"></span>
             </a>
             <a href="{{ route('parent.announcements') }}" class="flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium
                 {{ request()->routeIs('parent.announcements')
                 ? 'nav-active' : 'text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800'}}">
                 <i data-lucide="megaphone" class="w-4"></i>
                 Announcements
+                <span data-nav-notif="announcement" class="ml-auto hidden min-w-5 rounded-full bg-red-500 px-1.5 py-0.5 text-center text-[10px] font-bold leading-4 text-white"></span>
             </a>
             <a href="{{ route('parent.profile') }}" class="flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium
                 {{ request()->routeIs('parent.profile')
