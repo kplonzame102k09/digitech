@@ -8,7 +8,11 @@ return new class extends Migration
 {
     public function up(): void
     {
-        Schema::create('users', function (Blueprint $table) {
+        if (Schema::hasTable('users')) {
+            return;
+        }
+
+        Schema::create('users', function (Blueprint $table): void {
             $table->id();
             $table->string('user_id')->unique();
             $table->enum('role', ['student', 'teacher', 'admin', 'parent', 'guest']);
@@ -33,4 +37,4 @@ return new class extends Migration
     {
         Schema::dropIfExists('users');
     }
-};   
+};

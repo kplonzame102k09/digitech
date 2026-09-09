@@ -8,49 +8,46 @@ return new class extends Migration
 {
     public function up(): void
     {
-        Schema::create('portal_collections', function (Blueprint $table) {
-            $table->string('key')->primary();
-            $table->json('value');
-            $table->timestamps();
-        });
+        if (! Schema::hasTable('portal_collections')) {
+            Schema::create('portal_collections', function (Blueprint $table): void {
+                $table->string('key')->primary();
+                $table->json('value');
+                $table->timestamps();
+            });
+        }
 
-        Schema::table('users', function (Blueprint $table) {
-            $table->string('status')->default('active')->after('role');
-            $table->string('username')->nullable()->after('email');
-            $table->text('photo')->nullable()->after('rolePassword');
-            $table->string('strand')->nullable()->after('photo');
-            $table->string('address')->nullable()->after('strand');
-            $table->string('childId')->nullable()->after('address');
-            $table->json('childIds')->nullable()->after('childId');
-            $table->string('guardianName')->nullable()->after('childIds');
-            $table->string('guardianContact')->nullable()->after('guardianName');
-            $table->boolean('mustChangePassword')->default(false)->after('guardianContact');
-            $table->string('employeeId')->nullable()->after('mustChangePassword');
-            $table->string('department')->nullable()->after('employeeId');
-            $table->json('profile_extra')->nullable()->after('department');
-        });
+        if (! Schema::hasTable('users')) {
+            return;
+        }
+
+        $columns = [
+            'status' => fn (Blueprint $table) => $table->string('status')->default('active'),
+            'username' => fn (Blueprint $table) => $table->string('username')->nullable(),
+            'photo' => fn (Blueprint $table) => $table->text('photo')->nullable(),
+            'strand' => fn (Blueprint $table) => $table->string('strand')->nullable(),
+            'address' => fn (Blueprint $table) => $table->string('address')->nullable(),
+            'childId' => fn (Blueprint $table) => $table->string('childId')->nullable(),
+            'childIds' => fn (Blueprint $table) => $table->json('childIds')->nullable(),
+            'guardianName' => fn (Blueprint $table) => $table->string('guardianName')->nullable(),
+            'guardianContact' => fn (Blueprint $table) => $table->string('guardianContact')->nullable(),
+            'mustChangePassword' => fn (Blueprint $table) => $table->boolean('mustChangePassword')->default(false),
+            'employeeId' => fn (Blueprint $table) => $table->string('employeeId')->nullable(),
+            'department' => fn (Blueprint $table) => $table->string('department')->nullable(),
+            'profile_extra' => fn (Blueprint $table) => $table->json('profile_extra')->nullable(),
+        ];
+
+        foreach ($columns as $name => $definition) {
+            if (Schema::hasColumn('users', $name)) {
+                continue;
+            }
+
+            Schema::table('users', $definition);
+        }
     }
 
     public function down(): void
     {
-        Schema::table('users', function (Blueprint $table) {
-            $table->dropColumn([
-                'status',
-                'username',
-                'photo',
-                'strand',
-                'address',
-                'childId',
-                'childIds',
-                'guardianName',
-                'guardianContact',
-                'mustChangePassword',
-                'employeeId',
-                'department',
-                'profile_extra',
-            ]);
-        });
-
-        Schema::dropIfExists('portal_collections');
+        // This migration may have completed against an existing production schema.
+        // Do not remove user data or columns during an independent rollback.
     }
 };
