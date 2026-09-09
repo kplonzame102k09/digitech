@@ -675,36 +675,11 @@
         photos.forEach(img => {
           img.src = photo;
         });
-        const currentUser = JSON.parse(
-          localStorage.getItem("dg_current_user") ||
-          localStorage.getItem("currentUser") ||
-          "null"
-        );
-        const parentId =
-          currentUser?.id ||
-          currentUser?.userId ||
-          currentUser?.username ||
-          "parent";
-        localStorage.setItem(
-          `parent_profile_photo_${parentId}`,
-          photo
-        );
+        DG.setProfilePhoto(photo, DG.getCurrentUser());
       };
       reader.readAsDataURL(file);
     });
-    const currentUser = JSON.parse(
-      localStorage.getItem("dg_current_user") ||
-      localStorage.getItem("currentUser") ||
-      "null"
-    );
-    const parentId =
-      currentUser?.id ||
-      currentUser?.userId ||
-      currentUser?.username ||
-      "parent";
-    const savedPhoto = localStorage.getItem(
-      `parent_profile_photo_${parentId}`
-    );
+    const savedPhoto = DG.getProfilePhoto(DG.getCurrentUser());
     if (savedPhoto) {
       photos.forEach(img => {
         img.src = savedPhoto;

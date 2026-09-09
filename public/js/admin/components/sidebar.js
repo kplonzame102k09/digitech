@@ -50,9 +50,8 @@ function setupLogout() {
     if (!logoutButton) return;
 
     logoutButton.addEventListener("click", () => {
-        localStorage.removeItem("currentUser");
-        localStorage.removeItem("loggedInUser");
-        window.location.assign("../login.html");
+        if (window.AUTH?.logout) AUTH.logout();
+        else if (window.DG?.logoutUser) DG.logoutUser();
     });
 }
 

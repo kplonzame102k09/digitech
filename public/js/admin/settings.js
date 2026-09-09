@@ -18,6 +18,7 @@
   ];
   let admin;
   let settings;
+  let lastBackupAt = null;
   const get = (key, fallback = []) => DG.getData(key, fallback);
   const save = (key, value) => DG.saveData(key, value);
   const setText = (selector, value, root = document) => {
@@ -109,13 +110,13 @@
         storageKeys.map((key) => [key, get(key, key === "settings" ? {} : [])]),
       ),
     };
-    localStorage.setItem("lastBackupAt", backup.exportedAt);
+    lastBackupAt = backup.exportedAt;
     download(
       "digitech-portal-backup.json",
       JSON.stringify(backup, null, 2),
       "application/json",
     );
-    addAudit("Backup exported", "Full LocalStorage backup downloaded.");
+    addAudit("Backup exported", "Full MySQL backup downloaded.");
     setText(
       "#backupFeedback",
       `Backup downloaded on ${new Date(backup.exportedAt).toLocaleString()}.`,
@@ -138,7 +139,7 @@
           throw new Error("Invalid backup");
         if (
           !window.confirm(
-            "Restore this backup? Current prototype data will be replaced.",
+            "Restore this backup? Current database collections will be replaced.",
           )
         )
           return;
@@ -187,7 +188,7 @@
       box.append(name, count);
       grid?.append(box);
     });
-    const last = localStorage.getItem("lastBackupAt");
+    const last = lastBackupAt;
     setText(
       "#lastBackup",
       last
@@ -220,11 +221,11 @@
     const label = key === "documentRequests" ? "documents" : key;
     if (
       !window.confirm(
-        `Reset ${label} demo data? Create a backup first if you may need the current records.`,
+        `Reset ${label}? Create a backup first if you may need the current records.`,
       )
     )
       return;
-    localStorage.removeItem(key);
+    save(key, []);
     addAudit("Collection reset", `${key} collection was reset.`);
     APP.toast(`${label} reset`);
     renderHealth();
@@ -233,12 +234,12 @@
   function resetAll() {
     if (
       !window.confirm(
-        "Reset all prototype data? This cannot be undone without a downloaded backup.",
+        "Reset all portal collections? This cannot be undone without a downloaded backup.",
       )
     )
       return;
-    storageKeys.forEach((key) => localStorage.removeItem(key));
-    localStorage.removeItem("lastBackupAt");
+    storageKeys.forEach((key) => save(key, key === "settings" ? {} : []));
+    lastBackupAt = null;
     location.href = "/";
   }
   function init() {

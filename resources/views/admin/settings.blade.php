@@ -25,7 +25,7 @@
                         Settings & Controls
                     </h2>
                     <p class="mt-2 max-w-2xl text-white">
-                        Configure portal behavior, protect prototype data, and keep an
+                        Configure portal behavior, protect database data, and keep an
                         exportable backup.
                     </p>
                 </section>
@@ -39,7 +39,7 @@
                                 <div>
                                     <h3 class="font-bold">Appearance</h3>
                                     <p class="mt-1 text-sm text-slate-500">
-                                        Theme preference persists in this browser.
+                            Theme preference is saved with your portal settings.
                                     </p>
                                 </div>
                             </div>
@@ -135,7 +135,7 @@
                             <div>
                                 <h3 class="font-bold">Backup and restore</h3>
                                 <p class="mt-1 text-sm text-slate-500">
-                                    Export all prototype collections or restore a previously
+                                    Export the MySQL portal collections or restore a previously
                                     downloaded JSON backup.
                                 </p>
                             </div>
@@ -158,7 +158,7 @@
                             <div>
                                 <h3 class="font-bold">System health</h3>
                                 <p class="mt-1 text-sm text-slate-500">
-                                    Current LocalStorage collection counts and backup status.
+                                    Current MySQL collection counts and backup status.
                                 </p>
                             </div>
                         </div>
@@ -188,7 +188,7 @@
                         <span class="flex h-10 w-10 items-center justify-center rounded-xl bg-rose-50 text-rose-700"><i
                                 data-lucide="trash-2" class="h-5 w-5"></i></span>
                         <div>
-                            <h3 class="font-bold text-rose-700">Prototype data controls</h3>
+                            <h3 class="font-bold text-rose-700">Database data controls</h3>
                             <p class="mt-1 text-sm text-slate-500">
                                 Create a backup before resetting any collection. These actions
                                 cannot be undone without a backup.

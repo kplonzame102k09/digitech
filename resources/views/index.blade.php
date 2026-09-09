@@ -95,7 +95,7 @@
                         </span>
                         <span>
                             <i data-lucide="database" class="inline w-4 text-purple-600"></i>
-                            LocalStorage prototype
+                            MySQL-backed portal
                         </span>
                     </div>
                 </div>
@@ -243,8 +243,8 @@
                     </div>
                     <div class="bg-white border rounded-2xl p-6 shadow-sm"><i data-lucide="database"
                             class="text-amber-600"></i>
-                        <h3 class="mt-4 font-bold">Prototype Data</h3>
-                        <p class="mt-2 text-sm text-slate-500">Persistent browser LocalStorage simulation.</p>
+                        <h3 class="mt-4 font-bold">Secure Data</h3>
+                        <p class="mt-2 text-sm text-slate-500">Persistent records stored in the portal database.</p>
                     </div>
                 </div>
             </div>
@@ -355,7 +355,7 @@
                     <small class="block text-xs text-slate-500">COLLEGE</small>
                 </span>
             </a>
-            <span class="text-sm">© 2026 · Integrated Web Portal · Prototype</span>
+            <span class="text-sm">© 2026 · Integrated Web Portal · Digitech College</span>
         </div>
     </footer>
     <script>
