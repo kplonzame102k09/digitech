@@ -202,6 +202,7 @@
     empty.value = "";
     empty.textContent = "No linked student";
     select.append(empty);
+    users
       .filter((user) => user.role === "student")
       .forEach((student) => {
         const option = document.createElement("option");
@@ -209,6 +210,96 @@
         option.textContent = `${fullName(student)} · ${student.id}`;
         select.append(option);
       });
+  }
+
+  function resetAddressSelect(select, placeholder) {
+    if (!select) return;
+    select.replaceChildren(new Option(placeholder, ""));
+    select.disabled = true;
+  }
+
+  function setAddressOptions(select, placeholder, records, valueKey, selected = "") {
+    if (!select) return;
+    select.replaceChildren(new Option(placeholder, ""));
+    records.forEach((record) => {
+      select.append(new Option(record.name, record[valueKey]));
+    });
+    select.disabled = records.length === 0;
+    select.value = selected;
+  }
+
+  async function getAddressRecords(path) {
+    const response = await fetch(path);
+
+    if (!response.ok) {
+      throw new Error(`Address API error: ${response.status}`);
+    }
+
+    return response.json();
+  }
+
+  async function loadProvinces(regionCode, selected = "") {
+    const province = $("#province");
+    resetAddressSelect($("#city"), "Select City");
+    resetAddressSelect($("#barangay"), "Select Barangay");
+
+    if (!regionCode) {
+      resetAddressSelect(province, "Select Province");
+      return;
+    }
+
+    const provinces = await getAddressRecords(`/api/provinces/${regionCode}`);
+    setAddressOptions(province, "Select Province", provinces, "province_code", selected);
+  }
+
+  async function loadCities(provinceCode, selected = "") {
+    const city = $("#city");
+    resetAddressSelect($("#barangay"), "Select Barangay");
+
+    if (!provinceCode) {
+      resetAddressSelect(city, "Select City");
+      return;
+    }
+
+    const cities = await getAddressRecords(`/api/cities/${provinceCode}`);
+    setAddressOptions(city, "Select City", cities, "city_code", selected);
+  }
+
+  async function loadBarangays(cityCode, selected = "") {
+    const barangay = $("#barangay");
+
+    if (!cityCode) {
+      resetAddressSelect(barangay, "Select Barangay");
+      return;
+    }
+
+    const barangays = await getAddressRecords(`/api/barangays/${cityCode}`);
+    setAddressOptions(barangay, "Select Barangay", barangays, "barangay_code", selected);
+  }
+
+  async function populateAddressFields(user = null) {
+    const region = $("#region");
+    resetAddressSelect($("#province"), "Select Province");
+    resetAddressSelect($("#city"), "Select City");
+    resetAddressSelect($("#barangay"), "Select Barangay");
+
+    try {
+      const regions = await getAddressRecords("/api/regions");
+      setAddressOptions(region, "Select Region", regions, "region_code", user?.region || "");
+
+      if (!user?.region) return;
+
+      await loadProvinces(user.region, user.province || "");
+      if (!user?.province) return;
+
+      await loadCities(user.province, user.city || "");
+      if (!user?.city) return;
+
+      await loadBarangays(user.city, user.barangay || "");
+    } catch (error) {
+      console.error("Failed to load address options:", error);
+      setText("#formFeedback", "Unable to load address options. Please try again.");
+    }
   }
 
   function openEditor(user = null) {
@@ -232,13 +323,13 @@
       strand: user?.strand || "",
       childId:
         user?.childId || user?.childIds?.[0] || user?.children?.[0] || "",
-      address: user?.address || "",
     };
     Object.entries(fields).forEach(([id, value]) => {
       const element = document.getElementById(id);
       if (element) element.value = value;
     });
     syncParentField();
+    void populateAddressFields(user);
     $("#formFeedback").textContent = "";
     dialog.showModal();
   }
@@ -265,7 +356,10 @@
       "contact",
       "strand",
       "childId",
-      "address",
+      "region",
+      "province",
+      "city",
+      "barangay",
     ];
     const values = Object.fromEntries(
       fields.map((id) => [id, document.getElementById(id)?.value.trim() || ""]),
@@ -307,7 +401,10 @@
       status: values.accountStatus,
       contact: values.contact,
       strand: values.strand,
-      address: values.address,
+      region: values.region,
+      province: values.province,
+      city: values.city,
+      barangay: values.barangay,
       updatedAt: new Date().toISOString(),
     });
     if (values.password) user.password = values.password;
@@ -494,6 +591,58 @@ function generateUserId(role, existingUsers) {
   return id;
 }
 
+  async function queueUserImport(importedUsers) {
+    const response = await fetch("/api/portal/users/import", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Accept: "application/json",
+        "X-CSRF-TOKEN": document.querySelector('meta[name="csrf-token"]')?.content || "",
+        "X-Requested-With": "XMLHttpRequest",
+      },
+      credentials: "same-origin",
+      body: JSON.stringify({ users: importedUsers }),
+    });
+
+    if (!response.ok) {
+      throw new Error(`Import failed with status ${response.status}`);
+    }
+
+    return response.json();
+  }
+
+  function watchImport(batchId, importedCount) {
+    const timer = window.setInterval(async () => {
+      try {
+        const response = await fetch(`/api/portal/users/import/${batchId}`, {
+          headers: { Accept: "application/json" },
+          credentials: "same-origin",
+        });
+
+        if (!response.ok) {
+          throw new Error(`Import status failed with status ${response.status}`);
+        }
+
+        const batch = await response.json();
+        if (batch.failedJobs > 0 || batch.cancelled) {
+          window.clearInterval(timer);
+          APP.toast("Some users could not be imported. Check the server logs.", "error");
+          return;
+        }
+
+        if (batch.finished) {
+          window.clearInterval(timer);
+          APP.toast(`${importedCount} users imported`);
+          window.setTimeout(() => location.reload(), 700);
+        }
+      } catch (error) {
+        window.clearInterval(timer);
+        console.error("Failed to check import status:", error);
+        APP.toast("Unable to check import progress. Refresh the page shortly.", "error");
+      }
+    }, 1000);
+  }
+
 function importUsers() {
   const input = document.createElement("input");
 
@@ -543,7 +692,7 @@ function importUsers() {
         header.trim().toLowerCase()
       );
 
-      const users = DG.getData("users") || [];
+      const importedUsers = [];
 
       let importedCount = 0;
       let generatedCount = 0;
@@ -562,7 +711,7 @@ function importUsers() {
 
         // Generate one if missing
         if (!userId || userId.trim() === "") {
-          userId = generateUserId(role, users);
+          userId = DG.generateUserId(role);
           generatedCount++;
         }
 
@@ -581,23 +730,29 @@ function importUsers() {
           contact: data["contact"] || "",
         };
 
-        users.push(newUser);
+        importedUsers.push(newUser);
         importedCount++;
       });
 
-      // Save users
-      DG.saveData("users", users);
+      if (importedUsers.length === 0) {
+        APP.toast("CSV file contains no users");
+        return;
+      }
 
-      APP.toast(
-        `${importedCount} users imported` +
-        (generatedCount > 0
-          ? `, ${generatedCount} User IDs generated`
-          : "")
-      );
-
-      setTimeout(() => {
-        location.reload();
-      }, 700);
+      queueUserImport(importedUsers)
+        .then((result) => {
+          APP.toast(
+            `${result.users} users queued for import` +
+              (generatedCount > 0
+                ? `, ${generatedCount} User IDs generated`
+                : ""),
+          );
+          watchImport(result.batchId, result.users);
+        })
+        .catch((error) => {
+          console.error("Failed to queue user import:", error);
+          APP.toast("Unable to queue the user import. Please try again.", "error");
+        });
     };
     reader.readAsText(file);
   };
@@ -645,6 +800,27 @@ function importUsers() {
     $("[data-bulk-toggle]")?.addEventListener("click", bulkAction);
     $("#userForm")?.addEventListener("submit", saveUser);
     $("#role")?.addEventListener("change", syncParentField);
+    $("#region")?.addEventListener("change", async (event) => {
+      try {
+        await loadProvinces(event.target.value);
+      } catch (error) {
+        console.error("Failed to load provinces:", error);
+      }
+    });
+    $("#province")?.addEventListener("change", async (event) => {
+      try {
+        await loadCities(event.target.value);
+      } catch (error) {
+        console.error("Failed to load cities:", error);
+      }
+    });
+    $("#city")?.addEventListener("change", async (event) => {
+      try {
+        await loadBarangays(event.target.value);
+      } catch (error) {
+        console.error("Failed to load barangays:", error);
+      }
+    });
     $$("[data-close-dialog]").forEach((button) =>
       button.addEventListener("click", () => $("#userDialog")?.close()),
     );

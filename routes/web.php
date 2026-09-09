@@ -18,13 +18,15 @@ Route::get('/auth/signup', [SignupController::class, 'showSignup'])->name('auth.
 Route::post('/signup', [SignupController::class, 'signup'])->name('signup.submit');
 
 Route::get('/api/provinces/{regionCode}', [AddressController::class, 'provinces']);
-Route::get("/api/regions", [AddressController::class, "regions"]);
+Route::get('/api/regions', [AddressController::class, 'regions']);
 Route::get('/api/cities/{provinceCode}', [AddressController::class, 'cities']);
 Route::get('/api/barangays/{cityCode}', [AddressController::class, 'barangays']);
 
 Route::middleware('auth')->prefix('api/portal')->group(function () {
     Route::get('/', [PortalDataController::class, 'index']);
     Route::get('/boot', [PortalDataController::class, 'boot']);
+    Route::post('/users/import', [PortalDataController::class, 'importUsers']);
+    Route::get('/users/import/{batchId}', [PortalDataController::class, 'importStatus']);
     Route::get('/{key}', [PortalDataController::class, 'show']);
     Route::put('/{key}', [PortalDataController::class, 'update']);
 });

@@ -122,6 +122,16 @@ class PortalDataService
         ]);
     }
 
+    /**
+     * @param  array<int, array<string, mixed>>  $users
+     */
+    public function importUsers(array $users): void
+    {
+        DB::transaction(function () use ($users): void {
+            $this->upsertUsers($users);
+        });
+    }
+
     protected function syncUsers(array $users, ?User $actor): array
     {
         if (! $actor?->isAdmin()) {
@@ -131,30 +141,43 @@ class PortalDataService
         return DB::transaction(function () use ($users): array {
             $keepIds = ['ADMIN-000001'];
 
-            foreach ($users as $raw) {
-                if (! is_array($raw) || empty($raw['id'])) {
-                    continue;
-                }
-
-                $portalId = (string) $raw['id'];
-                $keepIds[] = $portalId;
-                $user = User::query()->where('user_id', $portalId)->first();
-                $fields = $this->userFields($raw, $user, $portalId);
-
-                if (! empty($raw['password'])) {
-                    $fields['password'] = $raw['password'];
-                } elseif (! $user) {
-                    $fields['password'] = str()->random(16);
-                    $fields['mustChangePassword'] = true;
-                }
-
-                $user ? $user->fill($fields)->save() : User::query()->create($fields);
-            }
+            $keepIds = array_merge($keepIds, $this->upsertUsers($users));
 
             User::query()->whereNotIn('user_id', array_unique($keepIds))->delete();
 
             return $this->usersForJs();
         });
+    }
+
+    /**
+     * @param  array<int, array<string, mixed>>  $users
+     * @return array<int, string>
+     */
+    protected function upsertUsers(array $users): array
+    {
+        $portalIds = [];
+
+        foreach ($users as $raw) {
+            if (! is_array($raw) || empty($raw['id'])) {
+                continue;
+            }
+
+            $portalId = (string) $raw['id'];
+            $portalIds[] = $portalId;
+            $user = User::query()->where('user_id', $portalId)->first();
+            $fields = $this->userFields($raw, $user, $portalId);
+
+            if (! empty($raw['password'])) {
+                $fields['password'] = $raw['password'];
+            } elseif (! $user) {
+                $fields['password'] = str()->random(16);
+                $fields['mustChangePassword'] = true;
+            }
+
+            $user ? $user->fill($fields)->save() : User::query()->create($fields);
+        }
+
+        return $portalIds;
     }
 
     protected function syncOwnProfile(?User $actor, array $users): array

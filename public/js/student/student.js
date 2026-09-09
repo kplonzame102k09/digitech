@@ -14,7 +14,7 @@
   const page = () =>
     document.body.dataset.studentPage || location.pathname.split("/").pop();
   const fullName = (user = U) =>
-    `${user?.firstName || ""} ${user?.lastName || ""}`.trim() || user?.id || "Student";
+    `${user?.firstName || ""} ${user?.middleName || ""} ${user?.lastName || ""}`.trim() || user?.id || "Student";
 
   const mine = (key) =>
     get(key, []).filter(
@@ -142,7 +142,7 @@
   function renderEnrollment() {
     text("#fullName", fullName());
     const sid = $("#studentId");
-    if (sid) sid.value = U.id;
+    if (sid) sid.value = U.user_id || U.id || "";
     const contact = $("#contact");
     if (contact && !contact.value) contact.value = U.contact || "";
     const birth = $("#birthDate");

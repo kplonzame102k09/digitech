@@ -192,9 +192,29 @@
                         <option value="">No linked student</option>
                     </select>
                 </label>
-                <label class="block text-[11px] font-medium text-slate-700 dark:text-slate-300 sm:col-span-2">
-                    Address
-                    <textarea id="address" rows="2" class="mt-1 w-full rounded-lg border border-slate-200 bg-white px-3 py-2.5 text-xs outline-none transition focus:border-green-500 focus:ring-2 focus:ring-green-100 dark:border-slate-700 dark:bg-slate-900" placeholder="Complete address" ></textarea>
+                <label class="block text-[11px] font-medium text-slate-700 dark:text-slate-300">
+                    Region
+                    <select id="region" required class="mt-1 w-full rounded-lg border border-slate-200 bg-white px-3 py-2.5 text-xs outline-none transition focus:border-green-500 focus:ring-2 focus:ring-green-100 dark:border-slate-700 dark:bg-slate-900">
+                        <option value="">Select Region</option>
+                    </select>
+                </label>
+                <label class="block text-[11px] font-medium text-slate-700 dark:text-slate-300">
+                    Province
+                    <select id="province" required disabled class="mt-1 w-full rounded-lg border border-slate-200 bg-white px-3 py-2.5 text-xs outline-none transition focus:border-green-500 focus:ring-2 focus:ring-green-100 dark:border-slate-700 dark:bg-slate-900">
+                        <option value="">Select Province</option>
+                    </select>
+                </label>
+                <label class="block text-[11px] font-medium text-slate-700 dark:text-slate-300">
+                    City / Municipality
+                    <select id="city" required disabled class="mt-1 w-full rounded-lg border border-slate-200 bg-white px-3 py-2.5 text-xs outline-none transition focus:border-green-500 focus:ring-2 focus:ring-green-100 dark:border-slate-700 dark:bg-slate-900">
+                        <option value="">Select City</option>
+                    </select>
+                </label>
+                <label class="block text-[11px] font-medium text-slate-700 dark:text-slate-300">
+                    Barangay
+                    <select id="barangay" required disabled class="mt-1 w-full rounded-lg border border-slate-200 bg-white px-3 py-2.5 text-xs outline-none transition focus:border-green-500 focus:ring-2 focus:ring-green-100 dark:border-slate-700 dark:bg-slate-900">
+                        <option value="">Select Barangay</option>
+                    </select>
                 </label>
             </div>
             <div class="mt-6 flex flex-wrap items-center justify-between gap-3">
