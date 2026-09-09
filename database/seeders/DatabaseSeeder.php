@@ -10,6 +10,8 @@ class DatabaseSeeder extends Seeder
 {
     public function run(): void
     {
+        $this->call(PhilippineSeeder::class);
+
         $rolePassword = env('ROLE_PASSWORD', 'ADMIN@TEACHER123');
 
         $admin = User::updateOrCreate(

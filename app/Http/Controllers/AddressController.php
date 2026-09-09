@@ -2,38 +2,47 @@
 
 namespace App\Http\Controllers;
 
-
-    public function regions(): IlluminateHttpJsonResponse
-    {
-        return response()->json(DB::table("philippine_regions")->orderBy("name")->get(["region_code", "name"]));
-    }
+use Illuminate\Http\JsonResponse;
+use Illuminate\Support\Facades\DB;
 
 class AddressController extends Controller
 {
-    public function provinces($regionCode)
+    public function regions(): JsonResponse
     {
-        $provinces = DB::table('philippine_provinces')
-            ->where('region_code', $regionCode)
-            ->get(['province_code', 'name']);
-
-        return response()->json($provinces);
+        return response()->json(
+            DB::table('philippine_regions')
+                ->orderBy('name')
+                ->get(['region_code', 'name'])
+        );
     }
 
-    public function cities($provinceCode)
+    public function provinces(string $regionCode): JsonResponse
     {
-        $cities = DB::table('philippine_cities')
-            ->where('province_code', $provinceCode)
-            ->get(['city_code', 'name']);
-
-        return response()->json($cities);
+        return response()->json(
+            DB::table('philippine_provinces')
+                ->where('region_code', $regionCode)
+                ->orderBy('name')
+                ->get(['province_code', 'name'])
+        );
     }
 
-    public function barangays($cityCode)
+    public function cities(string $provinceCode): JsonResponse
     {
-        $barangays = DB::table('philippine_barangays')
-            ->where('city_code', $cityCode)
-            ->get(['psgc_code as barangay_code', 'name']);
-
-        return response()->json($barangays);
+        return response()->json(
+            DB::table('philippine_cities')
+                ->where('province_code', $provinceCode)
+                ->orderBy('name')
+                ->get(['city_code', 'name'])
+        );
     }
-}   
+
+    public function barangays(string $cityCode): JsonResponse
+    {
+        return response()->json(
+            DB::table('philippine_barangays')
+                ->where('city_code', $cityCode)
+                ->orderBy('name')
+                ->get(['psgc_code as barangay_code', 'name'])
+        );
+    }
+}
