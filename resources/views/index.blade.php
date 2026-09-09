@@ -17,7 +17,7 @@
     <header class="fixed top-0 inset-x-0 z-50 bg-white/95 backdrop-blur border-b">
         <nav class="max-w-7xl mx-auto px-4">
             <div class="h-20 flex items-center justify-between">
-                <a class="flex items-center gap-3" href="{{ ('index') }}">
+                <a class="flex items-center gap-3" href="{{ url('/') }}">
                     <img src="{{ asset('images/16432.png') }}"
                         class="w-12 h-12 rounded-xl flex items-center justify-center">
                     <span>
@@ -75,7 +75,7 @@
                         through one convenient portal.
                     </p>
                     <div class="mt-8 flex flex-wrap gap-2">
-                        <a href="{{ ('index') }}"
+                        <a href="{{ url('/') }}"
                             class="px-5 py-3.5 rounded-xl bg-green-600 text-white font-semibold shadow-lg">
                             Access Portal
                             <i data-lucide="arrow-right" class="inline w-5"></i>
@@ -293,7 +293,7 @@
 
                         <!-- Buttons -->
                         <div class="mt-8 flex flex-col sm:flex-row items-center justify-center gap-3">
-                            <a href="{{ ('index') }}"
+                            <a href="{{ url('/') }}"
                                 class="group inline-flex items-center justify-center gap-2 bg-white text-green-700 px-7 py-3.5 rounded-xl font-semibold shadow-lg shadow-green-950/20 hover:bg-green-50 hover:-translate-y-0.5 transition-all duration-200">
                                 Go to Portal
                                 <i data-lucide="arrow-right"
@@ -347,7 +347,7 @@
     </main>
     <footer class="bg-slate-900 text-slate-400">
         <div class="max-w-7xl mx-auto px-4 py-10 flex justify-between flex-wrap gap-4">
-            <a class="flex items-center gap-3" href="{{ ('index') }}">
+            <a class="flex items-center gap-3" href="{{ url('/') }}">
                 <img src="{{ asset('images/16432.png') }}"
                     class="w-11 h-11 rounded-xl flex items-center justify-center">
                 <span>

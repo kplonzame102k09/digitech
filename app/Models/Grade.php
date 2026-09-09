@@ -23,7 +23,6 @@ class Grade extends Model
         'publishedAt',
         'publishedBy',
         'notes',
-        'updatedAt',
         'updatedBy',
     ];
 
@@ -31,7 +30,6 @@ class Grade extends Model
         'grade' => 'float',
         'published' => 'boolean',
         'publishedAt' => 'datetime',
-        'updatedAt' => 'datetime',
     ];
 
     protected $keyType = 'string';
@@ -40,17 +38,22 @@ class Grade extends Model
 
     public function student()
     {
-        return $this->belongsTo(User::class, 'studentId', 'id');
+        return $this->belongsTo(User::class, 'studentId', 'user_id');
     }
 
     public function teacherUser()
     {
-        return $this->belongsTo(User::class, 'teacherId', 'id');
+        return $this->belongsTo(User::class, 'teacherId', 'user_id');
     }
 
     public function publisher()
     {
-        return $this->belongsTo(User::class, 'publishedBy', 'id');
+        return $this->belongsTo(User::class, 'publishedBy', 'user_id');
+    }
+
+    public function updater()
+    {
+        return $this->belongsTo(User::class, 'updatedBy', 'user_id');
     }
 
     public function getNumericGrade()

@@ -159,12 +159,12 @@
                             <div id="status" class="mt-3"></div>
                         </div>
                         <div class="flex flex-wrap gap-3">
-                            <button type="button" onclick="saveEnrollment('Draft')"
+                            <button type="button" id="saveDraftBtn" onclick="saveEnrollment('Draft')"
                                 class="inline-flex items-center gap-2 rounded-xl border border-slate-200 px-5 py-3 text-sm font-semibold dark:border-slate-700">
                                 <i data-lucide="save" class="h-4 w-4"></i>
                                 Save draft
                             </button>
-                            <button type="button" onclick="saveEnrollment('Submitted')"
+                            <button type="button" id="submitEnrollmentBtn" onclick="saveEnrollment('Submitted')"
                                 class="inline-flex items-center gap-2 rounded-xl bg-emerald-600 px-5 py-3 text-sm font-semibold text-white hover:bg-emerald-700">
                                 <i data-lucide="send" class="h-4 w-4"></i>
                                 Submit enrollment

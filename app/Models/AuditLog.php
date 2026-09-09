@@ -2,8 +2,8 @@
 
 namespace App\Models;
 
-use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Model;
 
 class AuditLog extends Model
 {
@@ -27,20 +27,28 @@ class AuditLog extends Model
     ];
 
     protected $keyType = 'string';
+
     public $incrementing = false;
+
     public $timestamps = false;
 
     const ENTITY_USER = 'user';
+
     const ENTITY_ENROLLMENT = 'enrollment';
+
     const ENTITY_DOCUMENT = 'document';
+
     const ENTITY_GRADE = 'grade';
+
     const ENTITY_COMPETENCY = 'competency';
+
     const ENTITY_SYSTEM = 'system';
+
     const ENTITY_ATTENDANCE = 'attendance';
 
     public function actor()
     {
-        return $this->belongsTo(User::class, 'actorId', 'id');
+        return $this->belongsTo(User::class, 'actorId', 'user_id');
     }
 
     public static function forEntity($entity, $limit = 50)

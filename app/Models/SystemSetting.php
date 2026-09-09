@@ -2,14 +2,15 @@
 
 namespace App\Models;
 
-use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Model;
 
 class SystemSetting extends Model
 {
     use HasFactory;
 
     protected $fillable = [
+        'theme',
         'teacherRegistration',
         'adminRegistration',
         'institutionName',
@@ -21,7 +22,6 @@ class SystemSetting extends Model
         'notifyTeachers',
         'notifyAdmins',
         'updatedBy',
-        'updatedAt',
     ];
 
     protected $casts = [
@@ -33,14 +33,13 @@ class SystemSetting extends Model
         'notifyParents' => 'boolean',
         'notifyTeachers' => 'boolean',
         'notifyAdmins' => 'boolean',
-        'updatedAt' => 'datetime',
     ];
 
     public $timestamps = false;
 
     public function updater()
     {
-        return $this->belongsTo(User::class, 'updatedBy', 'id');
+        return $this->belongsTo(User::class, 'updatedBy', 'user_id');
     }
 
     public static function getInstance()
@@ -48,10 +47,11 @@ class SystemSetting extends Model
         return self::firstOrCreate(
             [],
             [
+                'theme' => 'light',
                 'teacherRegistration' => true,
                 'adminRegistration' => false,
                 'institutionName' => 'Digitech College',
-                'schoolYear' => date('Y') . '-' . (date('Y') + 1),
+                'schoolYear' => date('Y').'-'.(date('Y') + 1),
                 'passingGrade' => 75,
                 'notifyStudents' => true,
                 'notifyParents' => true,

@@ -3,46 +3,24 @@
 namespace App\Http\Controllers\Authentication;
 
 use App\Http\Controllers\Controller;
-use Illuminate\Http\Request;
+use App\Http\Requests\RegisterPortalUserRequest;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\View\View;
 
 class SignupController extends Controller
 {
-    public function showSignup()
+    public function showSignup(): View
     {
         $regions = DB::table('philippine_regions')->get(['region_code', 'name']);
 
         return view('auth.signup', compact('regions'));
     }
 
-    public function signup(Request $request)
+    public function signup(RegisterPortalUserRequest $request): RedirectResponse
     {
-        $validated = $request->validate([
-            'role' => 'required|in:student,teacher,parent,guest',
-            'firstName' => 'required|string|max:100',
-            'lastName' => 'required|string|max:100',
-            'middleName' => 'nullable|string|max:100',
-            'contact' => 'required|string|max:20',
-            'birthDate' => 'required|date|before:today',
-            'birthPlace' => 'required|string|max:150',
-            'barangay' => 'required|string|max:255',
-            'city' => 'required|string|max:255',
-            'province' => 'required|string|max:255',
-            'region' => 'required|string|max:255',
-            'email' => 'required|email|unique:users,email',
-            'password' => 'required|min:8|confirmed',
-            'rolePassword' => 'nullable|string|min:8',
-        ]);
-
-        $rolePassword = env('ROLE_PASSWORD');
-        if (in_array($validated['role'], ['admin', 'teacher'], true)) {
-            if (($validated['rolePassword'] ?? null) !== $rolePassword) {
-                return back()
-                    ->withErrors(['rolePassword' => 'Invalid role password.'])
-                    ->withInput();
-            }
-        }
+        $validated = $request->validated();
 
         $userId = $this->generateUniqueUserId($validated['role']);
 
@@ -61,10 +39,8 @@ class SignupController extends Controller
             'city' => $validated['city'],
             'barangay' => $validated['barangay'],
             'email' => $validated['email'],
+            'username' => $validated['username'] ?? null,
             'password' => Hash::make($validated['password']),
-            'rolePassword' => in_array($validated['role'], ['admin', 'teacher'], true)
-                ? Hash::make($validated['rolePassword'])
-                : null,
             'created_at' => now(),
             'updated_at' => now(),
         ]);

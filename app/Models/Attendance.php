@@ -2,12 +2,14 @@
 
 namespace App\Models;
 
-use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Model;
 
 class Attendance extends Model
 {
     use HasFactory;
+
+    protected $table = 'attendance';
 
     protected $fillable = [
         'id',
@@ -15,21 +17,20 @@ class Attendance extends Model
         'date',
         'status',
         'remarks',
-        'createdAt',
-        'updatedAt',
     ];
 
     protected $casts = [
         'date' => 'date',
-        'createdAt' => 'datetime',
-        'updatedAt' => 'datetime',
     ];
 
     protected $keyType = 'string';
+
     public $incrementing = false;
 
     const PRESENT = 'Present';
+
     const ABSENT = 'Absent';
+
     const LATE = 'Late';
 
     public static $statuses = [
@@ -40,7 +41,7 @@ class Attendance extends Model
 
     public function student()
     {
-        return $this->belongsTo(User::class, 'studentId', 'id');
+        return $this->belongsTo(User::class, 'studentId', 'user_id');
     }
 
     public static function getAttendanceRate($studentId, $startDate = null, $endDate = null)

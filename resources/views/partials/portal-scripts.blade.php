@@ -15,6 +15,7 @@
 <script src="{{ asset('js/data.js') }}"></script>
 <script src="{{ asset('js/auth.js') }}"></script>
 <script src="{{ asset('js/app.js') }}"></script>
+<script src="{{ asset('js/api.js') }}"></script>
 <script src="{{ asset('js/features.js') }}"></script>
 @foreach ($extraScripts as $script)
     <script src="{{ asset($script) }}"></script>

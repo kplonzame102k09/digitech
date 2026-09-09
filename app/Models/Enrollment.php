@@ -2,8 +2,8 @@
 
 namespace App\Models;
 
-use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Model;
 
 class Enrollment extends Model
 {
@@ -36,14 +36,21 @@ class Enrollment extends Model
     ];
 
     protected $keyType = 'string';
+
     public $incrementing = false;
 
     const DRAFT = 'Draft';
+
     const SUBMITTED = 'Submitted';
+
     const UNDER_REVIEW = 'Under Review';
+
     const APPROVED = 'Approved';
+
     const REJECTED = 'Rejected';
+
     const NEEDS_CORRECTION = 'Needs Correction';
+
     const ENROLLED = 'Enrolled';
 
     public static $statuses = [
@@ -58,12 +65,12 @@ class Enrollment extends Model
 
     public function student()
     {
-        return $this->belongsTo(User::class, 'studentId', 'id');
+        return $this->belongsTo(User::class, 'studentId', 'user_id');
     }
 
     public function teacher()
     {
-        return $this->belongsTo(User::class, 'assignedTeacherId', 'id');
+        return $this->belongsTo(User::class, 'assignedTeacherId', 'user_id');
     }
 
     public function documentRequests()

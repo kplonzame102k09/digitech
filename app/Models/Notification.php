@@ -2,8 +2,8 @@
 
 namespace App\Models;
 
-use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Model;
 
 class Notification extends Model
 {
@@ -28,29 +28,37 @@ class Notification extends Model
     ];
 
     protected $keyType = 'string';
+
     public $incrementing = false;
 
     const SOURCE_DOCUMENT = 'document';
+
     const SOURCE_GRADE = 'grade';
+
     const SOURCE_ENROLLMENT = 'enrollment';
+
     const SOURCE_COMPETENCY = 'competency';
+
     const SOURCE_ANNOUNCEMENT = 'announcement';
+
     const SOURCE_ATTENDANCE = 'attendance';
 
     public function user()
     {
-        return $this->belongsTo(User::class, 'userId', 'id');
+        return $this->belongsTo(User::class, 'userId', 'user_id');
     }
 
     public function markAsRead()
     {
         $this->update(['read' => true]);
+
         return $this;
     }
 
     public function markAsUnread()
     {
         $this->update(['read' => false]);
+
         return $this;
     }
 

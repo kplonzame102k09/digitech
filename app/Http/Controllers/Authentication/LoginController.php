@@ -3,28 +3,26 @@
 namespace App\Http\Controllers\Authentication;
 
 use App\Http\Controllers\Controller;
+use App\Http\Requests\AuthenticateUserRequest;
+use App\Models\User;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\View\View;
 
 class LoginController extends Controller
 {
-    public function showLogin()
+    public function showLogin(): View
     {
         return view('auth.login');
     }
 
-    public function login(Request $request)
+    public function login(AuthenticateUserRequest $request): RedirectResponse
     {
-        $validated = $request->validate([
-            'role' => 'required|in:student,teacher,admin,parent',
-            'user_id' => 'required|string',
-            'password' => 'required|string',
-            'rolePassword' => 'nullable|string',
-        ]);
+        $validated = $request->validated();
 
-        $user = DB::table('users')
+        $user = User::query()
             ->where(function ($query) use ($validated): void {
                 $query->where('user_id', $validated['user_id'])
                     ->orWhere('email', $validated['user_id']);
@@ -32,47 +30,40 @@ class LoginController extends Controller
             ->where('role', $validated['role'])
             ->first();
 
-        if (! $user) {
+        if (! $user || ! Hash::check($validated['password'], $user->password)) {
             return back()->withInput()->withErrors([
-                'user_id' => 'No account found with that User ID and role.',
+                'user_id' => 'The supplied credentials are invalid.',
             ]);
         }
 
-        if (! Hash::check($validated['password'], $user->password)) {
+        if ($user->status !== 'active') {
             return back()->withInput()->withErrors([
-                'password' => 'Incorrect password.',
+                'user_id' => 'This account is not active.',
             ]);
         }
 
-        if (in_array($user->role, ['admin', 'teacher'], true)) {
-            if (empty($validated['rolePassword'])) {
-                return back()->withInput()->withErrors([
-                    'rolePassword' => 'Role password is required for Admin and Teacher.',
-                ]);
-            }
-
-            if (! $user->rolePassword || ! Hash::check($validated['rolePassword'], $user->rolePassword)) {
-                return back()->withInput()->withErrors([
-                    'rolePassword' => 'Incorrect role password.',
-                ]);
-            }
+        if (Hash::needsRehash($user->password)) {
+            $user->forceFill(['password' => $validated['password']])->save();
         }
 
-        Auth::loginUsingId($user->id);
+        Auth::login($user);
         $request->session()->regenerate();
+
+        if ($user->mustChangePassword) {
+            return redirect()->route('auth.password.change');
+        }
 
         $redirects = [
             'student' => '/student/dashboard',
             'teacher' => '/teacher/dashboard',
             'admin' => '/admin/dashboard',
             'parent' => '/parent/dashboard',
-            'guest' => '/',
         ];
 
         return redirect($redirects[$user->role] ?? '/');
     }
 
-    public function logout(Request $request)
+    public function logout(Request $request): RedirectResponse
     {
         Auth::logout();
         $request->session()->invalidate();

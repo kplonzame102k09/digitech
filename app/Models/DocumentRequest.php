@@ -2,8 +2,8 @@
 
 namespace App\Models;
 
-use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Model;
 
 class DocumentRequest extends Model
 {
@@ -25,7 +25,6 @@ class DocumentRequest extends Model
         'reviewedAt',
         'reviewedBy',
         'createdBy',
-        'updatedAt',
     ];
 
     protected $casts = [
@@ -33,16 +32,20 @@ class DocumentRequest extends Model
         'requestDate' => 'datetime',
         'releaseDate' => 'datetime',
         'reviewedAt' => 'datetime',
-        'updatedAt' => 'datetime',
     ];
 
     protected $keyType = 'string';
+
     public $incrementing = false;
 
     const PENDING = 'Pending';
+
     const PROCESSING = 'Processing';
+
     const READY_FOR_RELEASE = 'Ready for Release';
+
     const RELEASED = 'Released';
+
     const REJECTED = 'Rejected';
 
     public static $statuses = [
@@ -55,16 +58,16 @@ class DocumentRequest extends Model
 
     public function student()
     {
-        return $this->belongsTo(User::class, 'studentId', 'id');
+        return $this->belongsTo(User::class, 'studentId', 'user_id');
     }
 
     public function reviewer()
     {
-        return $this->belongsTo(User::class, 'reviewedBy', 'id');
+        return $this->belongsTo(User::class, 'reviewedBy', 'user_id');
     }
 
     public function creator()
     {
-        return $this->belongsTo(User::class, 'createdBy', 'id');
+        return $this->belongsTo(User::class, 'createdBy', 'user_id');
     }
 }

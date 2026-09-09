@@ -2,9 +2,24 @@
 
 namespace App\Services;
 
+use App\Models\Announcement;
+use App\Models\Attendance;
+use App\Models\AuditLog;
+use App\Models\Competency;
+use App\Models\DocumentRequest;
+use App\Models\Enrollment;
+use App\Models\Grade;
+use App\Models\Notification;
+use App\Models\ParentLinkRequest;
 use App\Models\PortalCollection;
+use App\Models\Requirement;
+use App\Models\SystemSetting;
 use App\Models\User;
+use DateTimeInterface;
+use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Str;
 
 class PortalDataService
 {
@@ -20,6 +35,34 @@ class PortalDataService
         'requirements',
         'parentLinkRequests',
         'settings',
+    ];
+
+    /** Collections that are backed by a real Eloquent table. */
+    private const DOMAIN_MODELS = [
+        'enrollments' => Enrollment::class,
+        'documentRequests' => DocumentRequest::class,
+        'grades' => Grade::class,
+        'competencies' => Competency::class,
+        'notifications' => Notification::class,
+        'announcements' => Announcement::class,
+        'attendance' => Attendance::class,
+        'auditLogs' => AuditLog::class,
+        'requirements' => Requirement::class,
+        'parentLinkRequests' => ParentLinkRequest::class,
+    ];
+
+    /** Column whitelist applied when a client pushes a collection back. */
+    private const WRITE_FIELDS = [
+        'enrollments' => ['id', 'studentId', 'status', 'programType', 'gradeLevel', 'strand', 'track', 'schoolYear', 'trainingLevel', 'assignedTeacherId', 'assignedSection', 'reviewNotes', 'rejectionReason', 'reviewedAt', 'reviewedBy'],
+        'documentRequests' => ['id', 'studentId', 'documentType', 'purpose', 'copies', 'notes', 'status', 'requestDate', 'reviewNotes', 'rejectionReason', 'releaseMethod', 'releaseDate', 'reviewedAt', 'reviewedBy', 'createdBy'],
+        'grades' => ['id', 'studentId', 'subject', 'teacherId', 'grade', 'remarks', 'term', 'period', 'published', 'publishedAt', 'publishedBy', 'notes', 'updatedBy'],
+        'competencies' => ['id', 'studentId', 'competency', 'qualification', 'status', 'assessmentDate', 'assessor', 'evidence', 'remarks', 'createdBy', 'updatedBy'],
+        'notifications' => ['id', 'userId', 'title', 'message', 'read', 'source', 'recordId'],
+        'announcements' => ['id', 'title', 'message', 'category', 'audience', 'authorId'],
+        'attendance' => ['id', 'studentId', 'date', 'status', 'remarks'],
+        'auditLogs' => ['id', 'entity', 'recordId', 'action', 'from', 'to', 'notes', 'reason', 'actorId', 'createdAt'],
+        'requirements' => ['id', 'studentId', 'name', 'type', 'status', 'dueDate', 'submittedAt', 'notes'],
+        'parentLinkRequests' => ['id', 'parentId', 'studentId', 'status', 'reviewedAt', 'reviewedBy'],
     ];
 
     public function bootPayload(?User $authUser = null): array
@@ -50,15 +93,26 @@ class PortalDataService
             return $this->usersForJs();
         }
 
-        if ($key === 'currentUser') {
-            return null;
+        if ($key === 'settings') {
+            return $this->settingsForJs();
         }
 
         abort_unless(in_array($key, self::COLLECTION_KEYS, true), 404, 'Unknown collection');
 
-        $value = PortalCollection::query()->find($key)?->value;
+        $model = self::DOMAIN_MODELS[$key] ?? null;
 
-        return $key === 'settings' ? $value ?? $this->defaultSettings() : $value ?? [];
+        if (! $model) {
+            return PortalCollection::query()->find($key)?->value ?? [];
+        }
+
+        $rows = $model::query()
+            ->when($key === 'auditLogs', fn ($query) => $query->orderByDesc('createdAt'), fn ($query) => $query->orderByDesc('created_at'))
+            ->get();
+
+        return $rows
+            ->map(fn (Model $row): array => $this->serializeDomain($key, $row))
+            ->values()
+            ->all();
     }
 
     public function putCollection(string $key, mixed $value, ?User $actor = null): mixed
@@ -67,15 +121,26 @@ class PortalDataService
             return $this->syncUsers(is_array($value) ? $value : [], $actor);
         }
 
+        if ($key === 'settings') {
+            abort_unless($actor?->isAdmin(), 403);
+            $validated = is_array($value) ? $value : [];
+
+            return $this->applySettings($validated, $actor);
+        }
+
         abort_unless(in_array($key, self::COLLECTION_KEYS, true), 404, 'Unknown collection');
+        abort_unless($this->canWriteCollection($actor, $key), 403);
 
-        $value = $key === 'settings'
-            ? (is_array($value) ? $value : $this->defaultSettings())
-            : (is_array($value) ? array_values($value) : []);
+        if (isset(self::DOMAIN_MODELS[$key])) {
+            $this->syncDomainRows($key, is_array($value) ? $value : [], $actor);
+        } else {
+            PortalCollection::query()->updateOrCreate(
+                ['key' => $key],
+                ['value' => is_array($value) ? array_values($value) : []],
+            );
+        }
 
-        PortalCollection::query()->updateOrCreate(['key' => $key], ['value' => $value]);
-
-        return $value;
+        return $this->getCollection($key);
     }
 
     public function usersForJs(): array
@@ -106,7 +171,7 @@ class PortalDataService
             'city' => $user->city,
             'province' => $user->province,
             'region' => $user->region,
-            'photo' => $user->photo ?: '',
+            'photo' => $user->photo ? $this->publicPhotoUrl($user->photo) : '',
             'strand' => $user->strand,
             'address' => $user->address,
             'childId' => $user->childId,
@@ -118,7 +183,6 @@ class PortalDataService
             'department' => $user->department,
             'createdAt' => $user->created_at?->toIso8601String(),
             'updatedAt' => $user->updated_at?->toIso8601String(),
-            'password' => '',
         ]);
     }
 
@@ -194,8 +258,8 @@ class PortalDataService
 
         $allowed = [
             'firstName', 'lastName', 'middleName', 'contact', 'birthDate', 'birthPlace',
-            'barangay', 'city', 'province', 'region', 'email', 'username', 'photo',
-            'strand', 'address', 'guardianName', 'guardianContact',
+            'barangay', 'city', 'province', 'region', 'email', 'username',
+            'strand', 'address', 'guardianName', 'guardianContact', 'photo',
         ];
         $fields = collect($allowed)
             ->filter(fn (string $field): bool => array_key_exists($field, $profile))
@@ -237,25 +301,403 @@ class PortalDataService
             'department' => $raw['department'] ?? $user?->department,
         ];
 
-        $known = array_flip(array_merge(['id', 'password', 'rolePassword', 'createdAt', 'updatedAt'], array_keys($fields)));
+        $known = array_flip(array_merge(['id', 'password', 'createdAt', 'updatedAt'], array_keys($fields)));
         $fields['profile_extra'] = collect($raw)->except(array_keys($known))->all();
 
         return $fields;
     }
 
-    protected function defaultSettings(): array
+    protected function settingsForJs(): array
     {
+        $settings = SystemSetting::getInstance();
+
         return [
-            'theme' => 'light',
-            'teacherRegistration' => true,
-            'adminRegistration' => false,
-            'institutionName' => 'Digitech College',
-            'schoolYear' => date('Y').'-'.(date('Y') + 1),
-            'passingGrade' => 75,
-            'notifyStudents' => true,
-            'notifyParents' => true,
-            'notifyTeachers' => true,
-            'notifyAdmins' => true,
+            'theme' => $settings->theme ?: 'light',
+            'teacherRegistration' => (bool) $settings->teacherRegistration,
+            'adminRegistration' => (bool) $settings->adminRegistration,
+            'institutionName' => $settings->institutionName ?: 'Digitech College',
+            'schoolYear' => $settings->schoolYear ?: date('Y').'-'.(date('Y') + 1),
+            'passingGrade' => $settings->passingGrade !== null ? (float) $settings->passingGrade : 75,
+            'enrollmentDeadline' => $settings->enrollmentDeadline?->format('Y-m-d'),
+            'notifyStudents' => (bool) $settings->notifyStudents,
+            'notifyParents' => (bool) $settings->notifyParents,
+            'notifyTeachers' => (bool) $settings->notifyTeachers,
+            'notifyAdmins' => (bool) $settings->notifyAdmins,
+            'updatedBy' => $settings->updatedBy,
+            'updatedAt' => $this->dateToIso($settings->updated_at),
         ];
+    }
+
+    protected function applySettings(array $values, ?User $actor): array
+    {
+        $settings = SystemSetting::getInstance();
+
+        $allowed = [
+            'theme', 'teacherRegistration', 'adminRegistration', 'institutionName',
+            'schoolYear', 'passingGrade', 'enrollmentDeadline', 'notifyStudents',
+            'notifyParents', 'notifyTeachers', 'notifyAdmins',
+        ];
+
+        foreach ($allowed as $field) {
+            if (array_key_exists($field, $values)) {
+                $settings->{$field} = $values[$field];
+            }
+        }
+
+        $settings->updatedBy = $actor?->user_id;
+        $settings->updated_at = now();
+        $settings->save();
+
+        return $this->settingsForJs();
+    }
+
+    /**
+     * @param  array<int, array<string, mixed>>  $records
+     */
+    protected function syncDomainRows(string $key, array $records, ?User $actor): void
+    {
+        $model = self::DOMAIN_MODELS[$key];
+        $allowed = self::WRITE_FIELDS[$key];
+
+        foreach ($records as $raw) {
+            if (! is_array($raw) || empty($raw['id'])) {
+                continue;
+            }
+
+            $data = $this->scopedDomainFields($key, $raw, $allowed, $actor, $model);
+
+            if ($data === null) {
+                continue;
+            }
+
+            $this->upsertDomainRow($key, $model, $data, $actor);
+        }
+    }
+
+    /**
+     * @return array<string, mixed>|null
+     */
+    protected function scopedDomainFields(string $key, array $raw, array $allowed, ?User $actor, string $model): ?array
+    {
+        // Audit logs carry their timestamp under "date" in the legacy client.
+        if ($key === 'auditLogs' && array_key_exists('date', $raw)) {
+            $raw['createdAt'] = $raw['date'];
+        }
+
+        $data = collect($raw)->only($allowed)->all();
+
+        if ($data === []) {
+            return null;
+        }
+
+        switch ($key) {
+            case 'enrollments':
+                if ($actor?->isAdmin()) {
+                    $current = $this->existingValue($model, $raw, 'status');
+                    if (isset($data['status']) && $data['status'] !== $current) {
+                        $data['reviewedAt'] = now();
+                        $data['reviewedBy'] = $actor->user_id;
+                    }
+                } else {
+                    $data['studentId'] = $actor?->user_id;
+                    if (($data['status'] ?? null) && ! in_array($data['status'], ['Draft', 'Submitted'], true)) {
+                        unset($data['status']);
+                    }
+                    $data = array_diff_key($data, array_flip(['assignedTeacherId', 'assignedSection', 'reviewNotes', 'rejectionReason', 'reviewedAt', 'reviewedBy']));
+                }
+                break;
+
+            case 'grades':
+                if ($actor?->isTeacher()) {
+                    $data['teacherId'] = $actor->user_id;
+                    $data['publishedBy'] = $data['published'] ? $actor->user_id : ($data['publishedBy'] ?? null);
+                }
+                break;
+
+            case 'competencies':
+                if ($actor?->isTeacher()) {
+                    $data['updatedBy'] = $actor->user_id;
+                }
+                break;
+
+            case 'documentRequests':
+                if (! $actor?->isAdmin()) {
+                    $data['studentId'] = $actor?->user_id;
+                    $data = array_diff_key($data, array_flip(['reviewNotes', 'rejectionReason', 'releaseMethod', 'releaseDate', 'reviewedAt', 'reviewedBy']));
+                }
+                break;
+
+            case 'requirements':
+                if (! $actor?->isAdmin()) {
+                    $data['studentId'] = $actor?->user_id;
+                }
+                break;
+
+            case 'notifications':
+                if (! $actor?->isAdmin()) {
+                    $data['userId'] = $actor?->user_id;
+                }
+                break;
+
+            case 'announcements':
+                if (! $actor?->isAdmin()) {
+                    $data['authorId'] = $actor?->user_id;
+                }
+                break;
+
+            case 'auditLogs':
+                $data['actorId'] = $actor?->user_id;
+                break;
+
+            case 'parentLinkRequests':
+                if ($actor?->isParent()) {
+                    $data['parentId'] = $actor->user_id;
+                    $data['status'] = 'Pending';
+                }
+                break;
+        }
+
+        return $data;
+    }
+
+    protected function existingValue(?string $model, array $raw, string $field): mixed
+    {
+        return $model::query()->find($raw['id'])?->{$field};
+    }
+
+    protected function upsertDomainRow(string $key, string $model, array $data, ?User $actor): void
+    {
+        if ($key !== 'auditLogs') {
+            $row = $model::query()->find($data['id']);
+
+            if ($row) {
+                $row->fill($data)->save();
+            } else {
+                $model::query()->create($data);
+            }
+        } else {
+            $this->upsertAuditLog($model, $data, $actor);
+        }
+
+        if ($key === 'parentLinkRequests' && $actor?->isAdmin() && strtolower((string) ($data['status'] ?? '')) === 'approved') {
+            $this->attachParentStudent($data['parentId'] ?? null, $data['studentId'] ?? null);
+        }
+    }
+
+    protected function upsertAuditLog(string $model, array $data, ?User $actor): void
+    {
+        $existing = $model::query()->find($data['id']);
+
+        if ($existing) {
+            $existing->fill(collect($data)->except('createdAt')->all());
+            $existing->actorId = $actor?->user_id ?? $existing->actorId;
+            $existing->save();
+        } else {
+            $data['createdAt'] = $data['createdAt'] ?? now();
+            $model::query()->create($data);
+        }
+    }
+
+    protected function attachParentStudent(?string $parentId, ?string $studentId): void
+    {
+        if (! $parentId || ! $studentId) {
+            return;
+        }
+
+        $parentKey = User::query()->where('user_id', $parentId)->value('id');
+        $studentKey = User::query()->where('user_id', $studentId)->value('id');
+
+        if ($parentKey && $studentKey) {
+            DB::table('parent_student')->updateOrInsert(
+                ['parent_id' => $parentKey, 'student_id' => $studentKey],
+                ['created_at' => now(), 'updated_at' => now()],
+            );
+        }
+    }
+
+    protected function canWriteCollection(?User $actor, string $key): bool
+    {
+        if (! $actor) {
+            return false;
+        }
+
+        return match ($actor->role) {
+            'admin' => true,
+            'teacher' => in_array($key, ['announcements', 'attendance', 'competencies', 'grades', 'notifications', 'auditLogs'], true),
+            'student' => in_array($key, ['documentRequests', 'enrollments', 'notifications', 'requirements', 'users', 'auditLogs'], true),
+            'parent' => in_array($key, ['notifications', 'parentLinkRequests', 'users', 'auditLogs'], true),
+            default => false,
+        };
+    }
+
+    protected function serializeDomain(string $key, Model $row): array
+    {
+        return match ($key) {
+            'enrollments' => [
+                'id' => $row->id,
+                'studentId' => $row->studentId,
+                'status' => $row->status,
+                'programType' => $row->programType,
+                'gradeLevel' => $row->gradeLevel,
+                'strand' => $row->strand,
+                'track' => $row->track,
+                'schoolYear' => $row->schoolYear,
+                'trainingLevel' => $row->trainingLevel,
+                'assignedTeacherId' => $row->assignedTeacherId,
+                'assignedSection' => $row->assignedSection,
+                'reviewNotes' => $row->reviewNotes,
+                'rejectionReason' => $row->rejectionReason,
+                'reviewedAt' => $this->dateToIso($row->reviewedAt),
+                'reviewedBy' => $row->reviewedBy,
+                'createdAt' => $this->dateToIso($row->created_at),
+                'updatedAt' => $this->dateToIso($row->updated_at),
+            ],
+            'grades' => [
+                'id' => $row->id,
+                'studentId' => $row->studentId,
+                'subject' => $row->subject,
+                'teacher' => $row->teacherUserId?->firstName.($row->teacherUserId?->lastName !== null ? ' '.$row->teacherUserId->lastName : ''),
+                'teacherId' => $row->teacherId,
+                'grade' => $row->grade !== null ? (float) $row->grade : null,
+                'remarks' => $row->remarks,
+                'term' => $row->term,
+                'period' => $row->period,
+                'published' => (bool) $row->published,
+                'publishedAt' => $this->dateToIso($row->publishedAt),
+                'publishedBy' => $row->publishedBy,
+                'notes' => $row->notes,
+                'updatedBy' => $row->updatedBy,
+                'createdAt' => $this->dateToIso($row->created_at),
+                'updatedAt' => $this->dateToIso($row->updated_at),
+            ],
+            'attendance' => [
+                'id' => $row->id,
+                'studentId' => $row->studentId,
+                'date' => $this->dateToString($row->date),
+                'status' => $row->status,
+                'remarks' => $row->remarks,
+                'createdAt' => $this->dateToIso($row->created_at),
+                'updatedAt' => $this->dateToIso($row->updated_at),
+            ],
+            'documentRequests' => [
+                'id' => $row->id,
+                'studentId' => $row->studentId,
+                'documentType' => $row->documentType,
+                'purpose' => $row->purpose,
+                'copies' => (int) $row->copies,
+                'notes' => $row->notes,
+                'status' => $row->status,
+                'requestDate' => $this->dateToIso($row->requestDate),
+                'reviewNotes' => $row->reviewNotes,
+                'rejectionReason' => $row->rejectionReason,
+                'releaseMethod' => $row->releaseMethod,
+                'releaseDate' => $this->dateToIso($row->releaseDate),
+                'reviewedAt' => $this->dateToIso($row->reviewedAt),
+                'reviewedBy' => $row->reviewedBy,
+                'createdBy' => $row->createdBy,
+                'createdAt' => $this->dateToIso($row->created_at),
+                'updatedAt' => $this->dateToIso($row->updated_at),
+            ],
+            'requirements' => [
+                'id' => $row->id,
+                'studentId' => $row->studentId,
+                'name' => $row->name,
+                'type' => $row->type,
+                'status' => $row->status,
+                'dueDate' => $this->dateToString($row->dueDate),
+                'submittedAt' => $this->dateToIso($row->submittedAt),
+                'notes' => $row->notes,
+                'createdAt' => $this->dateToIso($row->created_at),
+                'updatedAt' => $this->dateToIso($row->updated_at),
+            ],
+            'competencies' => [
+                'id' => $row->id,
+                'studentId' => $row->studentId,
+                'competency' => $row->competency,
+                'qualification' => $row->qualification,
+                'status' => $row->status,
+                'assessmentDate' => $this->dateToString($row->assessmentDate),
+                'assessor' => $row->assessor,
+                'evidence' => $row->evidence,
+                'remarks' => $row->remarks,
+                'createdBy' => $row->createdBy,
+                'updatedBy' => $row->updatedBy,
+                'createdAt' => $this->dateToIso($row->created_at),
+                'updatedAt' => $this->dateToIso($row->updated_at),
+            ],
+            'notifications' => [
+                'id' => $row->id,
+                'userId' => $row->userId,
+                'title' => $row->title,
+                'message' => $row->message,
+                'read' => (bool) $row->read,
+                'source' => $row->source,
+                'recordId' => $row->recordId,
+                'date' => $this->dateToIso($row->created_at),
+                'createdAt' => $this->dateToIso($row->created_at),
+                'updatedAt' => $this->dateToIso($row->updated_at),
+            ],
+            'announcements' => [
+                'id' => $row->id,
+                'title' => $row->title,
+                'message' => $row->message,
+                'category' => $row->category,
+                'audience' => $row->audience,
+                'authorId' => $row->authorId,
+                'createdAt' => $this->dateToIso($row->created_at),
+                'updatedAt' => $this->dateToIso($row->updated_at),
+            ],
+            'auditLogs' => [
+                'id' => $row->id,
+                'entity' => $row->entity,
+                'recordId' => $row->recordId,
+                'action' => $row->action,
+                'from' => $row->from,
+                'to' => $row->to,
+                'notes' => $row->notes,
+                'reason' => $row->reason,
+                'actorId' => $row->actorId,
+                'date' => $this->dateToIso($row->createdAt),
+                'createdAt' => $this->dateToIso($row->createdAt),
+            ],
+            'parentLinkRequests' => [
+                'id' => $row->id,
+                'parentId' => $row->parentId,
+                'studentId' => $row->studentId,
+                'status' => $row->status,
+                'reviewedAt' => $this->dateToIso($row->reviewedAt),
+                'reviewedBy' => $row->reviewedBy,
+                'createdAt' => $this->dateToIso($row->created_at),
+                'updatedAt' => $this->dateToIso($row->updated_at),
+            ],
+            default => $row->toArray(),
+        };
+    }
+
+    protected function publicPhotoUrl(string $path): string
+    {
+        if (Str::startsWith($path, ['http://', 'https://'])) {
+            return $path;
+        }
+
+        return asset('storage/'.ltrim($path, '/'));
+    }
+
+    protected function dateToIso(mixed $value): ?string
+    {
+        if ($value instanceof DateTimeInterface) {
+            return $value->toIso8601String();
+        }
+
+        return is_string($value) && $value !== '' ? $value : null;
+    }
+
+    protected function dateToString(mixed $value): ?string
+    {
+        if ($value instanceof DateTimeInterface) {
+            return $value->format('Y-m-d');
+        }
+
+        return is_string($value) && $value !== '' ? substr($value, 0, 10) : null;
     }
 }

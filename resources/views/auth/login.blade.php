@@ -103,11 +103,6 @@
                                 class="input mt-1 w-full rounded-xl border px-3 py-3">
                         </label>
 
-                        <label id="rolePasswordContainer" class="block text-sm font-medium hidden">
-                            Role Password
-                            <input type="password" name="rolePassword" id="rolePassword"
-                                class="input mt-1 w-full rounded-xl border px-3 py-3">
-                        </label>
 
                         @if (session('success'))
                             <div class="rounded-xl bg-emerald-50 border border-emerald-200 p-3 text-sm text-emerald-700">{{ session('success') }}</div>
@@ -162,21 +157,6 @@
 
             roleSelect.addEventListener('change', updateUserIdPlaceholder);
             updateUserIdPlaceholder();
-            const role = document.getElementById('role'); 
-            const rolePasswordContainer = document.getElementById('rolePasswordContainer'); 
-            const rolePassword = document.getElementById('rolePassword'); 
-            function updateRolePassword() { 
-                const selectedRole = role.value.toLowerCase(); 
-                if (selectedRole === 'admin' || selectedRole === 'teacher') { 
-                    rolePasswordContainer.classList.remove('hidden'); 
-                    rolePassword.required = true; 
-                } else { 
-                    rolePasswordContainer.classList.add('hidden'); 
-                    rolePassword.required = false; 
-                    rolePassword.value = '';
-                } 
-            } role.addEventListener('change', updateRolePassword); 
-            updateRolePassword();
 });
     </script>
 </body>

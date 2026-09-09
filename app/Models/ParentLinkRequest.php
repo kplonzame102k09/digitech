@@ -5,26 +5,23 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
-class Requirement extends Model
+class ParentLinkRequest extends Model
 {
     use HasFactory;
 
     protected $fillable = [
         'id',
+        'parentId',
         'studentId',
-        'name',
-        'type',
         'status',
-        'dueDate',
-        'submittedAt',
-        'notes',
+        'reviewedAt',
+        'reviewedBy',
         'createdAt',
         'updatedAt',
     ];
 
     protected $casts = [
-        'dueDate' => 'date',
-        'submittedAt' => 'datetime',
+        'reviewedAt' => 'datetime',
         'createdAt' => 'datetime',
         'updatedAt' => 'datetime',
     ];
@@ -35,26 +32,28 @@ class Requirement extends Model
 
     const PENDING = 'Pending';
 
-    const SUBMITTED = 'Submitted';
-
     const APPROVED = 'Approved';
 
     const REJECTED = 'Rejected';
 
     public static $statuses = [
         self::PENDING,
-        self::SUBMITTED,
         self::APPROVED,
         self::REJECTED,
     ];
+
+    public function parent()
+    {
+        return $this->belongsTo(User::class, 'parentId', 'user_id');
+    }
 
     public function student()
     {
         return $this->belongsTo(User::class, 'studentId', 'user_id');
     }
 
-    public function isOverdue()
+    public function reviewer()
     {
-        return $this->status === self::PENDING && $this->dueDate && $this->dueDate->isPast();
+        return $this->belongsTo(User::class, 'reviewedBy', 'user_id');
     }
 }

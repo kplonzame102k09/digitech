@@ -27,7 +27,6 @@ class User extends Authenticatable
         'email',
         'username',
         'password',
-        'rolePassword',
         'photo',
         'strand',
         'address',
@@ -43,7 +42,6 @@ class User extends Authenticatable
 
     protected $hidden = [
         'password',
-        'rolePassword',
         'remember_token',
     ];
 
@@ -55,7 +53,6 @@ class User extends Authenticatable
             'profile_extra' => 'array',
             'mustChangePassword' => 'boolean',
             'password' => 'hashed',
-            'rolePassword' => 'hashed',
         ];
     }
 
@@ -90,18 +87,16 @@ class User extends Authenticatable
             return collect();
         }
 
-        $childIds = $this->childIds ?? [];
+        return $this->belongsToMany(User::class, 'parent_student', 'parent_id', 'student_id');
+    }
 
-        if ($this->childId) {
-            $childIds[] = $this->childId;
-        }
+    public function parentLinks()
+    {
+        return $this->belongsToMany(User::class, 'parent_student', 'student_id', 'parent_id');
+    }
 
-        $childIds = array_values(array_unique(array_filter($childIds)));
-
-        if ($childIds === []) {
-            return collect();
-        }
-
-        return self::query()->whereIn('user_id', $childIds)->get();
+    public function studentLinks()
+    {
+        return $this->belongsToMany(User::class, 'parent_student', 'parent_id', 'student_id');
     }
 }

@@ -183,25 +183,12 @@
                                     <option value="student" @selected(old('role') === 'student')>
                                         Student
                                     </option>
-                                    <option value="teacher" @selected(old('role') === 'teacher')>
-                                        Teacher
-                                    </option>
                                     <option value="parent" @selected(old('role') === 'parent')>
                                         Parent
-                                    </option>
-                                    <option value="guest" @selected(old('role') === 'guest')>
-                                        Guest
                                     </option>
                                 </select>
                             </label>
                         </div>
-                        <!-- Role Password -->
-                        <label id="rolePasswordContainer"
-                            class="mt-3 hidden block text-[11px] font-medium text-slate-700">
-                            Role Password
-                            <input type="password" required name="rollPassword" id="rolePassword"
-                                class="mt-1 w-full rounded-lg border border-slate-200 bg-white px-3 py-2.5 text-xs outline-none transition focus:border-green-500 focus:ring-2 focus:ring-green-100">
-                        </label>
                         <!-- Student Information -->
                         <div class="mb-5 mt-7">
                             <div class="flex items-center gap-3">
@@ -392,19 +379,6 @@
                     console.error('Failed to load barangays:', error);
                 }
             });
-            const role = document.getElementById('role');
-            const rolePasswordContainer = document.getElementById('rolePasswordContainer');
-            const rolePassword = document.getElementById('rolePassword');
-            function updateRolePassword() {
-                if (role.value === 'admin' || role.value === 'teacher') {
-                    rolePasswordContainer.classList.remove('hidden'); rolePassword.required = true;
-                } else {
-                    rolePasswordContainer.classList.add('hidden');
-                    rolePassword.required = false;
-                    rolePassword.value = '';
-                }
-            } role.addEventListener('change', updateRolePassword);
-            updateRolePassword();
         });
     </script>
 </body>
