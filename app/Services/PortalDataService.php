@@ -257,6 +257,27 @@ class PortalDataService
             $user = User::query()->where('user_id', $portalId)->first();
             $fields = $this->userFields($raw, $user, $portalId);
 
+            // Check for duplicate email/username with different user
+            if (! empty($fields['email'])) {
+                $existingEmail = User::query()
+                    ->where('email', $fields['email'])
+                    ->where('id', '!=', $user?->id)
+                    ->first();
+                if ($existingEmail) {
+                    unset($fields['email']);
+                }
+            }
+
+            if (! empty($fields['username'])) {
+                $existingUsername = User::query()
+                    ->where('username', $fields['username'])
+                    ->where('id', '!=', $user?->id)
+                    ->first();
+                if ($existingUsername) {
+                    unset($fields['username']);
+                }
+            }
+
             if (! empty($raw['password'])) {
                 $fields['password'] = $raw['password'];
             } elseif (! $user) {

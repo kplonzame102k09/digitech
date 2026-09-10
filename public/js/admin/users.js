@@ -8,6 +8,8 @@
   let users = [];
   let selected = new Set();
   let editingId = null;
+  let currentPage = 1;
+  const itemsPerPage = 10;
 
   const get = (key, fallback = []) => DG.getData(key, fallback);
   const save = (key, value) => DG.saveData(key, value);
@@ -47,7 +49,7 @@
   };
   const roleLabel = (role) =>
     ({
-      admin: "Admin",
+      admin: "Administrator",
       teacher: "Teacher",
       student: "Student",
       parent: "Parent",
@@ -124,13 +126,24 @@
     const container = $("#rows");
     container?.replaceChildren();
     const visible = visibleUsers();
+    const totalPages = Math.ceil(visible.length / itemsPerPage);
+    
+    // Reset to page 1 if current page exceeds total pages
+    if (currentPage > totalPages && totalPages > 0) {
+      currentPage = 1;
+    }
+    
+    const startIndex = (currentPage - 1) * itemsPerPage;
+    const endIndex = startIndex + itemsPerPage;
+    const paginatedUsers = visible.slice(startIndex, endIndex);
+    
     setText("#resultCount", `${visible.length} of ${users.length} accounts`);
     setText(
       "#selectionCount",
       selected.size ? `${selected.size} selected` : "",
     );
     $("#emptyState")?.classList.toggle("hidden", visible.length > 0);
-    visible.forEach((user) => {
+    paginatedUsers.forEach((user) => {
       const row = clone("userRowTemplate");
       if (!row) return;
       const checkbox = $("[data-select-user]", row);
@@ -182,17 +195,99 @@
       );
       container?.append(row);
     });
-    const visibleIds = new Set(visible.map((user) => user.id));
+    const visibleIds = new Set(paginatedUsers.map((user) => user.id));
     const allVisibleSelected =
-      visible.length > 0 && visible.every((user) => selected.has(user.id));
+      paginatedUsers.length > 0 && paginatedUsers.every((user) => selected.has(user.id));
     const selectAll = $("#selectAll");
     if (selectAll) {
       selectAll.checked = allVisibleSelected;
       selectAll.indeterminate =
-        !allVisibleSelected && visible.some((user) => selected.has(user.id));
+        !allVisibleSelected && paginatedUsers.some((user) => selected.has(user.id));
     }
-    $("[data-bulk-toggle]")?.classList.toggle("hidden", selected.size === 0);
+    $("#bulkActions")?.classList.toggle("hidden", selected.size === 0);
+    
+    // Update delete button state
+    if (selected.size > 0) {
+      updateBulkDeleteButton();
+    }
+    
+    // Render pagination controls
+    renderPagination(totalPages, visible.length);
+    
     lucide.createIcons();
+  }
+
+  function renderPagination(totalPages, totalItems) {
+    const paginationContainer = $("#paginationContainer");
+    if (!paginationContainer) return;
+    
+    paginationContainer.replaceChildren();
+    
+    if (totalPages <= 1) {
+      paginationContainer.classList.add("hidden");
+      return;
+    }
+    
+    paginationContainer.classList.remove("hidden");
+    
+    const startItem = (currentPage - 1) * itemsPerPage + 1;
+    const endItem = Math.min(currentPage * itemsPerPage, totalItems);
+    
+    // Info text
+    const info = document.createElement("span");
+    info.className = "text-xs text-slate-500";
+    info.textContent = `Showing ${startItem}-${endItem} of ${totalItems}`;
+    paginationContainer.appendChild(info);
+    
+    // Previous button
+    const prevButton = document.createElement("button");
+    prevButton.className = "ml-2 rounded-lg border border-slate-200 px-3 py-1.5 text-xs font-medium text-slate-600 hover:bg-slate-50 disabled:opacity-50 disabled:cursor-not-allowed dark:border-slate-700 dark:text-slate-400 dark:hover:bg-slate-800";
+    prevButton.disabled = currentPage === 1;
+    prevButton.innerHTML = '<i data-lucide="chevron-left" class="h-3 w-3"></i>';
+    prevButton.addEventListener("click", () => {
+      if (currentPage > 1) {
+        currentPage--;
+        render();
+      }
+    });
+    paginationContainer.appendChild(prevButton);
+    
+    // Page numbers
+    const maxVisiblePages = 5;
+    let startPage = Math.max(1, currentPage - Math.floor(maxVisiblePages / 2));
+    let endPage = Math.min(totalPages, startPage + maxVisiblePages - 1);
+    
+    if (endPage - startPage + 1 < maxVisiblePages) {
+      startPage = Math.max(1, endPage - maxVisiblePages + 1);
+    }
+    
+    for (let i = startPage; i <= endPage; i++) {
+      const pageButton = document.createElement("button");
+      pageButton.className = `mx-1 rounded-lg px-3 py-1.5 text-xs font-medium ${
+        i === currentPage 
+          ? "bg-green-600 text-white" 
+          : "border border-slate-200 text-slate-600 hover:bg-slate-50 dark:border-slate-700 dark:text-slate-400 dark:hover:bg-slate-800"
+      }`;
+      pageButton.textContent = i;
+      pageButton.addEventListener("click", () => {
+        currentPage = i;
+        render();
+      });
+      paginationContainer.appendChild(pageButton);
+    }
+    
+    // Next button
+    const nextButton = document.createElement("button");
+    nextButton.className = "ml-2 rounded-lg border border-slate-200 px-3 py-1.5 text-xs font-medium text-slate-600 hover:bg-slate-50 disabled:opacity-50 disabled:cursor-not-allowed dark:border-slate-700 dark:text-slate-400 dark:hover:bg-slate-800";
+    nextButton.disabled = currentPage === totalPages;
+    nextButton.innerHTML = '<i data-lucide="chevron-right" class="h-3 w-3"></i>';
+    nextButton.addEventListener("click", () => {
+      if (currentPage < totalPages) {
+        currentPage++;
+        render();
+      }
+    });
+    paginationContainer.appendChild(nextButton);
   }
 
   function fillParentLinks() {
@@ -421,6 +516,7 @@
     save(usersKey, users);
     $("#userDialog")?.close();
     APP.toast(editingId ? "User updated" : "User created");
+    currentPage = 1;
     render();
   }
 
@@ -505,6 +601,7 @@
     save(usersKey, users);
     selected.delete(user.id);
     APP.toast("User deleted");
+    currentPage = 1;
     render();
   }
   function handleAction(action, user) {
@@ -514,25 +611,83 @@
     if (action === "reset") resetPassword(user);
     if (action === "delete") deleteUser(user);
   }
-  function bulkAction() {
-    if (!selected.size) return;
-    const action = window
-      .prompt(
-        "Type activate or deactivate to update selected accounts:",
-        "deactivate",
-      )
-      ?.toLowerCase();
-    if (!["activate", "deactivate"].includes(action)) return;
+
+  function updateBulkDeleteButton() {
+    const selectedUsers = users.filter(user => selected.has(user.id) && user.id !== currentUser.id);
+    const usersWithRecords = selectedUsers.filter(user => relatedCount(user) > 0);
+    const deleteButton = $("[data-bulk-delete]");
+    
+    if (deleteButton) {
+      if (usersWithRecords.length > 0) {
+        deleteButton.disabled = true;
+        deleteButton.classList.add("opacity-50", "cursor-not-allowed");
+        deleteButton.title = `${usersWithRecords.length} account${usersWithRecords.length !== 1 ? 's' : ''} have related records`;
+      } else {
+        deleteButton.disabled = false;
+        deleteButton.classList.remove("opacity-50", "cursor-not-allowed");
+        deleteButton.title = "";
+      }
+    }
+  }
+
+  function bulkActivate() {
     users.forEach((user) => {
       if (selected.has(user.id) && user.id !== currentUser.id)
-        user.status = action === "activate" ? "active" : "inactive";
+        user.status = "active";
     });
     save(usersKey, users);
     selected.clear();
-    APP.toast(`Selected accounts ${action}d`);
+    APP.toast("Selected accounts activated");
+    currentPage = 1;
+    render();
+  }
+
+  function bulkDeactivate() {
+    users.forEach((user) => {
+      if (selected.has(user.id) && user.id !== currentUser.id)
+        user.status = "inactive";
+    });
+    save(usersKey, users);
+    selected.clear();
+    APP.toast("Selected accounts deactivated");
+    currentPage = 1;
+    render();
+  }
+
+  function bulkDelete() {
+    const selectedUsers = users.filter(user => selected.has(user.id) && user.id !== currentUser.id);
+    
+    // Check for users with related records
+    const usersWithRecords = selectedUsers.filter(user => relatedCount(user) > 0);
+    
+    if (usersWithRecords.length > 0) {
+      APP.toast(
+        `${usersWithRecords.length} account${usersWithRecords.length !== 1 ? 's' : ''} cannot be deleted due to related records. Please deactivate them instead.`,
+        "error"
+      );
+      return;
+    }
+    
+    if (selectedUsers.length === 0) {
+      APP.toast("No eligible accounts to delete", "error");
+      return;
+    }
+    
+    if (!window.confirm(
+      `Delete ${selectedUsers.length} account${selectedUsers.length !== 1 ? 's' : ''}? This action cannot be undone.`
+    )) {
+      return;
+    }
+    
+    users = users.filter(user => !selected.has(user.id) || user.id === currentUser.id);
+    save(usersKey, users);
+    selected.clear();
+    APP.toast(`${selectedUsers.length} account${selectedUsers.length !== 1 ? 's' : ''} deleted`);
+    currentPage = 1;
     render();
   }
   function exportUsers() {
+    const visible = visibleUsers();
     const rows = [
       [
         "Name",
@@ -544,7 +699,7 @@
         "Contact",
         "Program / Strand",
       ],
-      ...visibleUsers().map((user) => [
+      ...visible.map((user) => [
         fullName(user),
         user.id,
         roleLabel(user.role),
@@ -569,7 +724,7 @@
     link.download = "digitech-users.csv";
     link.click();
     URL.revokeObjectURL(link.href);
-    APP.toast("CSV export downloaded");
+    APP.toast(`CSV export downloaded (${visible.length} users)`);
   }
 function generateUserId(role, existingUsers) {
   const prefix =
@@ -595,12 +750,17 @@ function generateUserId(role, existingUsers) {
 }
 
   async function queueUserImport(importedUsers) {
+    const csrfToken = document.querySelector('meta[name="csrf-token"]')?.content;
+    if (!csrfToken) {
+      throw new Error("CSRF token not found");
+    }
+
     const response = await fetch("/api/portal/users/import", {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
         Accept: "application/json",
-        "X-CSRF-TOKEN": document.querySelector('meta[name="csrf-token"]')?.content || "",
+        "X-CSRF-TOKEN": csrfToken,
         "X-Requested-With": "XMLHttpRequest",
       },
       credentials: "same-origin",
@@ -653,11 +813,11 @@ function importUsers() {
   input.accept = ".csv,text/csv";
 
   const FIELD_ALIASES = {
-    id: ["id", "userid", "user_id", "user-id"],
-    name: ["name", "fullname", "full_name", "names", "fullnames"],
-    firstname: ["firstname", "first_name", "first", "givenname", "given_name"],
-    middlename: ["middlename", "middle_name", "middle"],
-    lastname: ["lastname", "last_name", "last", "familyname", "surname"],
+    // id: ["id", "userid", "user_id", "user-id", "userId"],
+    name: ["name", "fullname", "full_name", "names", "fullnames", "fullName", "FullName",],
+    firstname: ["firstname", "first_name", "first", "givenname", "given_name", "firstName"],
+    middlename: ["middlename", "middle_name", "middle", "middleName"],
+    lastname: ["lastname", "last_name", "last", "familyname", "surname", "lastName"],
     role: ["role", "type", "userrole", "account_type"],
     email: ["email", "emailaddress", "email_address"],
     status: ["status", "accountstatus", "account_status"],
@@ -666,6 +826,8 @@ function importUsers() {
     username: ["username", "user_name", "login"],
     strand: ["strand", "program", "track", "programstrand", "strandprogram"],
     address: ["address", "homeaddress", "home_address"],
+    createdAt: ["created_at", "createdAt"],
+    updatedAt: ["updatedAt", "updated_at"],
   };
 
   const normalizeRole = (value) => {
@@ -717,7 +879,6 @@ function importUsers() {
         return;
       }
 
-      // Parse CSV (handles quoted values and empty fields)
       const parseCsvLine = (line) => {
         const values = [];
         let current = "";
@@ -749,7 +910,6 @@ function importUsers() {
       };
       const rows = lines.map(parseCsvLine);
 
-      // Map CSV headers onto canonical field names, tolerating aliases
       const colIndex = {};
       rows[0].forEach((header, index) => {
         const key = header
@@ -784,8 +944,6 @@ function importUsers() {
         const csvId = cell(row, "id");
         const password = cell(row, "password");
 
-        // Split a single full-name column (e.g. "Kim Philip Lonzame") into
-        // first / middle / last when separate name columns are absent.
         if ((!firstName || !lastName) && cell(row, "name")) {
           const parts = cell(row, "name").trim().split(/\s+/);
           if (parts.length) {
@@ -799,8 +957,6 @@ function importUsers() {
             }
           }
         }
-
-        // Skip rows that carry no usable information at all
         if (
           !firstName &&
           !lastName &&
@@ -813,14 +969,12 @@ function importUsers() {
           return;
         }
 
-        // Use CSV User ID if provided, otherwise generate one
         let userId = csvId;
         if (!userId) {
-          userId = DG.generateUserId(role);
+          userId = generateUserId(role, users);
           generatedCount++;
         }
 
-        // Create user object; omit empty values so the server applies defaults
         const newUser = {
           id: userId,
           role: role,
@@ -832,7 +986,7 @@ function importUsers() {
         if (lastName) newUser.lastName = lastName;
         if (middleName) newUser.middleName = middleName;
         if (email) newUser.email = email;
-        if (password.length >= 6) newUser.password = password;
+        if (password && password.length >= 6) newUser.password = password;
         if (cell(row, "contact")) newUser.contact = cell(row, "contact");
         if (cell(row, "username")) newUser.username = cell(row, "username");
         if (cell(row, "strand")) newUser.strand = cell(row, "strand");
@@ -866,6 +1020,9 @@ function importUsers() {
 
       queueUserImport(importedUsers)
         .then((result) => {
+          if (!result || !result.ok || !result.batchId) {
+            throw new Error("Invalid server response");
+          }
           APP.toast(
             `${result.users} users queued for import` +
               ` (names from ${nameSource})` +
@@ -903,12 +1060,17 @@ function importUsers() {
     $$("[data-logout]").forEach((button) =>
       button.addEventListener("click", () => AUTH.logout()),
     );
-    $("#q")?.addEventListener("input", render);
-    $("#filter")?.addEventListener("change", render);
-    $("#statusFilter")?.addEventListener("change", render);
-    $("#sortBy")?.addEventListener("change", render);
+    $("#q")?.addEventListener("input", () => { currentPage = 1; render(); });
+    $("#filter")?.addEventListener("change", () => { currentPage = 1; render(); });
+    $("#statusFilter")?.addEventListener("change", () => { currentPage = 1; render(); });
+    $("#sortBy")?.addEventListener("change", () => { currentPage = 1; render(); });
     $("#selectAll")?.addEventListener("change", (event) => {
-      visibleUsers().forEach((user) => {
+      const visible = visibleUsers();
+      const startIndex = (currentPage - 1) * itemsPerPage;
+      const endIndex = startIndex + itemsPerPage;
+      const paginatedUsers = visible.slice(startIndex, endIndex);
+      
+      paginatedUsers.forEach((user) => {
         if (user.id !== currentUser.id) {
           if (event.target.checked) selected.add(user.id);
           else selected.delete(user.id);
@@ -919,7 +1081,11 @@ function importUsers() {
     $("[data-create-user]")?.addEventListener("click", () => openEditor());
     $("[data-import-users]")?.addEventListener("click", importUsers);
     $("[data-export-users]")?.addEventListener("click", exportUsers);
-    $("[data-bulk-toggle]")?.addEventListener("click", bulkAction);
+    
+    // Bulk action icon button listeners
+    $("[data-bulk-activate]")?.addEventListener("click", bulkActivate);
+    $("[data-bulk-deactivate]")?.addEventListener("click", bulkDeactivate);
+    $("[data-bulk-delete]")?.addEventListener("click", bulkDelete);
     $("#userForm")?.addEventListener("submit", saveUser);
     $("#role")?.addEventListener("change", syncParentField);
     $("#region")?.addEventListener("change", async (event) => {

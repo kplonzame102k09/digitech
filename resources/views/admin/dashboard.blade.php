@@ -19,7 +19,7 @@
         @include('admin.components.header')
             <main class="p-4 sm:p-6 lg:p-8">
                 <div class="mx-auto max-w-7xl">
-                    <section class="mb-7 student-hero mb-7 p-6 sm:p-8">
+                    <section class="student-hero mb-7 p-6 sm:p-8">
                         <p class="text-sm font-semibold text-purple-600">Administration</p>
                         <h2 class="mt-1 text-3xl font-bold tracking-tight">
                             System Overview
