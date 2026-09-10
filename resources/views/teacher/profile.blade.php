@@ -1,7 +1,7 @@
 @include('partials.profile-page', [
     'role' => 'teacher',
     'heroClass' => 'teacher-hero',
-    'eyebrowClass' => 'text-emerald-600',
+    'eyebrowClass' => 'text-emerald-300',
     'heroTitle' => 'Your teacher profile',
     'heroIntro' => 'Keep your faculty details current so students and administrators see the right contact information.',
     'saveButtonClass' => 'bg-emerald-600 hover:bg-emerald-700',

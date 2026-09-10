@@ -26,7 +26,7 @@
         @include($role.'.components.header', ['title' => $headerTitle ?? null, 'subtitle' => $headerSubtitle ?? null])
         <main class="p-4 sm:p-6 lg:p-8">
             <div class="mx-auto max-w-5xl">
-                <section class="{{ $heroClass }} mb-7 p-6 sm:p-8">
+                <section class="{{ $heroClass }} mb-7 overflow-hidden rounded-3xl p-6 text-white shadow-xl sm:p-8">
                     <p class="text-xs font-bold uppercase tracking-[0.18em] {{ $eyebrowClass }}">Account settings</p>
                     <h2 class="mt-2 text-3xl font-extrabold tracking-tight">{{ $heroTitle }}</h2>
                     <p class="mt-2 max-w-2xl text-white">{{ $heroIntro }}</p>

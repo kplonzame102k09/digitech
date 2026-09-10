@@ -334,6 +334,9 @@
     wireShell();
 $("#profileForm")?.addEventListener("submit", saveDetails);
       $("#passwordForm")?.addEventListener("submit", changePassword);
+      $$("[data-theme-toggle]").forEach((button) =>
+        button.addEventListener("click", () => APP?.toggleTheme?.())
+      );
       APP?.applyTheme?.();
       APP?.updateNotif?.();
       DG.loadProfileElements();
