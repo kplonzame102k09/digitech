@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Authentication;
 
 use App\Http\Controllers\Controller;
 use App\Http\Requests\AuthenticateUserRequest;
+use App\Models\AuditLog;
 use App\Models\User;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -49,6 +50,14 @@ class LoginController extends Controller
         Auth::login($user);
         $request->session()->regenerate();
 
+        AuditLog::record([
+            'entity' => AuditLog::ENTITY_USER,
+            'recordId' => $user->user_id,
+            'action' => 'login',
+            'notes' => trim($user->firstName.' '.$user->lastName).' signed in to the portal.',
+            'actorId' => $user->user_id,
+        ]);
+
         if ($user->mustChangePassword) {
             return redirect()->route('auth.password.change');
         }
@@ -66,6 +75,18 @@ class LoginController extends Controller
 
     public function logout(Request $request): RedirectResponse
     {
+        $user = $request->user();
+
+        if ($user) {
+            AuditLog::record([
+                'entity' => AuditLog::ENTITY_USER,
+                'recordId' => $user->user_id,
+                'action' => 'logout',
+                'notes' => trim($user->firstName.' '.$user->lastName).' signed out of the portal.',
+                'actorId' => $user->user_id,
+            ]);
+        }
+
         Auth::logout();
         $request->session()->invalidate();
         $request->session()->regenerateToken();

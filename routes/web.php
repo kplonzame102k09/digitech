@@ -1,6 +1,8 @@
 <?php
 
+use App\Http\Controllers\AccountController;
 use App\Http\Controllers\AddressController;
+use App\Http\Controllers\Admin\ProfileController as AdminProfileController;
 use App\Http\Controllers\Authentication\LoginController;
 use App\Http\Controllers\Authentication\PasswordController;
 use App\Http\Controllers\PortalDataController;
@@ -33,6 +35,9 @@ Route::middleware('auth')->prefix('api/portal')->group(function () {
     Route::get('/users/import/{batchId}', [PortalDataController::class, 'importStatus']);
     Route::post('/photo', [PortalDataController::class, 'uploadPhoto']);
     Route::post('/uploads', [PortalDataController::class, 'uploadImage']);
+    Route::post('/requirements/upload', [PortalDataController::class, 'uploadRequirementFile']);
+    Route::get('/account/activity', [AccountController::class, 'activity']);
+    Route::post('/account/password', [AccountController::class, 'changePassword']);
     Route::get('/{key}', [PortalDataController::class, 'show']);
     Route::put('/{key}', [PortalDataController::class, 'update']);
 });
@@ -49,6 +54,10 @@ Route::middleware(['auth', 'password.updated', 'role:admin'])->prefix('admin')->
     Route::get('/attendance', fn () => view('admin.attendance'))->name('attendance');
     Route::get('/announcements', fn () => view('admin.announcements'))->name('announcements');
     Route::get('/parent-links', fn () => view('admin.parent-links'))->name('parent-links');
+    Route::get('/profile', fn () => view('admin.profile'))->name('profile');
+    Route::get('/api/profile', [AdminProfileController::class, 'show'])->name('api.profile.show');
+    Route::put('/api/profile', [AdminProfileController::class, 'update'])->name('api.profile.update');
+    Route::post('/api/profile/photo', [AdminProfileController::class, 'uploadPhoto'])->name('api.profile.photo');
 });
 
 Route::middleware(['auth', 'password.updated', 'role:student'])->prefix('student')->name('student.')->group(function () {

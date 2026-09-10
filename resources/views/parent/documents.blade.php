@@ -75,6 +75,7 @@
             <td data-document-date class="whitespace-nowrap p-4 text-slate-500 dark:text-slate-400"></td>
         </tr>
     </template>
+    @include('partials.portal-scripts', ['portalPage' => 'parent/parent.js'])
 </body>
 
 </html>

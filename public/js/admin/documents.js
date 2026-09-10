@@ -97,23 +97,14 @@
                 : value) === request.studentId,
           )),
     );
-    const notifications = get("notifications");
-    targets.forEach((user) =>
-      notifications.push({
-        id: DG.generateId("NOT"),
-        userId: user.id,
-        title: `Document ${status}`,
-        message:
-          message ||
-          `Your ${request.documentType || "document"} request ${request.id} is now ${status}.`,
-        date: new Date().toISOString(),
-        read: false,
-        source: "document",
-        documentId: request.id,
-      }),
+    APP.notifyUsers(
+      targets.map((user) => user.id),
+      `Document ${status}`,
+      message ||
+        `Your ${request.documentType || "document"} request ${request.id} is now ${status}.`,
+      "document",
+      request.id,
     );
-    save("notifications", notifications);
-    APP?.updateNotif?.();
   }
   function populateFilters() {
     const values = [
@@ -500,9 +491,6 @@
     APP.updateNotif();
     $("#open")?.addEventListener("click", () =>
       $("#side")?.classList.toggle("-translate-x-full"),
-    );
-    $$("[data-notifications]").forEach((button) =>
-      button.addEventListener("click", () => APP.showNotifications()),
     );
     $$("[data-theme-toggle]").forEach((button) =>
       button.addEventListener("click", () => APP.toggleTheme()),

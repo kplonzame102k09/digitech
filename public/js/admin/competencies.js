@@ -84,21 +84,13 @@
                 : value) === record.studentId,
           )),
     );
-    const notifications = get("notifications");
-    targets.forEach((user) =>
-      notifications.push({
-        id: DG.generateId("NOT"),
-        userId: user.id,
-        title,
-        message,
-        date: new Date().toISOString(),
-        read: false,
-        source: "competency",
-        competencyId: record.id,
-      }),
+    APP.notifyUsers(
+      targets.map((user) => user.id),
+      title,
+      message,
+      "competency",
+      record.id,
     );
-    save("notifications", notifications);
-    APP?.updateNotif?.();
   }
   function populateFilters() {
     const qualifications = [
@@ -490,9 +482,6 @@
     APP.updateNotif();
     $("#open")?.addEventListener("click", () =>
       $("#side")?.classList.toggle("-translate-x-full"),
-    );
-    $$("[data-notifications]").forEach((button) =>
-      button.addEventListener("click", () => APP.showNotifications()),
     );
     $$("[data-theme-toggle]").forEach((button) =>
       button.addEventListener("click", () => APP.toggleTheme()),

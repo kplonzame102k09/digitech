@@ -39,9 +39,9 @@
                             <h3 class="mt-1 text-xl font-extrabold">Record attendance</h3>
                             <p class="mt-1 text-sm text-slate-500">Create or correct a learner attendance record.</p>
                         </div>
-                        <button id="newAttendance" class="rounded-xl bg-emerald-600 px-4 py-2 text-sm font-semibold text-white">
+                        <!-- <button id="newAttendance" class="rounded-xl bg-emerald-600 px-4 py-2 text-sm font-semibold text-white">
                             New record
-                        </button>
+                        </button> -->
                     </div>
                     <div id="attendanceDialog" class="hidden rounded-xl border border-emerald-100 bg-emerald-50/60 p-4 dark:border-emerald-900 dark:bg-emerald-950/20">
                         <form id="attendanceForm" class="grid gap-3 md:grid-cols-6">
@@ -72,20 +72,25 @@
                             <h3 class="font-extrabold">Attendance history</h3>
                             <p class="text-xs text-slate-400">Review attendance records and remarks.</p>
                         </div>
-                        <button id="export" class="rounded-xl border px-4 py-2 text-sm font-semibold">
-                            Export CSV
-                        </button>
+                        <div class="flex items-center gap-2">
+                            <button id="newAttendance" class="rounded-xl bg-emerald-600 px-4 py-2 text-sm font-semibold text-white">
+                                New record
+                            </button>
+                            <button id="export" class="rounded-xl border px-4 py-2 text-sm font-semibold">
+                                Export CSV
+                            </button>
+                        </div>
                     </div>
                     <div class="overflow-x-auto">
                         <table class="w-full text-left text-sm">
-                            <thead class="bg-slate-50 dark:bg-slate-800">
+                            <thead class="bg-slate-50 text-[11px] font-semibold uppercase tracking-wider text-slate-500 dark:bg-slate-800 dark:text-slate-400">
                                 <tr>
-                                    <th class="p-4">Student</th>
-                                    <th class="p-4">Date</th>
-                                    <th class="p-4">Subject / session</th>
-                                    <th class="p-4">Status</th>
-                                    <th class="p-4">Remarks</th>
-                                    <th class="p-4">Action</th>
+                                    <th class="px-5 py-3.5">Student</th>
+                                    <th class="px-5 py-3.5">Date</th>
+                                    <th class="px-5 py-3.5">Subject / session</th>
+                                    <th class="px-5 py-3.5">Status</th>
+                                    <th class="px-5 py-3.5">Remarks</th>
+                                    <th class="px-5 py-3.5 text-right">Action</th>
                                 </tr>
                             </thead>
                             <tbody id="rows"></tbody>

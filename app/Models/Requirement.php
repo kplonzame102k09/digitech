@@ -18,6 +18,7 @@ class Requirement extends Model
         'dueDate',
         'submittedAt',
         'notes',
+        'fileUrl',
         'createdAt',
         'updatedAt',
     ];

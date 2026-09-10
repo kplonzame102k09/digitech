@@ -307,22 +307,15 @@
       const announcements = DG.getData("announcements", []);
       announcements.push(announcement);
       DG.saveData("announcements", announcements);
-      const notifications = DG.getData("notifications", []);
-      users
-        .filter((user) => audience === "all" || user.role === audience)
-        .forEach((user) =>
-          notifications.push({
-            id: DG.generateId("NOT"),
-            userId: user.id,
-            title,
-            message,
-            date: announcement.date,
-            read: false,
-            source: "announcement",
-            announcementId: announcement.id,
-          }),
-        );
-      DG.saveData("notifications", notifications);
+      APP.notifyUsers(
+        users
+          .filter((user) => audience === "all" || user.role === audience)
+          .map((user) => user.id),
+        title,
+        message,
+        "announcement",
+        announcement.id,
+      );
       const feedback = $("#announcementFeedback");
       if (feedback)
         feedback.textContent = `Published to ${audience === "all" ? "everyone" : `${audience}s`}.`;
@@ -353,9 +346,6 @@
     lucide.createIcons();
     $("#open")?.addEventListener("click", () =>
       $("#side")?.classList.toggle("-translate-x-full"),
-    );
-    $$("[data-notifications]").forEach((button) =>
-      button.addEventListener("click", () => APP.showNotifications()),
     );
     $$("[data-theme-toggle]").forEach((button) =>
       button.addEventListener("click", () => APP.toggleTheme()),

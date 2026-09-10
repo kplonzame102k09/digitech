@@ -1,91 +1,12 @@
-<!doctype html>
-<html>
-
-<head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width,initial-scale=1" />
-    <title>My Profile | Digitech College</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <script>
-        tailwind.config = { darkMode: "class" };
-    </script>
-    <script src="https://unpkg.com/lucide@latest"></script>
-    <link rel="stylesheet" href="{{ asset('css/custom.css') }}" />
-</head>
-
-<body data-guest-page="profile" class="student-portal min-h-screen bg-slate-50 text-slate-800 dark:bg-slate-950 dark:text-slate-100">
-    @include('guest.components.sidebar')
-    <div class="lg:pl-64">
-        @include('guest.components.header', ['subtitle' => 'Guest Portal', 'title' => 'My Profile'])
-        <main class="p-4 sm:p-6 lg:p-8">
-            <div class="mx-auto max-w-5xl">
-                <section class="mb-7 student-hero mb-7 p-6 sm:p-8">
-                    <p class="text-xs font-bold uppercase tracking-[0.18em] text-emerald-600">Account settings</p>
-                    <h2 class="mt-2 text-3xl font-extrabold tracking-tight">Your guest profile</h2>
-                    <p class="mt-2 max-w-2xl text-white">Keep your contact information current for college communication
-                        and document requests.</p>
-                </section>
-                <form id="profileForm" class="grid gap-6 lg:grid-cols-[0.8fr_1.2fr]">
-                    <section class="student-hero p-6 sm:p-7">
-                        <div class="relative z-10 flex flex-col items-center text-center">
-                            <div class="relative">
-                                <img id="bigAvatar" data-profile-photo
-                                    class="h-28 w-28 rounded-3xl border-4 border-white object-cover shadow-xl"
-                                    alt="Guest profile photo" />
-                                <label for="profilePhotoInput"
-                                    class="absolute -bottom-2 -right-2 inline-flex h-10 w-10 cursor-pointer items-center justify-center rounded-full bg-white text-emerald-700 shadow-lg transition hover:bg-emerald-50 focus-within:ring-2 focus-within:ring-white focus-within:ring-offset-2 focus-within:ring-offset-emerald-700"
-                                    title="Change profile photo">
-                                    <i data-lucide="camera" class="h-4 w-4"></i>
-                                    <span class="sr-only">Change profile photo</span>
-                                </label>
-                                <input id="profilePhotoInput" type="file" accept="image/jpeg,image/png,image/webp"
-                                    class="sr-only" />
-                            </div>
-                            <p class="mt-3 text-xs text-white/75">JPG, PNG, or WebP up to 2 MB</p>
-                            <h3 id="profileName" class="mt-5 text-xl font-extrabold"></h3>
-                            <p id="profileId" class="mt-1 font-mono text-xs text-emerald-100"></p>
-                            <p id="profileRole" class="mt-2 text-sm text-white/75"></p>
-                        </div>
-                        <div class="relative z-10 mt-8 border-t border-white/15 pt-5 text-sm text-white/80">
-                            <div class="flex gap-3"><i data-lucide="shield-check" class="h-4 w-4 shrink-0"></i>
-                                <p>Your identity is managed by the college.</p>
-                            </div>
-                        </div>
-                    </section>
-                    <section class="card p-6 sm:p-7">
-                        <div class="flex items-start gap-3 border-b border-slate-200 pb-5 dark:border-slate-700"><span
-                                class="flex h-10 w-10 items-center justify-center rounded-xl bg-blue-50 text-blue-600 dark:bg-blue-950/50 dark:text-blue-300"><i
-                                    data-lucide="contact"></i></span>
-                            <div>
-                                <h3 class="font-extrabold">Contact information</h3>
-                                <p class="mt-1 text-sm text-slate-500">Update the information the college may use to reach
-                                    you.</p>
-                            </div>
-                        </div>
-                        <div class="mt-6 grid gap-5 sm:grid-cols-2"><label
-                                class="text-sm font-semibold sm:col-span-2">Email address<input id="email" readonly
-                                    class="input mt-1.5 w-full rounded-xl border bg-slate-50 px-3 py-3 dark:bg-slate-800" /></label><label
-                                class="text-sm font-semibold">Contact number<input id="contact" required maxlength="30"
-                                    class="input mt-1.5 w-full rounded-xl border px-3 py-3"
-                                    placeholder="e.g. +63 900 000 0000" /></label><label
-                                class="text-sm font-semibold sm:col-span-2">Home address<input id="address" maxlength="240"
-                                    class="input mt-1.5 w-full rounded-xl border px-3 py-3"
-                                    placeholder="House number, street, city" /></label></div>
-                        <div
-                            class="mt-7 flex flex-wrap items-center justify-between gap-3 border-t border-slate-200 pt-5 dark:border-slate-700">
-                            <p class="text-xs text-slate-400"><i data-lucide="info"
-                                    class="mr-1 inline h-3.5 w-3.5"></i>Changes are stored in your portal profile.</p>
-                            <button type="submit"
-                                class="inline-flex items-center gap-2 rounded-xl bg-emerald-600 px-5 py-3 text-sm font-semibold text-white hover:bg-emerald-700"><i
-                                    data-lucide="save" class="h-4 w-4"></i>Save changes</button>
-                        </div>
-                    </section>
-                </form>
-            </div>
-        </main>
-    </div>
-    <div id="modalRoot"></div>
-@include('partials.portal-scripts', ['portalPage' => 'guest/guest.js'])
-</body>
-
-</html>
+@include('partials.profile-page', [
+    'role' => 'guest',
+    'headerTitle' => 'My Profile',
+    'headerSubtitle' => 'Guest Portal',
+    'heroClass' => 'student-hero',
+    'eyebrowClass' => 'text-emerald-600',
+    'heroTitle' => 'Your guest profile',
+    'heroIntro' => 'Keep your contact information current for college communication and document requests.',
+    'saveButtonClass' => 'bg-emerald-600 hover:bg-emerald-700',
+    'accentTextClass' => 'text-emerald-600 dark:text-emerald-300',
+    'accentCardIconClass' => 'bg-emerald-50 text-emerald-600 dark:bg-emerald-950/50 dark:text-emerald-300',
+])

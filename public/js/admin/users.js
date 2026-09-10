@@ -897,9 +897,6 @@ function importUsers() {
     $("#open")?.addEventListener("click", () =>
       $("#side")?.classList.toggle("-translate-x-full"),
     );
-    $$("[data-notifications]").forEach((button) =>
-      button.addEventListener("click", () => APP.showNotifications()),
-    );
     $$("[data-theme-toggle]").forEach((button) =>
       button.addEventListener("click", () => APP.toggleTheme()),
     );

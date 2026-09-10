@@ -47,23 +47,6 @@
                                 <option>Guests</option>
                             </select>
                         </div>
-                        <div class="mt-3 flex flex-wrap items-center gap-3">
-                            <label class="inline-flex cursor-pointer items-center gap-2 rounded-xl border border-slate-300 px-4 py-2.5 text-sm font-semibold hover:bg-slate-50 dark:border-slate-600 dark:hover:bg-slate-800">
-                                <i data-lucide="image-plus" class="h-4 w-4"></i>
-                                Add photo
-                                <input id="announcementImage" type="file" accept="image/*" class="hidden" />
-                            </label>
-                            <span id="announcementImageName" class="text-xs text-slate-400"></span>
-                        </div>
-                        <div id="announcementImagePreview" class="mt-3 hidden">
-                            <div class="relative inline-block">
-                                <img id="announcementImagePreviewImg" class="max-h-52 rounded-xl border border-slate-200 object-cover dark:border-slate-700" alt="Announcement photo preview" />
-                                <button type="button" id="announcementImageRemove" aria-label="Remove photo"
-                                    class="absolute -top-2 -right-2 flex h-6 w-6 items-center justify-center rounded-full bg-slate-900 text-white shadow">
-                                    <i data-lucide="x" class="h-3 w-3"></i>
-                                </button>
-                            </div>
-                        </div>
                         <div class="mt-4 flex flex-wrap items-center justify-between gap-3">
                             <span class="text-xs text-slate-400">Reaches every selected audience instantly.</span>
                             <button type="submit" class="inline-flex items-center justify-center gap-2 rounded-xl bg-emerald-600 px-5 py-2.5 text-sm font-semibold text-white hover:bg-emerald-700">

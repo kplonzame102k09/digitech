@@ -16,20 +16,20 @@ class PortalDataController extends Controller
 {
     public function __construct(private PortalDataService $portal) {}
 
-    public function index(): JsonResponse
+    public function index(Request $request): JsonResponse
     {
         return response()->json([
             'ok' => true,
-            'collections' => $this->portal->allCollections(),
+            'collections' => $this->portal->allCollections($request->user()),
         ]);
     }
 
-    public function show(string $key): JsonResponse
+    public function show(Request $request, string $key): JsonResponse
     {
         return response()->json([
             'ok' => true,
             'key' => $key,
-            'value' => $this->portal->getCollection($key),
+            'value' => $this->portal->getCollection($key, $request->user()),
         ]);
     }
 
@@ -110,6 +110,24 @@ class PortalDataController extends Controller
         );
     }
 
+    public function uploadRequirementFile(Request $request): JsonResponse
+    {
+        /** @var User $user */
+        $user = $request->user();
+        abort_unless($user && in_array($user->role, ['admin', 'student'], true), 403);
+
+        $request->validate([
+            'file' => ['required', 'file', 'mimes:pdf,jpeg,jpg,png,webp', 'max:5120'],
+        ]);
+
+        $path = $request->file('file')->store('requirement-files', 'public');
+
+        return response()->json([
+            'ok' => true,
+            'fileUrl' => Storage::url($path),
+        ]);
+    }
+
     public function uploadImage(Request $request): JsonResponse
     {
         /** @var User $user */
@@ -155,9 +173,10 @@ class PortalDataController extends Controller
         }
 
         return match ($user->role) {
-            'teacher' => in_array($key, ['announcements', 'attendance', 'competencies', 'grades', 'notifications'], true),
+            'teacher' => in_array($key, ['announcements', 'attendance', 'competencies', 'grades', 'notifications', 'users'], true),
             'student' => in_array($key, ['documentRequests', 'enrollments', 'notifications', 'requirements', 'users'], true),
             'parent' => in_array($key, ['notifications', 'parentLinkRequests', 'users'], true),
+            'guest' => in_array($key, ['notifications', 'users'], true),
             default => false,
         };
     }

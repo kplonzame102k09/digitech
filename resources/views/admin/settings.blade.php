@@ -190,27 +190,45 @@
                         <div>
                             <h3 class="font-bold text-rose-700">Database data controls</h3>
                             <p class="mt-1 text-sm text-slate-500">
-                                Create a backup before resetting any collection. These actions
-                                cannot be undone without a backup.
+                                Tick the collections you want to clear, then reset them all with one button.
+                                These actions cannot be undone without a backup.
                             </p>
                         </div>
                     </div>
-                    <div class="mt-5 flex flex-wrap gap-3">
-                        <button type="button" data-reset-key="users"
-                            class="rounded-xl border border-slate-200 px-4 py-2.5 font-semibold dark:border-slate-700">
-                            Reset users</button><button type="button" data-reset-key="enrollments"
-                            class="rounded-xl border border-slate-200 px-4 py-2.5 font-semibold dark:border-slate-700">
-                            Reset enrollments</button><button type="button" data-reset-key="documentRequests"
-                            class="rounded-xl border border-slate-200 px-4 py-2.5 font-semibold dark:border-slate-700">
-                            Reset documents</button><button type="button" data-reset-key="grades"
-                            class="rounded-xl border border-slate-200 px-4 py-2.5 font-semibold dark:border-slate-700">
-                            Reset grades</button><button type="button" data-reset-key="competencies"
-                            class="rounded-xl border border-slate-200 px-4 py-2.5 font-semibold dark:border-slate-700">
-                            Reset competencies</button><button type="button" data-reset-key="notifications"
-                            class="rounded-xl border border-slate-200 px-4 py-2.5 font-semibold dark:border-slate-700">
-                            Reset notifications</button><button type="button" data-reset-all
-                            class="rounded-xl bg-rose-600 px-4 py-2.5 font-semibold text-white">
-                            Reset everything
+                    <div id="resetOptions" class="mt-5 grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
+                        <label class="flex cursor-pointer items-center gap-3 rounded-xl border border-slate-200 px-3 py-2.5 text-sm font-medium dark:border-slate-700">
+                            <input type="checkbox" data-reset-key="users" class="h-4 w-4 accent-rose-600" />Users
+                        </label>
+                        <label class="flex cursor-pointer items-center gap-3 rounded-xl border border-slate-200 px-3 py-2.5 text-sm font-medium dark:border-slate-700">
+                            <input type="checkbox" data-reset-key="enrollments" class="h-4 w-4 accent-rose-600" />Enrollments
+                        </label>
+                        <label class="flex cursor-pointer items-center gap-3 rounded-xl border border-slate-200 px-3 py-2.5 text-sm font-medium dark:border-slate-700">
+                            <input type="checkbox" data-reset-key="documentRequests" class="h-4 w-4 accent-rose-600" />Documents
+                        </label>
+                        <label class="flex cursor-pointer items-center gap-3 rounded-xl border border-slate-200 px-3 py-2.5 text-sm font-medium dark:border-slate-700">
+                            <input type="checkbox" data-reset-key="grades" class="h-4 w-4 accent-rose-600" />Grades
+                        </label>
+                        <label class="flex cursor-pointer items-center gap-3 rounded-xl border border-slate-200 px-3 py-2.5 text-sm font-medium dark:border-slate-700">
+                            <input type="checkbox" data-reset-key="competencies" class="h-4 w-4 accent-rose-600" />Competencies
+                        </label>
+                        <label class="flex cursor-pointer items-center gap-3 rounded-xl border border-slate-200 px-3 py-2.5 text-sm font-medium dark:border-slate-700">
+                            <input type="checkbox" data-reset-key="notifications" class="h-4 w-4 accent-rose-600" />Notifications
+                        </label>
+                        <label class="flex cursor-pointer items-center gap-3 rounded-xl border border-slate-200 px-3 py-2.5 text-sm font-medium dark:border-slate-700">
+                            <input type="checkbox" data-reset-key="announcements" class="h-4 w-4 accent-rose-600" />Announcements
+                        </label>
+                        <label class="flex cursor-pointer items-center gap-3 rounded-xl border border-slate-200 px-3 py-2.5 text-sm font-medium dark:border-slate-700">
+                            <input type="checkbox" data-reset-key="attendance" class="h-4 w-4 accent-rose-600" />Attendance
+                        </label>
+                        <label class="flex cursor-pointer items-center gap-3 rounded-xl border border-slate-200 px-3 py-2.5 text-sm font-medium dark:border-slate-700">
+                            <input type="checkbox" data-reset-key="requirements" class="h-4 w-4 accent-rose-600" />Requirements
+                        </label>
+                    </div>
+                    <div class="mt-5 flex flex-wrap items-center justify-between gap-4">
+                        <p id="resetFeedback" class="text-xs text-slate-500"></p>
+                        <button type="button" id="resetSelectedBtn"
+                            class="rounded-xl bg-rose-600 px-5 py-2.5 font-semibold text-white hover:bg-rose-700">
+                            Reset selected
                         </button>
                     </div>
                 </section>

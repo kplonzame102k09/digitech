@@ -82,8 +82,11 @@ function toggleTheme() {
   const settings = window.DG ? DG.getData("settings", {}) : {};
   if (settings && typeof settings === "object") {
     settings.theme = next;
-    if (user?.role === "admin") {
+    if (user?.role === "admin" && window.DG) {
       DG.saveData("settings", settings);
+      if (DG.flushSync) {
+        DG.flushSync();
+      }
     }
   }
   applyTheme();
@@ -171,12 +174,24 @@ function updateNotif() {
   }
   document.querySelectorAll("[data-nav-notif]").forEach((el) => {
     const sources = (el.dataset.navNotif || "portal").split(" ").filter(Boolean);
-    const count = unread.filter((x) => sources.includes(x.source || "portal")).length;
+    const count = sources.reduce((total, source) => {
+      if (source === "parentLinkRequest" && u.role === "admin") {
+        return total + DG.getData("parentLinkRequests", []).filter((r) => String(r.status || "").toLowerCase() === "pending").length;
+      }
+      return total + unread.filter((x) => (x.source || "portal") === source).length;
+    }, 0);
     el.textContent = count;
     el.classList.toggle("hidden", count === 0);
   });
 }
+function notificationsEnabledFor(role) {
+  if (!role) return true;
+  const settings = DG.getData("settings", {});
+  const key = `notify${role.charAt(0).toUpperCase()}${role.slice(1)}s`;
+  return settings[key] !== false;
+}
 function notifyAdmins(title, message, source = "portal", recordId) {
+  if (!notificationsEnabledFor("admin")) return [];
   const currentUser = DG.getCurrentUser();
   const users = DG.getData("users", []);
   const admins = users.filter((user) => user && user.role === "admin");
@@ -201,7 +216,7 @@ function notifyAdmins(title, message, source = "portal", recordId) {
         source,
       };
       if (recordId) notification[`${source}Id`] = recordId;
-      notifications.push(notification);
+      upsertNotification(notifications, notification, source, recordId);
       return notification;
     });
 
@@ -217,8 +232,13 @@ function createAdminNotification(title, message, source = "portal", recordId) {
 
 // Create notifications for an explicit list of user ids (any role).
 function notifyUsers(userIds, title, message, source = "portal", recordId) {
+  const users = DG.getData("users", []);
+  const targets = [...new Set((userIds || []).filter(Boolean))].filter((userId) => {
+    const target = users.find((user) => user.id === userId);
+    return notificationsEnabledFor(target?.role);
+  });
   const notifications = DG.getData("notifications", []);
-  [...new Set((userIds || []).filter(Boolean))].forEach((userId) => {
+  targets.forEach((userId) => {
     const notification = {
       id: DG.generateId("NOT"),
       userId,
@@ -229,11 +249,11 @@ function notifyUsers(userIds, title, message, source = "portal", recordId) {
       source,
     };
     if (recordId) notification[`${source}Id`] = recordId;
-    notifications.push(notification);
+    upsertNotification(notifications, notification, source, recordId);
   });
   DG.saveData("notifications", notifications);
   const currentUser = DG.getCurrentUser();
-  if (currentUser && (userIds || []).includes(currentUser.id)) updateNotif();
+  if (currentUser && targets.includes(currentUser.id)) updateNotif();
   return notifications;
 }
 
@@ -339,12 +359,87 @@ function observeAdminNotificationEvents() {
 
 observeAdminNotificationEvents();
 installNotificationDialog();
+// Insert or replace a notification so the same event never appears twice for
+// the same user. Matches on (userId, source, recordId) when a record id is
+// known; otherwise on (userId, source, title, message).
+function upsertNotification(list, notification, source, recordId) {
+  const index = list.findIndex(
+    (existing) =>
+      existing.userId === notification.userId &&
+      (existing.source || "portal") === source &&
+      (recordId
+        ? existing[`${source}Id`] === recordId
+        : existing.title === notification.title && existing.message === notification.message),
+  );
+  if (index >= 0) list[index] = notification;
+  else list.push(notification);
+}
+
+function markSourceRead(source) {
+  const u = DG.getCurrentUser();
+  if (!u || !source) return;
+  const notifications = DG.getData("notifications", []);
+  let changed = false;
+  notifications.forEach((notification) => {
+    if (
+      notification.userId === u.id &&
+      (notification.source || "portal") === source &&
+      !notification.read
+    ) {
+      notification.read = true;
+      changed = true;
+    }
+  });
+  if (changed) {
+    DG.saveData("notifications", notifications);
+    updateNotif();
+  }
+}
+
+const PAGE_SOURCE_MAP = {
+  "/student/enrollment": ["enrollment"],
+  "/student/requirements": ["requirement"],
+  "/student/documents": ["document"],
+  "/student/grades": ["grade"],
+  "/student/competencies": ["competency"],
+  "/student/attendance": ["attendance"],
+  "/student/announcements": ["announcement"],
+  "/teacher/grades": ["grade"],
+  "/teacher/competencies": ["competency"],
+  "/teacher/attendance": ["attendance"],
+  "/teacher/announcements": ["announcement"],
+  "/parent/grades": ["grade"],
+  "/parent/attendance": ["attendance"],
+  "/parent/documents": ["document"],
+  "/parent/announcements": ["announcement"],
+  "/admin/enrollment": ["enrollment"],
+  "/admin/documents": ["document"],
+  "/admin/requirements": ["requirement"],
+  "/admin/announcements": ["announcement"],
+  "/admin/parent-links": ["parentLinkRequest"],
+  "/guest/documents": ["document"],
+  "/guest/announcements": ["announcement"],
+};
+
+function autoClearBadges() {
+  (PAGE_SOURCE_MAP[location.pathname] || []).forEach(markSourceRead);
+}
+
 function showNotifications() {
   const u = DG.getCurrentUser();
   if (!u) return;
+  const seen = new Set();
   const ns = DG.getData("notifications", [])
     .filter((n) => n.userId === u.id)
-    .sort((a, b) => new Date(b.date) - new Date(a.date));
+    .sort((a, b) => new Date(b.date) - new Date(a.date))
+    .filter((n) => {
+      const key =
+        n.id ||
+        `${n.source || "portal"}|${n[`${n.source}Id`] || ""}|${n.title}|${n.message}`;
+      if (seen.has(key)) return false;
+      seen.add(key);
+      return true;
+    });
   const root = document.getElementById("modalRoot");
   if (!root) return;
   root.replaceChildren();
@@ -439,5 +534,8 @@ window.APP = {
   notifyAdmins,
   createAdminNotification,
   notifyUsers,
+  notificationsEnabledFor,
+  markSourceRead,
+  autoClearBadges,
   generateId: DG.generateId,
 };

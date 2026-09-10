@@ -52,6 +52,14 @@ const API = {
     return this.request(url, { method: 'DELETE' });
   },
 
+  // Admin-specific API endpoints
+  admin: {
+    profile: {
+      get: () => API.get('/admin/api/profile'),
+      update: (data) => API.put('/admin/api/profile', data),
+    },
+  },
+
   // Student-specific API endpoints
   student: {
     enrollments: {

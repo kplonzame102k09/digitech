@@ -16,6 +16,7 @@ use App\Models\Requirement;
 use App\Models\SystemSetting;
 use App\Models\User;
 use DateTimeInterface;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
@@ -58,11 +59,29 @@ class PortalDataService
         'grades' => ['id', 'studentId', 'subject', 'semester', 'prelim', 'midterm', 'finals', 'finalGrade', 'units', 'schoolYear', 'teacherId', 'remarks', 'published', 'publishedAt', 'publishedBy', 'notes', 'updatedBy'],
         'competencies' => ['id', 'studentId', 'competency', 'qualification', 'status', 'assessmentDate', 'assessor', 'evidence', 'remarks', 'createdBy', 'updatedBy'],
         'notifications' => ['id', 'userId', 'title', 'message', 'read', 'source', 'recordId'],
-        'announcements' => ['id', 'title', 'message', 'category', 'audience', 'authorId'],
+        'announcements' => ['id', 'title', 'message', 'category', 'audience', 'authorId', 'createdBy', 'image'],
         'attendance' => ['id', 'studentId', 'date', 'status', 'subject', 'recordedBy', 'remarks'],
         'auditLogs' => ['id', 'entity', 'recordId', 'action', 'from', 'to', 'notes', 'reason', 'actorId', 'createdAt'],
-        'requirements' => ['id', 'studentId', 'name', 'type', 'status', 'dueDate', 'submittedAt', 'notes'],
+        'requirements' => ['id', 'studentId', 'name', 'type', 'status', 'dueDate', 'submittedAt', 'notes', 'fileUrl'],
         'parentLinkRequests' => ['id', 'parentId', 'studentId', 'status', 'reviewedAt', 'reviewedBy'],
+    ];
+
+    /**
+     * Columns that mark a domain row as owned by a specific user id. When a
+     * non-admin pushes a collection, only rows matched by these columns may be
+     * removed; admin payloads reconcile against the whole table.
+     */
+    private const OWNER_FIELDS = [
+        'enrollments' => ['studentId'],
+        'documentRequests' => ['studentId', 'createdBy'],
+        'grades' => ['teacherId', 'updatedBy'],
+        'competencies' => ['createdBy', 'updatedBy'],
+        'notifications' => ['userId'],
+        'announcements' => ['createdBy', 'authorId'],
+        'attendance' => ['recordedBy'],
+        'auditLogs' => ['actorId'],
+        'requirements' => ['studentId'],
+        'parentLinkRequests' => ['parentId', 'studentId'],
     ];
 
     public function bootPayload(?User $authUser = null): array
@@ -72,22 +91,22 @@ class PortalDataService
             'logoutUrl' => url('/logout'),
             'apiBase' => url('/api/portal'),
             'currentUser' => $authUser ? $this->userToJs($authUser) : null,
-            'collections' => $this->allCollections(),
+            'collections' => $this->allCollections($authUser),
         ];
     }
 
-    public function allCollections(): array
+    public function allCollections(?User $actor = null): array
     {
         $data = ['users' => $this->usersForJs()];
 
         foreach (self::COLLECTION_KEYS as $key) {
-            $data[$key] = $this->getCollection($key);
+            $data[$key] = $this->getCollection($key, $actor);
         }
 
         return $data;
     }
 
-    public function getCollection(string $key): mixed
+    public function getCollection(string $key, ?User $actor = null): mixed
     {
         if ($key === 'users') {
             return $this->usersForJs();
@@ -105,7 +124,12 @@ class PortalDataService
             return PortalCollection::query()->find($key)?->value ?? [];
         }
 
+        $visibleStudentIds = in_array($key, ['requirements', 'documentRequests'], true)
+            ? $this->visibleStudentIds($actor)
+            : null;
+
         $rows = $model::query()
+            ->when($visibleStudentIds !== null, fn (Builder $query) => $query->whereIn('studentId', $visibleStudentIds))
             ->when($key === 'auditLogs', fn ($query) => $query->orderByDesc('createdAt'), fn ($query) => $query->orderByDesc('created_at'))
             ->get();
 
@@ -140,7 +164,7 @@ class PortalDataService
             );
         }
 
-        return $this->getCollection($key);
+        return $this->getCollection($key, $actor);
     }
 
     public function usersForJs(): array
@@ -316,13 +340,60 @@ class PortalDataService
             'firstName', 'lastName', 'middleName', 'contact', 'birthDate', 'birthPlace',
             'barangay', 'city', 'province', 'region', 'email', 'username',
             'strand', 'address', 'guardianName', 'guardianContact', 'photo',
+            // Role-specific extras persisted inside profile_extra.
+            'occupation', 'emergencyContact', 'specialization',
         ];
         $fields = collect($allowed)
             ->filter(fn (string $field): bool => array_key_exists($field, $profile))
             ->mapWithKeys(fn (string $field): array => [$field => $profile[$field]])
             ->all();
 
-        $actor->fill($fields)->save();
+        if (array_key_exists('photo', $fields)) {
+            $fields['photo'] = $this->normalizePhotoPath($fields['photo']);
+        }
+
+        $extras = [
+            'occupation' => $fields['occupation'] ?? null,
+            'emergencyContact' => $fields['emergencyContact'] ?? null,
+            'specialization' => $fields['specialization'] ?? null,
+        ];
+        $extras = collect($extras)->filter(fn (mixed $value): bool => $value !== null && $value !== '')->all();
+
+        $columnFields = collect($fields)->except(['occupation', 'emergencyContact', 'specialization'])->all();
+
+        $beforeExtras = array_merge(
+            ['occupation' => null, 'emergencyContact' => null, 'specialization' => null],
+            is_array($actor->profile_extra) ? $actor->profile_extra : []
+        );
+
+        $extraChanges = collect($extras)
+            ->filter(fn (mixed $value, string $key): bool => ($beforeExtras[$key] ?? null) !== $value)
+            ->keys()
+            ->all();
+
+        $actor->fill($columnFields);
+        $columnChanges = array_keys(collect($actor->getDirty())->except(['updated_at', 'profile_extra'])->all());
+        $actor->save();
+
+        if ($extraChanges !== []) {
+            $actor->profile_extra = array_merge(
+                is_array($actor->profile_extra) ? $actor->profile_extra : [],
+                $extras
+            );
+            $actor->save();
+        }
+
+        $changed = array_unique(array_merge($columnChanges, $extraChanges));
+
+        if ($changed !== []) {
+            AuditLog::record([
+                'entity' => AuditLog::ENTITY_USER,
+                'recordId' => $actor->user_id,
+                'action' => 'profile.updated',
+                'notes' => ucfirst($actor->role).' profile updated ('.implode(', ', $changed).').',
+                'actorId' => $actor->user_id,
+            ]);
+        }
 
         return [$this->userToJs($actor)];
     }
@@ -359,6 +430,10 @@ class PortalDataService
 
         $known = array_flip(array_merge(['id', 'password', 'createdAt', 'updatedAt'], array_keys($fields)));
         $fields['profile_extra'] = collect($raw)->except(array_keys($known))->all();
+
+        if (is_string($fields['photo'])) {
+            $fields['photo'] = $this->normalizePhotoPath($fields['photo']);
+        }
 
         return $fields;
     }
@@ -415,6 +490,17 @@ class PortalDataService
         $model = self::DOMAIN_MODELS[$key];
         $allowed = self::WRITE_FIELDS[$key];
 
+        // An empty payload is an explicit reset performed by an admin.
+        if ($records === [] && $actor?->isAdmin()) {
+            $model::query()->delete();
+
+            return;
+        }
+
+        if ($records === []) {
+            return;
+        }
+
         foreach ($records as $raw) {
             if (! is_array($raw) || empty($raw['id'])) {
                 continue;
@@ -428,6 +514,61 @@ class PortalDataService
 
             $this->upsertDomainRow($key, $model, $data, $actor);
         }
+
+        $this->reconcileDomainRows($key, $model, $records, $actor);
+
+        if ($key === 'notifications') {
+            $this->dedupeNotifications($model);
+        }
+    }
+
+    /**
+     * Collapse duplicate notification rows so the bell/modals never list the
+     * same event twice. Keeps the newest row for each user+source+record or,
+     * when no record id is set, user+source+title+message.
+     */
+    protected function dedupeNotifications(string $model): void
+    {
+        $keep = $model::query()
+            ->selectRaw('MAX(id) AS keep')
+            ->groupBy('userId', 'source', DB::raw('COALESCE(recordId, CONCAT(title, ":|:", message))'))
+            ->pluck('keep')
+            ->all();
+
+        if ($keep !== []) {
+            $model::query()->whereNotIn('id', $keep)->delete();
+        }
+    }
+
+    /**
+     * Remove rows that were deleted on the client but are still on the server.
+     * The payload is the client's current full view of the collection, so row
+     * deletions arrive as "missing" ids. Non-admin writers may only remove rows
+     * they own so one session cannot touch another user's data.
+     */
+    protected function reconcileDomainRows(string $key, string $model, array $records, ?User $actor): void
+    {
+        $ids = collect($records)->pluck('id')->filter()->values()->all();
+
+        if ($ids === []) {
+            return;
+        }
+
+        $query = $model::query()->whereNotIn('id', $ids);
+
+        if (! $actor?->isAdmin()) {
+            $ownerFields = self::OWNER_FIELDS[$key] ?? [];
+
+            if ($ownerFields !== []) {
+                $query->where(function (Builder $query) use ($ownerFields, $actor): void {
+                    foreach ($ownerFields as $field) {
+                        $query->orWhere($field, $actor?->user_id);
+                    }
+                });
+            }
+        }
+
+        $query->delete();
     }
 
     /**
@@ -501,20 +642,78 @@ class PortalDataService
 
             case 'documentRequests':
                 if (! $actor?->isAdmin()) {
-                    $data['studentId'] = $actor?->user_id;
+                    // The local mirror once contained the whole collection, so a
+                    // requester's payload can hold other students' rows. Only rows
+                    // they already own may be updated, and brand-new rows must name
+                    // themselves as the student, so ownership can never move.
+                    $existing = $model::query()->find($raw['id']);
+
+                    $ownsRow = $existing
+                        ? (string) $existing->studentId === (string) $actor->user_id
+                            || (string) $existing->createdBy === (string) $actor->user_id
+                        : (string) ($raw['studentId'] ?? '') === (string) $actor->user_id;
+
+                    if (! $ownsRow) {
+                        return null;
+                    }
+
+                    $data['studentId'] = $actor->user_id;
+
+                    if ($existing) {
+                        if ($existing->createdBy !== null) {
+                            $data['createdBy'] = (string) $existing->createdBy;
+                        } else {
+                            unset($data['createdBy']);
+                        }
+                    } else {
+                        $data['createdBy'] = $actor->user_id;
+                    }
+
+                    // Submissions are final: a requester may create a Pending
+                    // request but never rewrite the registrar's decision.
+                    $data['status'] = $existing ? (string) $existing->status : 'Pending';
+
                     $data = array_diff_key($data, array_flip(['reviewNotes', 'rejectionReason', 'releaseMethod', 'releaseDate', 'reviewedAt', 'reviewedBy']));
                 }
                 break;
 
             case 'requirements':
                 if (! $actor?->isAdmin()) {
-                    $data['studentId'] = $actor?->user_id;
+                    // Clients mirror the whole (previously unscoped) collection
+                    // locally, so a student's payload can contain other pupils'
+                    // rows. Students may only update learner-controlled fields on
+                    // requirement rows they already own; every other record
+                    // (other pupils' rows, or new rows with fresh ids) is
+                    // skipped so ownership and admin-assigned metadata never move.
+                    $existing = $model::query()->find($raw['id']);
+
+                    if (! $existing || (string) $existing->studentId !== (string) $actor->user_id) {
+                        return null;
+                    }
+
+                    $data = collect($data)->only(['id', 'status', 'submittedAt', 'notes', 'fileUrl', 'studentId'])->all();
+                    $data['studentId'] = $actor->user_id;
+
+                    // Review decisions ("Approved"/"Rejected") are admin-only;
+                    // an unset status preserves the stored value.
+                    if (isset($data['status']) && ! in_array($data['status'], ['Pending', 'Submitted'], true)) {
+                        unset($data['status']);
+                    }
                 }
                 break;
 
             case 'notifications':
+                // Clients push the whole notifications collection back. Non-admins
+                // may only act on notifications they already own (marking them
+                // read); existing rows keep their stored recipient so one user can
+                // never hijack another's rows. Brand-new rows, however, are relayed
+                // alerts created for OTHER users (e.g. a parent's link request
+                // notifying admins), so their declared recipient must survive.
                 if (! $actor?->isAdmin()) {
-                    $data['userId'] = $actor?->user_id;
+                    $existing = $model::query()->find($raw['id']);
+                    if ($existing) {
+                        $data['userId'] = (string) $existing->userId;
+                    }
                 }
                 break;
 
@@ -529,9 +728,29 @@ class PortalDataService
                 break;
 
             case 'parentLinkRequests':
+                // Parents may only submit requests in their own name. Once an
+                // admin approves a request that decision is final and must
+                // survive the parent's next (stale) push. A fresh submission
+                // reuses the row for the same parent+student (unique index), so
+                // a re-request after a rejection cannot collide on (parentId,
+                // studentId).
                 if ($actor?->isParent()) {
                     $data['parentId'] = $actor->user_id;
-                    $data['status'] = 'Pending';
+                    $existing = $model::query()->find($raw['id']);
+
+                    if (! $existing) {
+                        $existing = $model::query()
+                            ->where('parentId', $data['parentId'])
+                            ->where('studentId', $data['studentId'] ?? null)
+                            ->first();
+
+                        if ($existing) {
+                            $data['id'] = $existing->getKey();
+                        }
+                    }
+
+                    $data['status'] = $existing && $existing->status === 'Approved' ? 'Approved' : 'Pending';
+                    unset($data['reviewedAt'], $data['reviewedBy']);
                 }
                 break;
         }
@@ -542,6 +761,43 @@ class PortalDataService
     protected function existingValue(?string $model, array $raw, string $field): mixed
     {
         return $model::query()->find($raw['id'])?->{$field};
+    }
+
+    /**
+     * Resolve which students a non-admin may read for the student-scoped
+     * collections. Students see their own rows, a parent sees their linked
+     * children, and every other role keeps the full view.
+     *
+     * @return array<int, string>|null null means "no restriction"
+     */
+    protected function visibleStudentIds(?User $actor): ?array
+    {
+        if (! $actor || $actor->isAdmin()) {
+            return null;
+        }
+
+        if ($actor->isStudent()) {
+            return [$actor->user_id];
+        }
+
+        if ($actor->isParent()) {
+            $ids = collect([$actor->childId])
+                ->concat($actor->childIds ?? [])
+                ->filter(static fn (mixed $id): bool => is_string($id) && $id !== '')
+                ->all();
+
+            // Pivot-backed approvals (parent_student links primary keys, not
+            // portal ids), so map them back to the student user_id.
+            $pivotIds = DB::table('parent_student')
+                ->join('users as linked', 'linked.id', '=', 'parent_student.student_id')
+                ->where('parent_student.parent_id', $actor->getKey())
+                ->pluck('linked.user_id')
+                ->all();
+
+            return array_values(array_unique(array_merge($ids, $pivotIds)));
+        }
+
+        return null;
     }
 
     protected function upsertDomainRow(string $key, string $model, array $data, ?User $actor): void
@@ -693,6 +949,7 @@ class PortalDataService
                 'dueDate' => $this->dateToString($row->dueDate),
                 'submittedAt' => $this->dateToIso($row->submittedAt),
                 'notes' => $row->notes,
+                'fileUrl' => $row->fileUrl,
                 'createdAt' => $this->dateToIso($row->created_at),
                 'updatedAt' => $this->dateToIso($row->updated_at),
             ],
@@ -730,6 +987,8 @@ class PortalDataService
                 'category' => $row->category,
                 'audience' => $row->audience,
                 'authorId' => $row->authorId,
+                'createdBy' => (string) $row->createdBy,
+                'image' => (string) $row->image,
                 'createdAt' => $this->dateToIso($row->created_at),
                 'updatedAt' => $this->dateToIso($row->updated_at),
             ],
@@ -762,11 +1021,24 @@ class PortalDataService
 
     protected function publicPhotoUrl(string $path): string
     {
-        if (Str::startsWith($path, ['http://', 'https://', 'data:'])) {
+        if (Str::startsWith($path, ['http://', 'https://', '/', 'data:'])) {
             return $path;
         }
 
         return asset('storage/'.ltrim($path, '/'));
+    }
+
+    protected function normalizePhotoPath(mixed $photo): ?string
+    {
+        if (! is_string($photo) || trim($photo) === '') {
+            return null;
+        }
+
+        if (Str::startsWith($photo, ['http://', 'https://', 'data:'])) {
+            return $photo;
+        }
+
+        return preg_replace('#^/?storage(?:/|$)#', '', $photo);
     }
 
     protected function dateToIso(mixed $value): ?string

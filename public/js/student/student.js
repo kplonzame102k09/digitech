@@ -50,7 +50,7 @@
   };
 
   const showError = (message) => {
-    APP?.toast?.(message);
+    APP?.toast?.(message, "error");
     console.error(message);
   };
 
@@ -513,10 +513,95 @@
     lucide.createIcons();
   }
 
+  function fileLabel(url) {
+    if (!url) return "";
+    try {
+      return decodeURIComponent(url.split("/").pop() || url);
+    } catch {
+      return url;
+    }
+  }
+
+  function openRequirementSubmit(record) {
+    const root = $("#modalRoot");
+    if (!root) return;
+    APP.closeModal();
+    const backdrop = document.createElement("div");
+    backdrop.className =
+      "modal-backdrop fixed inset-0 z-[90] flex items-center justify-center bg-slate-950/50 p-4";
+    const panel = document.createElement("form");
+    panel.className =
+      "w-full max-w-md rounded-2xl bg-white p-5 shadow-2xl dark:bg-slate-900";
+    panel.innerHTML = `
+      <div class="flex items-start justify-between gap-4">
+        <div>
+          <p class="text-xs font-semibold uppercase tracking-[0.16em] text-emerald-600">Upload requirement</p>
+          <h2 class="mt-1 text-lg font-extrabold">${esc(record.name)}</h2>
+          <p class="mt-1 text-sm text-slate-500">${esc(record.status)}${record.fileUrl ? ` · attached: ${esc(fileLabel(record.fileUrl))}` : ""}</p>
+        </div>
+        <button type="button" data-close-req class="rounded-xl p-2 text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800" aria-label="Close"><i data-lucide="x" class="h-5 w-5"></i></button>
+      </div>
+      <p class="mt-4 text-sm text-slate-500">Choose the document below and upload it. Uploading marks this requirement as submitted.</p>
+      <label class="mt-4 block text-sm font-semibold">
+        Document file
+        <input id="reqFile" type="file" accept=".pdf,image/jpeg,image/png,image/webp" class="input mt-1.5 w-full rounded-xl border px-3 py-2.5">
+      </label>
+      <p class="mt-2 text-xs text-slate-400">PDF or image up to 5 MB.</p>
+      <div class="mt-6 flex justify-end gap-3">
+        <button type="button" data-cancel-req class="rounded-xl border border-slate-200 px-4 py-2.5 text-sm font-semibold dark:border-slate-700">Cancel</button>
+        <button id="reqSubmit" class="inline-flex items-center gap-2 rounded-xl bg-emerald-600 px-5 py-2.5 text-sm font-semibold text-white hover:bg-emerald-700"><i data-lucide="upload-cloud" class="h-4 w-4"></i>Upload</button>
+      </div>`;
+    const close = () => APP.closeModal();
+    panel.addEventListener("submit", async (event) => {
+      event.preventDefault();
+      const fileInput = $("#reqFile", panel);
+      const file = fileInput?.files?.[0];
+      if (!file) {
+        showError("Choose a file to upload first.");
+        return;
+      }
+      const confirmBtn = $("#reqSubmit", panel);
+      if (confirmBtn) {
+        confirmBtn.disabled = true;
+        confirmBtn.textContent = "Uploading…";
+      }
+      try {
+        const uploaded = await DG.uploadRequirementFile(file);
+        const fileUrl = uploaded?.fileUrl || "";
+        if (!fileUrl) throw new Error("Upload returned no file URL.");
+        const all = get("requirements", []);
+        const idx = all.findIndex((x) => x.id === record.id);
+        if (idx < 0) throw new Error("This requirement no longer exists.");
+        const next = [...all];
+        next[idx] = {
+          ...all[idx],
+          status: "Submitted",
+          submittedAt: new Date().toISOString(),
+          fileUrl,
+        };
+        save("requirements", next);
+        APP?.toast?.(record.status === "Rejected" ? "Requirement resubmitted" : "Requirement submitted");
+        close();
+        renderRequirements();
+      } catch (error) {
+        showError(error.message || "Upload failed");
+        if (confirmBtn) {
+          confirmBtn.disabled = false;
+          confirmBtn.innerHTML = '<i data-lucide="upload-cloud" class="h-4 w-4"></i>Upload';
+        }
+      }
+    });
+    panel.querySelector("[data-close-req]").addEventListener("click", close);
+    panel.querySelector("[data-cancel-req]").addEventListener("click", close);
+    backdrop.append(panel);
+    root.append(backdrop);
+    lucide.createIcons();
+  }
+
   function renderRequirements() {
     const rows = mine("requirements");
     text("#reqTotal", rows.length);
-    text("#reqPending", rows.filter((r) => r.status === "Pending").length);
+    text("#reqPending", rows.filter((r) => r.status === "Pending" || r.status === "Rejected").length);
     text("#reqSubmitted", rows.filter((r) => ["Submitted", "Approved"].includes(r.status)).length);
     const body = $("#rows");
     if (!body) return;
@@ -529,8 +614,8 @@
               <td class="p-4">${esc((r.submittedAt || "").toString().slice(0, 10) || "—")}</td>
               <td class="p-4 text-right">
                 ${
-                  r.status === "Pending"
-                    ? `<button data-submit-req="${esc(r.id)}" class="text-emerald-700 font-semibold">Mark submitted</button>`
+                  r.status === "Pending" || r.status === "Rejected"
+                    ? `<button data-upload-req="${esc(r.id)}" class="inline-flex items-center gap-1.5 rounded-lg bg-emerald-600 px-3 py-1.5 text-[11px] font-semibold text-white hover:bg-emerald-700"><i data-lucide="upload-cloud" class="h-4 w-4"></i>${r.status === "Rejected" ? "Re-upload" : "Upload"}</button>`
                     : "—"
                 }
               </td>
@@ -539,19 +624,11 @@
           .join("")
       : `<tr><td colspan="4" class="p-8 text-center text-slate-500">No requirements assigned yet.</td></tr>`;
 
-    body.querySelectorAll("[data-submit-req]").forEach((btn) => {
+    body.querySelectorAll("[data-upload-req]").forEach((btn) => {
       btn.addEventListener("click", () => {
         const all = get("requirements", []);
-        const idx = all.findIndex((r) => r.id === btn.dataset.submitReq);
-        if (idx < 0) return;
-        all[idx] = {
-          ...all[idx],
-          status: "Submitted",
-          submittedAt: new Date().toISOString(),
-        };
-        save("requirements", all);
-        APP?.toast?.("Requirement marked as submitted");
-        renderRequirements();
+        const record = all.find((x) => x.id === btn.dataset.uploadReq);
+        if (record) openRequirementSubmit(record);
       });
     });
   }
@@ -638,6 +715,9 @@
   APP?.applyTheme?.();
   APP?.updateNotif?.();
   DG.loadProfileElements();
+  $("#open")?.addEventListener("click", () =>
+    $("#side")?.classList.toggle("-translate-x-full"),
+  );
   $$("[data-theme-toggle]").forEach((button) => {
     if (button.dataset.themeBound) return;
     button.dataset.themeBound = "1";

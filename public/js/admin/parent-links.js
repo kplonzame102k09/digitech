@@ -57,26 +57,47 @@
     const requests = get("parentLinkRequests", []);
     const idx = requests.findIndex((r) => r.id === id);
     if (idx < 0) return;
+    const users = get("users", []);
+    const parent = users.find((u) => u.id === requests[idx].parentId);
+    const student = users.find((u) => u.id === requests[idx].studentId);
+    const roleIssues = [
+      parent?.role && parent.role !== "parent" ? `${parent.id} is not a parent account` : "",
+      student?.role && student.role !== "student" ? `${student.id} is not a student account` : "",
+    ].filter(Boolean);
+    if (roleIssues.length && status === "Approved") {
+      APP?.toast?.(`Cannot approve: ${roleIssues.join(" · ")}`, "error");
+      return;
+    }
     const req = { ...requests[idx], status, reviewedAt: new Date().toISOString(), reviewedBy: admin.id };
     requests[idx] = req;
     save("parentLinkRequests", requests);
 
     if (status === "Approved") {
-      const users = get("users", []);
       const pIdx = users.findIndex((u) => u.id === req.parentId);
       if (pIdx >= 0) {
-        const parent = { ...users[pIdx] };
-        const childIds = Array.isArray(parent.childIds) ? [...parent.childIds] : [];
+        const parentUser = { ...users[pIdx] };
+        const childIds = Array.isArray(parentUser.childIds) ? [...parentUser.childIds] : [];
         if (!childIds.includes(req.studentId)) childIds.push(req.studentId);
-        parent.childId = parent.childId || req.studentId;
-        parent.childIds = childIds;
-        users[pIdx] = parent;
+        parentUser.childId = parentUser.childId || req.studentId;
+        parentUser.childIds = childIds;
+        users[pIdx] = parentUser;
         save("users", users);
       }
     }
 
+    APP?.notifyUsers?.(
+      [req.parentId],
+      `Child link ${status.toLowerCase()}`,
+      status === "Approved"
+        ? `Your link request to ${req.studentId} was approved.`
+        : `Your link request to ${req.studentId} was rejected.`,
+      "parentLinkRequest",
+      req.id,
+    );
+
     APP?.toast?.(`Request ${status.toLowerCase()}`);
     render();
+    APP?.updateNotif?.();
   }
 
   APP?.applyTheme?.();

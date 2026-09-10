@@ -76,12 +76,19 @@
                 ? 'nav-active' : 'text-slate-600 dark:text-slate-300 hover:bg-slate-800' }}">
                 <i data-lucide="users-round" class="w-4"></i>
                 Parent links
+                <span data-nav-notif="parentLinkRequest" class="ml-auto hidden min-w-5 rounded-full bg-red-500 px-1.5 py-0.5 text-center text-[10px] font-bold leading-4 text-white"></span>
             </a>
             <a href="{{ route('admin.settings') }}" class="flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium
                 {{ request()->routeIs('admin.settings')
                 ? 'nav-active' : 'text-slate-600 dark:text-slate-300 hover:bg-slate-800' }}">
                 <i data-lucide="settings" class="w-4"></i>
                 Settings
+            </a>
+            <a href="{{ route('admin.profile') }}" class="flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium
+                {{ request()->routeIs('admin.profile')
+                ? 'nav-active' : 'text-slate-600 dark:text-slate-300 hover:bg-slate-800' }}">
+                <i data-lucide="user-round" class="w-4"></i>
+                Profile
             </a>
         </nav>
         <button

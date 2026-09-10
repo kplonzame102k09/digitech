@@ -39,7 +39,47 @@
           .sort((a, b) => String(b.date).localeCompare(String(a.date)))
           .map((r) => {
             const s = users.find((u) => u.id === r.studentId);
-            return `<tr class="border-t"><td class="p-3">${F.esc(F.userName(s) || r.studentId)}</td><td class="p-3">${F.esc(r.date)}</td><td class="p-3">${F.esc(r.subject || "—")}</td><td class="p-3">${F.esc(r.status)}</td><td class="p-3">${F.esc(r.remarks || "—")}</td>${isTeacher || isAdmin ? `<td class="p-3"><button class="text-emerald-700 font-semibold" data-edit="${F.esc(r.id)}">Edit</button></td>` : ""}</tr>`;
+            const nm = F.userName(s) || r.studentId;
+            const initials = (
+              nm === r.studentId
+                ? nm.slice(0, 2)
+                : nm.split(/\s+/).map((w) => w[0]).slice(0, 2).join("")
+            ).toUpperCase();
+            const [y, m, d] = String(r.date || "").split("-");
+            const when =
+              y && m && d
+                ? new Date(Number(y), Number(m) - 1, Number(d)).toLocaleDateString("en-PH", {
+                    year: "numeric",
+                    month: "short",
+                    day: "numeric",
+                  })
+                : "—";
+            const st = String(r.status || "").toLowerCase();
+            const badge =
+              {
+                present: "bg-emerald-50 text-emerald-700 dark:bg-emerald-950 dark:text-emerald-300",
+                late: "bg-amber-50 text-amber-700 dark:bg-amber-950 dark:text-amber-300",
+                absent: "bg-rose-50 text-rose-700 dark:bg-rose-950 dark:text-rose-300",
+              }[st] || "bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-300";
+            return `<tr class="border-t border-slate-100 transition-colors hover:bg-slate-50/70 dark:border-slate-800 dark:hover:bg-slate-800/40">
+              <td class="p-4">
+                <div class="flex items-center gap-3">
+                  <span class="relative flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-blue-50 dark:bg-blue-950">
+                    <span class="flex h-9 w-9 items-center justify-center rounded-full text-xs font-bold text-blue-700 dark:text-blue-300">${F.esc(initials)}</span>
+                    ${F.photoUrl(s) ? `<img src="${F.esc(F.photoUrl(s))}" alt="${F.esc(nm)}" loading="lazy" class="absolute inset-0 h-9 w-9 rounded-full object-cover" onerror="this.style.display='none'" />` : ""}
+                  </span>
+                  <div>
+                    <b class="block">${F.esc(nm)}</b>
+                    <small class="text-xs text-slate-400">${F.esc(r.studentId)}</small>
+                  </div>
+                </div>
+              </td>
+              <td class="whitespace-nowrap p-4 text-xs font-medium text-slate-600 dark:text-slate-400">${F.esc(when)}</td>
+              <td class="p-4 text-slate-700 dark:text-slate-300">${F.esc(r.subject || "—")}</td>
+              <td class="p-4"><span class="inline-flex rounded-full px-2.5 py-1 text-xs font-semibold ${badge}">${F.esc(r.status || "—")}</span></td>
+              <td class="max-w-[16rem] truncate p-4 text-slate-500 dark:text-slate-400" title="${F.esc(r.remarks || "")}">${F.esc(r.remarks || "—")}</td>
+              ${isTeacher || isAdmin ? `<td class="p-4 text-right"><button class="rounded-lg p-2 text-emerald-700 hover:bg-emerald-50 dark:hover:bg-emerald-950/40" data-edit="${F.esc(r.id)}" title="Edit record"><i data-lucide="pencil" class="h-4 w-4"></i></button></td>` : `<td class="p-4"></td>`}
+            </tr>`;
           }),
       );
       $("#rows")
@@ -171,9 +211,13 @@
           const badge =
             AUDIENCE_BADGE[aud] ||
             "bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-300";
+          const authorPhoto = F.photoUrl(author);
+          const avatar = authorPhoto
+            ? `<img src="${F.esc(authorPhoto)}" alt="${F.esc(name)}" class="h-11 w-11 shrink-0 rounded-full object-cover" onerror="this.style.display='none'" />`
+            : `<span class="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-violet-500 to-fuchsia-500 text-sm font-bold text-white">${F.esc(initials)}</span>`;
           return `<article class="card p-5">
               <div class="flex items-start gap-3">
-                <span class="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-violet-500 to-fuchsia-500 text-sm font-bold text-white">${F.esc(initials)}</span>
+                ${avatar}
                 <div class="min-w-0 flex-1">
                   <div class="flex flex-wrap items-center justify-between gap-x-2 gap-y-1">
                     <div class="flex items-center gap-2">
@@ -188,12 +232,28 @@
               </div>
               <h3 class="mt-3 text-lg font-bold tracking-tight">${F.esc(r.title)}</h3>
               <p class="mt-1 text-sm leading-relaxed text-slate-600 dark:text-slate-300">${F.esc(r.message)}</p>
+              ${r.image ? `<img src="${F.esc(r.image)}" alt="${F.esc(r.title)}" class="mt-3 max-h-80 w-full rounded-xl border border-slate-200 object-cover dark:border-slate-700" onerror="this.style.display='none'" />` : ""}
             </article>`;
         }),
       );
     };
-    $("#announcementForm")?.addEventListener("submit", (e) => {
+    $("#announcementForm")?.addEventListener("submit", async (e) => {
       e.preventDefault();
+      const imageInput = $("#announcementImage");
+      let image = null;
+      if (imageInput?.files?.length) {
+        imageInput.disabled = true;
+        try {
+          const uploaded = await DG.uploadImage(imageInput.files[0]);
+          image = uploaded.photo || null;
+        } catch (error) {
+          console.error("Failed to upload announcement photo:", error);
+          APP.toast("Photo upload failed. Try a smaller image.", "error");
+          imageInput.disabled = false;
+          return;
+        }
+        imageInput.disabled = false;
+      }
       const audience = $("#audience").value;
       const assignedIds =
         U.role === "teacher"
@@ -226,6 +286,7 @@
         audience,
         createdBy: U.id,
         authorId: U.id,
+        image,
         createdAt: new Date().toISOString(),
       };
       const all = F.get("announcements", []);
@@ -238,11 +299,78 @@
         "announcement",
       );
       e.target.reset();
+      resetPhotoUI();
       render();
       APP.toast("Announcement published");
     });
+    const resetPhotoUI = () => {
+      const imageInput = $("#announcementImage");
+      if (imageInput) imageInput.value = "";
+      const nameEl = $("#announcementImageName");
+      if (nameEl) nameEl.textContent = "";
+      const preview = $("#announcementImagePreview");
+      if (preview) preview.classList.add("hidden");
+    };
+    const imageInput = $("#announcementImage");
+    imageInput?.addEventListener("change", () => {
+      const file = imageInput.files?.[0];
+      const nameEl = $("#announcementImageName");
+      const preview = $("#announcementImagePreview");
+      const previewImg = $("#announcementImagePreviewImg");
+      if (!file) {
+        resetPhotoUI();
+        return;
+      }
+      if (nameEl) nameEl.textContent = file.name;
+      const reader = new FileReader();
+      reader.onload = () => {
+        if (previewImg) previewImg.src = reader.result;
+        if (preview) preview.classList.remove("hidden");
+        lucide.createIcons();
+      };
+      reader.readAsDataURL(file);
+    });
+    $("#announcementImageRemove")?.addEventListener("click", resetPhotoUI);
     render();
   }
+  function openRequirementPreview(r) {
+    const root = document.getElementById("modalRoot");
+    if (!root) return;
+    APP.closeModal();
+    const url = r.fileUrl || "";
+    const ext = (url.split("?")[0] || "").toLowerCase();
+    const isImage = /\.(jpe?g|png|webp|gif)$/.test(ext);
+    const isPdf = ext.endsWith(".pdf");
+    const student = F.users().find((u) => u.id === r.studentId);
+    const backdrop = document.createElement("div");
+    backdrop.className =
+      "modal-backdrop fixed inset-0 z-[90] flex items-center justify-center bg-slate-950/50 p-4";
+    const panel = document.createElement("div");
+    panel.className =
+      "w-full max-w-2xl rounded-2xl bg-white p-5 shadow-2xl dark:bg-slate-900";
+    const close = () => APP.closeModal();
+    panel.innerHTML = `
+      <div class="flex items-start justify-between gap-4">
+        <div class="min-w-0">
+          <p class="text-xs font-semibold uppercase tracking-[0.16em] text-blue-600">Requirement submission</p>
+          <h2 class="mt-1 truncate text-lg font-extrabold">${F.esc(r.name)}</h2>
+          <p class="mt-1 text-xs text-slate-500">${F.esc(student ? F.userName(student) : r.studentId)} · ${F.esc(r.status)}</p>
+        </div>
+        <button type="button" data-preview-close class="shrink-0 rounded-xl p-2 text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800" aria-label="Close"><i data-lucide="x" class="h-5 w-5"></i></button>
+      </div>
+      <div class="mt-4 max-h-[65vh] overflow-auto rounded-xl border border-slate-200 bg-slate-50 dark:border-slate-700 dark:bg-slate-800">
+        ${isImage ? `<img src="${F.esc(url)}" alt="${F.esc(r.name)}" class="mx-auto max-h-[58vh] object-contain">` : isPdf ? `<iframe src="${F.esc(url)}" title="${F.esc(r.name)}" class="h-[58vh] w-full"></iframe>` : `<div class="flex flex-col items-center gap-2 p-10 text-center"><i data-lucide="file-text" class="h-8 w-8 text-slate-400"></i><p class="text-sm text-slate-500">No inline preview for this file type.</p></div>`}
+      </div>
+      <div class="mt-4 flex justify-end gap-3">
+        <a href="${F.esc(url)}" target="_blank" rel="noopener" class="rounded-xl border border-slate-200 px-4 py-2 text-sm font-semibold dark:border-slate-700">Open original</a>
+        <button type="button" data-preview-close class="rounded-xl bg-blue-600 px-4 py-2 text-sm font-semibold text-white">Close</button>
+      </div>`;
+    panel.querySelectorAll("[data-preview-close]").forEach((b) => b.addEventListener("click", close));
+    backdrop.append(panel);
+    root.append(backdrop);
+    lucide.createIcons();
+  }
+
   function requirements() {
     const studentSelect = $("#student");
     if (studentSelect) {
@@ -257,9 +385,22 @@
     const render = () => {
       const all = F.get("requirements", []);
       renderRows(
-        all.map(
-          (r) => `<tr class="border-t"><td class="p-3">${F.esc(r.name)}</td><td class="p-3">${F.esc(r.studentId)}</td><td class="p-3">${F.esc(r.status)}</td><td class="p-3">${F.esc(r.dueDate || "—")}</td><td class="p-3"><button class="text-emerald-700 font-semibold" data-approve="${F.esc(r.id)}">Approve</button> <button class="text-rose-700 font-semibold" data-reject="${F.esc(r.id)}">Reject</button></td></tr>`,
-        ),
+        all.map((r) => {
+          const actions = [];
+          if (r.fileUrl) {
+            actions.push(
+              `<button class="inline-flex items-center gap-1 rounded-lg bg-blue-600 px-2.5 py-1.5 text-[11px] font-semibold text-white hover:bg-blue-700" data-preview="${F.esc(r.id)}"><i data-lucide="eye" class="h-3.5 w-3.5"></i>Preview</button>`,
+            );
+          }
+          if (r.status === "Submitted") {
+            actions.push(
+              `<button class="inline-flex items-center gap-1 rounded-lg bg-emerald-600 px-2.5 py-1.5 text-[11px] font-semibold text-white hover:bg-emerald-700" data-approve="${F.esc(r.id)}"><i data-lucide="check" class="h-3.5 w-3.5"></i>Approve</button>`,
+              `<button class="inline-flex items-center gap-1 rounded-lg bg-rose-600 px-2.5 py-1.5 text-[11px] font-semibold text-white hover:bg-rose-700" data-reject="${F.esc(r.id)}"><i data-lucide="x" class="h-3.5 w-3.5"></i>Reject</button>`,
+            );
+          }
+          const actionCell = actions.length ? `<div class="flex flex-wrap items-center gap-2">${actions.join("")}</div>` : "—";
+          return `<tr class="border-t"><td class="p-3">${F.esc(r.name)}</td><td class="p-3">${F.esc(r.studentId)}</td><td class="p-3">${F.esc(r.status)}</td><td class="p-3">${F.esc(r.dueDate || "—")}</td><td class="p-3">${actionCell}</td></tr>`;
+        }),
       );
       $("#rows")
         ?.querySelectorAll("[data-approve],[data-reject]")
@@ -284,6 +425,17 @@
               );
               render();
               APP.toast(`Requirement ${r.status.toLowerCase()}`);
+            }),
+        );
+      $("#rows")
+        ?.querySelectorAll("[data-preview]")
+        .forEach(
+          (b) =>
+            (b.onclick = () => {
+              const r = F.get("requirements", []).find(
+                (x) => x.id === b.dataset.preview,
+              );
+              if (r) openRequirementPreview(r);
             }),
         );
     };

@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Authentication;
 
 use App\Http\Controllers\Controller;
+use App\Models\AuditLog;
 use App\Models\User;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -41,6 +42,14 @@ class PasswordController extends Controller
             'password' => $validated['password'],
             'mustChangePassword' => false,
         ])->save();
+
+        AuditLog::record([
+            'entity' => AuditLog::ENTITY_USER,
+            'recordId' => $user->user_id,
+            'action' => 'password.changed',
+            'notes' => 'Password changed using the security reset flow.',
+            'actorId' => $user->user_id,
+        ]);
 
         $request->session()->regenerate();
 

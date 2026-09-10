@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Student;
 
 use App\Http\Controllers\Controller;
 use App\Http\Requests\UpdateProfileRequest;
+use App\Models\AuditLog;
 use App\Models\User;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -39,7 +40,26 @@ class ProfileController extends Controller
         // Remove empty values to keep existing data
         $updateData = array_filter($validated, fn ($value) => $value !== null && $value !== '');
 
-        $user->update($updateData);
+        $changed = array_filter(
+            $updateData,
+            fn ($value, $key) => (string) $user->getAttribute($key) !== (string) $value,
+            ARRAY_FILTER_USE_BOTH,
+        );
+
+        if ($changed !== []) {
+            $user->update($changed);
+
+            $fields = array_keys($changed);
+            AuditLog::record([
+                'entity' => AuditLog::ENTITY_USER,
+                'recordId' => $user->user_id,
+                'action' => 'profile.updated',
+                'from' => json_encode(array_intersect_key($user->getOriginal(), array_flip($fields)), JSON_UNESCAPED_SLASHES),
+                'to' => json_encode($changed, JSON_UNESCAPED_SLASHES),
+                'notes' => ucfirst($user->role).' profile updated ('.implode(', ', $fields).').',
+                'actorId' => $user->user_id,
+            ]);
+        }
 
         return response()->json([
             'ok' => true,
@@ -133,12 +153,27 @@ class ProfileController extends Controller
             'department' => $user->department,
             'createdAt' => $user->created_at?->toIso8601String(),
             'updatedAt' => $user->updated_at?->toIso8601String(),
+            ...$this->extraPayload($user),
         ];
+    }
+
+    private function extraPayload(User $user): array
+    {
+        $extra = is_array($user->profile_extra) ? $user->profile_extra : [];
+        $payload = [];
+
+        foreach (['occupation', 'emergencyContact', 'specialization'] as $key) {
+            if (($extra[$key] ?? null) !== null) {
+                $payload[$key] = $extra[$key];
+            }
+        }
+
+        return $payload;
     }
 
     private function publicPhotoUrl(string $path): string
     {
-        return Str::startsWith($path, ['http://', 'https://'])
+        return Str::startsWith($path, ['http://', 'https://', '/'])
             ? $path
             : asset('storage/'.ltrim($path, '/'));
     }

@@ -116,21 +116,13 @@
                 : child) === studentId,
           )),
     );
-    const notifications = get("notifications", []);
-    targets.forEach((user) =>
-      notifications.push({
-        id: DG.generateId("NOT"),
-        userId: user.id,
-        title,
-        message,
-        date: new Date().toISOString(),
-        read: false,
-        source,
-        [`${source}Id`]: recordId,
-      }),
+    APP.notifyUsers(
+      targets.map((user) => user.id),
+      title,
+      message,
+      source,
+      recordId,
     );
-    save("notifications", notifications);
-    APP?.updateNotif?.();
   };
 
   const audit = (entity, record, action, notes) => {
@@ -279,7 +271,7 @@
     const pendingGrades = data.grades.filter(
       (record) =>
         data.ids.has(record.studentId) &&
-        (record.grade === null || record.grade === undefined || record.grade === ""),
+        (record.finalGrade === null || record.finalGrade === undefined || record.finalGrade === ""),
     );
     const competencyRecords = data.competencies.filter((record) =>
       data.ids.has(record.studentId),
@@ -354,7 +346,7 @@
 
   function renderStudents() {
     const data = assignedData();
-    const query = ($( "teacherSearch")?.value || "").trim().toLowerCase();
+    const query = ($("teacherSearch")?.value || "").trim().toLowerCase();
     const filter = $("teacherFilter")?.value || "all";
     const students = assignedStudents(data).filter((student) => {
       const enrollment = latestEnrollment(student.id, data.enrollments);
@@ -488,6 +480,10 @@
     $("newGradeDialog")?.close();
     APP.toast("Grade saved as unpublished");
     renderGrades();
+    openGradeModal(studentId, {
+      semester,
+      year: $("newGradeYear")?.value.trim() || undefined,
+    });
   }
 
   function visibleGrades() {
@@ -551,24 +547,26 @@
     return studentFor(id) || get("users", []).find((user) => user.id === id);
   }
 
-  function openGradeModal(studentId) {
+  function openGradeModal(studentId, options = {}) {
     const student = studentById(studentId);
     if (!student) return;
+    const { semester = teacherSemester(), year } = options;
     const years = [...new Set(get("grades", []).map((g) => g.schoolYear).filter(Boolean))].sort().reverse();
+    if (year && !years.includes(year)) years.unshift(year);
     const yearSelect = $("modalYear");
     yearSelect.replaceChildren();
-    (years.length ? years : ["2026-2027"]).forEach((year) => {
+    (years.length ? years : ["2026-2027"]).forEach((yearValue) => {
       const option = document.createElement("option");
-      option.value = year;
-      option.textContent = year;
+      option.value = yearValue;
+      option.textContent = yearValue;
       yearSelect.append(option);
     });
     const enrollment = latestEnrollment(studentId, get("enrollments", []));
     setText("modalStudentName", fullName(student));
     setText("modalStudentId", student.id);
     setText("modalStudentClass", [enrollment?.gradeLevel, enrollment?.strand || enrollment?.track].filter(Boolean).join(" · ") || "");
-    yearSelect.value = years[0] || "2026-2027";
-    $("modalSemester").value = teacherSemester();
+    yearSelect.value = year || years[0] || "2026-2027";
+    $("modalSemester").value = semester;
     const photo = document.querySelector("#gradesModal [data-grade-photo]");
     const fallback = document.querySelector("#gradesModal [data-grade-initials]");
     if (photo) photo.classList.add("hidden");
@@ -604,6 +602,12 @@
       .map((record) => ({ ...record, published: record.published === true || record.published === "true" }));
   }
 
+  function modalRowRecords() {
+    return qq("#modalGradeRows tr")
+      .map((row) => row._record)
+      .filter((record) => record && String(record.subject || "").trim());
+  }
+
   function renderGradeModalRows() {
     const body = $("modalGradeRows");
     body?.replaceChildren();
@@ -636,7 +640,7 @@
           record.finals = numberOrNull(q("[data-row-finals]", row).value);
           const final = gFinal(record);
           if (finalCell) finalCell.textContent = final === null ? "—" : final.toFixed(2);
-          renderGradeModalSummary(records);
+          renderGradeModalSummary(modalRowRecords());
         }),
       );
       q("[data-row-published]", row)?.addEventListener("change", (event) => {
@@ -658,7 +662,7 @@
       });
       body?.append(row);
     });
-    renderGradeModalSummary(records);
+    renderGradeModalSummary(modalRowRecords());
     lucide.createIcons();
   }
 
@@ -712,14 +716,18 @@
         record.finals = numberOrNull(q("[data-row-finals]", row).value);
         const final = gFinal(record);
         if (finalCell) finalCell.textContent = final === null ? "—" : final.toFixed(2);
+        renderGradeModalSummary(modalRowRecords());
       }),
     );
     q("[data-row-published]", row)?.addEventListener("change", (event) => {
       record.published = event.target.value === "true";
     });
-    q("[data-row-remove]", row)?.addEventListener("click", () => row.remove());
+    q("[data-row-remove]", row)?.addEventListener("click", () => {
+      row.remove();
+      renderGradeModalSummary(modalRowRecords());
+    });
     body?.append(row);
-    renderGradeModalSummary(modalGradeRecords());
+    renderGradeModalSummary(modalRowRecords());
     lucide.createIcons();
   }
 
@@ -767,14 +775,14 @@
     });
     save("grades", all);
     audit("grade", { studentId: student.id, subject: Object.keys(description).join(", ") }, "Grades saved", JSON.stringify(description));
-    $("gradesModal")?.close();
     APP.toast("Grades saved");
+    renderGradeModalRows();
     renderGrades();
   }
 
   function visibleCompetencies() {
     const data = assignedData();
-    const query = ($( "teacherSearch")?.value || "").trim().toLowerCase();
+    const query = ($("teacherSearch")?.value || "").trim().toLowerCase();
     const filter = $("teacherFilter")?.value || "all";
     return data.competencies.filter((record) => {
       const student = studentFor(record.studentId, data.users);
@@ -1001,10 +1009,11 @@
     });
     $("exportVisible")?.addEventListener("click", exportVisible);
     qq("[data-close-grades]").forEach((button) => button.addEventListener("click", () => $("gradesModal")?.close()));
+    $("gradesModal")?.addEventListener("cancel", (event) => event.preventDefault());
     $("modalSemester")?.addEventListener("change", () => { renderGradeModalRows(); });
     $("modalYear")?.addEventListener("change", () => { renderGradeModalRows(); });
-    $("[data-save-grades]")?.addEventListener("click", saveGradeModal);
-    $("[data-add-subject]")?.addEventListener("click", addGradeModalRow);
+    q("[data-save-grades]")?.addEventListener("click", saveGradeModal);
+    q("[data-add-subject]")?.addEventListener("click", addGradeModalRow);
     renderGrades();
   }
   if (page() === "competencies") {

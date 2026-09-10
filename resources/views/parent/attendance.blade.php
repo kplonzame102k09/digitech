@@ -53,13 +53,13 @@
                     </div>
                     <div class="overflow-x-auto">
                         <table class="w-full text-left text-sm">
-                            <thead class="bg-slate-50 text-xs uppercase text-slate-500 dark:bg-slate-800 dark:text-slate-400">
+                            <thead class="bg-slate-50 text-[11px] font-semibold uppercase tracking-wider text-slate-500 dark:bg-slate-800 dark:text-slate-400">
                                 <tr>
-                                    <th class="p-4">Date</th>
-                                    <th class="p-4">Student</th>
-                                    <th class="p-4">Subject / session</th>
-                                    <th class="p-4">Status</th>
-                                    <th class="p-4">Remarks</th>
+                                    <th class="px-5 py-3.5">Date</th>
+                                    <th class="px-5 py-3.5">Student</th>
+                                    <th class="px-5 py-3.5">Subject / session</th>
+                                    <th class="px-5 py-3.5">Status</th>
+                                    <th class="px-5 py-3.5">Remarks</th>
                                 </tr>
                             </thead>
                             <tbody id="attendanceRows"></tbody>
@@ -83,14 +83,22 @@
         </a>
     </template>
     <template id="attendanceRowTemplate">
-        <tr class="border-t border-slate-200 dark:border-slate-800">
-            <td data-attendance-date class="whitespace-nowrap p-4"></td>
-            <td data-attendance-student class="p-4 font-semibold"></td>
-            <td data-attendance-subject class="p-4"></td>
+        <tr class="border-t border-slate-100 transition-colors hover:bg-slate-50/70 dark:border-slate-800 dark:hover:bg-slate-800/40">
+            <td data-attendance-date class="whitespace-nowrap p-4 text-xs font-medium text-slate-600 dark:text-slate-400"></td>
+            <td class="p-4">
+                <div class="flex items-center gap-3">
+                    <span class="relative flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-blue-50 dark:bg-blue-950">
+                        <span data-attendance-initials class="flex h-9 w-9 items-center justify-center rounded-full text-xs font-bold text-blue-700 dark:text-blue-300"></span>
+                        <img data-attendance-photo class="absolute inset-0 hidden h-9 w-9 rounded-full object-cover" alt="" />
+                    </span>
+                    <b data-attendance-student class="block"></b>
+                </div>
+            </td>
+            <td data-attendance-subject class="p-4 text-slate-700 dark:text-slate-300"></td>
             <td class="p-4">
                 <span data-attendance-status></span>
             </td>
-            <td data-attendance-remarks class="p-4 text-slate-500 dark:text-slate-400"></td>
+            <td data-attendance-remarks class="max-w-[16rem] truncate p-4 text-slate-500 dark:text-slate-400"></td>
         </tr>
     </template>
 @include('partials.portal-scripts', ['portalPage' => 'parent/parent.js'])

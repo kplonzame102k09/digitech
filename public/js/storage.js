@@ -32,6 +32,7 @@ function queueSync(key, data) {
 async function flushSync() {
   const entries = Object.entries(pendingSync);
   entries.forEach(([key]) => delete pendingSync[key]);
+  const failed = [];
   for (const [key, value] of entries) {
     try {
       const response = await fetch(`${apiBase}/${encodeURIComponent(key)}`, {
@@ -44,9 +45,16 @@ async function flushSync() {
     } catch (error) {
       console.error("Failed to sync", key, error);
       pendingSync[key] = value;
+      failed.push(key);
     }
   }
   if (Object.keys(pendingSync).length) queueSync._retry = setTimeout(flushSync, 1500);
+  return {
+    ok: failed.length === 0,
+    synced: entries.length - failed.length,
+    total: entries.length,
+    failed,
+  };
 }
 function hydrateFromBoot(boot) {
   if (!boot || typeof boot !== "object") return;
@@ -54,12 +62,29 @@ function hydrateFromBoot(boot) {
   apiBase = boot.apiBase || "/api/portal";
   logoutUrl = boot.logoutUrl || "/logout";
   Object.entries(boot.collections || {}).forEach(([key, value]) => { memoryStore[key] = value; });
+  if (Array.isArray(memoryStore.notifications)) {
+    memoryStore.notifications = dedupeNotifications(memoryStore.notifications);
+  }
   if (boot.currentUser) memoryStore.currentUser = boot.currentUser;
   syncEnabled = true;
   window.__DIGITECH_READY__ = true;
   document.dispatchEvent(new CustomEvent("digitech:ready"));
 }
 function generateId(prefix = "REC") { return `${prefix}-${new Date().getFullYear()}-${Math.random().toString(36).slice(2, 8).toUpperCase()}`; }
+function dedupeNotifications(list) {
+  const byKey = new Map();
+  (list || []).forEach((notification) => {
+    const source = notification.source || "portal";
+    const key =
+      notification.id ||
+      `${source}|${notification[`${source}Id`] || ""}|${notification.title}|${notification.message}`;
+    const previous = byKey.get(key);
+    if (!previous || new Date(notification.date) >= new Date(previous.date)) {
+      byKey.set(key, notification);
+    }
+  });
+  return [...byKey.values()];
+}
 function userIdExists(id) { return getData("users", []).some((u) => u.id === id); }
 function generateUserId(role) {
   const prefixes = { student: "STU", parent: "PRT", teacher: "TCH", admin: "ADM", guest: "GST" };
@@ -129,6 +154,20 @@ async function uploadImage(file) {
   if (!response.ok) throw new Error(data.error || `Upload failed (${response.status})`);
   return data;
 }
+async function uploadRequirementFile(file) {
+  if (!file) throw new Error("No file selected");
+  const form = new FormData();
+  form.append("file", file);
+  const response = await fetch(`${apiBase}/requirements/upload`, {
+    method: "POST",
+    headers: { Accept: "application/json", "X-CSRF-TOKEN": csrfToken, "X-Requested-With": "XMLHttpRequest" },
+    credentials: "same-origin",
+    body: form,
+  });
+  const data = await response.json().catch(() => ({}));
+  if (!response.ok) throw new Error(data.error || `Upload failed (${response.status})`);
+  return data;
+}
 function loadProfileElements() {
   const user = getCurrentUser();
   if (!user) return;
@@ -136,4 +175,4 @@ function loadProfileElements() {
   document.querySelectorAll("[data-user-name]").forEach((el) => { el.textContent = `${user.firstName} ${user.lastName}`; });
   document.querySelectorAll("[data-user-id]").forEach((el) => { el.textContent = user.id; });
 }
-window.DG = { saveData, getData, removeData, clearData, generateId, generateUserId, userIdExists, getCurrentUser, setCurrentUser, logoutUser, getProfilePhoto, setProfilePhoto, uploadProfilePhoto, uploadImage, loadProfileElements, hydrateFromBoot, flushSync, STORAGE_KEYS };
+window.DG = { saveData, getData, removeData, clearData, generateId, generateUserId, userIdExists, getCurrentUser, setCurrentUser, logoutUser, getProfilePhoto, setProfilePhoto, uploadProfilePhoto, uploadImage, uploadRequirementFile, loadProfileElements, hydrateFromBoot, flushSync, dedupeNotifications, STORAGE_KEYS };

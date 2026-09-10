@@ -3,6 +3,12 @@
   const save = (key, value) => DG.saveData(key, value);
   const esc = (value) => APP.esc(value ?? "");
   const userName = (u) => `${u?.firstName || ""} ${u?.lastName || ""}`.trim() || u?.id || "Unknown";
+  const photoUrl = (u) => {
+    const photo = u?.photo;
+    if (!photo) return "";
+    if (/^(?:https?:|data:|\/)/.test(photo)) return photo;
+    return `${window.location.origin}/storage/${photo.replace(/^\/+/, "")}`;
+  };
   const users = () => get("users", []);
   const students = () => users().filter((u) => u.role === "student");
   const teacherStudents = (teacher) => {
@@ -12,12 +18,8 @@
     get("competencies", []).filter((r) => r.teacherId === teacher.id || r.assessorId === teacher.id || r.assessor === userName(teacher)).forEach((r) => ids.add(r.studentId));
     return students().filter((s) => ids.has(s.id));
   };
-  const notify = (userIds, title, message, source = "portal") => {
-    const ns = get("notifications", []);
-    [...new Set(userIds)].filter(Boolean).forEach((userId) => ns.push({ id: DG.generateId("NOT"), userId, title, message, source, date: new Date().toISOString(), read: false }));
-    save("notifications", ns);
-    APP?.updateNotif?.();
-  };
+  const notify = (userIds, title, message, source = "portal") =>
+    APP.notifyUsers(userIds || [], title, message, source);
   const parentIdsFor = (studentIds) => users().filter((u) => u.role === "parent" && [u.childId, ...(u.childIds || []), ...(u.children || [])].some((v) => studentIds.includes(typeof v === "object" ? v.id || v.studentId : v))).map((u) => u.id);
   const download = (name, text, type = "text/plain") => {
     const a = document.createElement("a"); a.href = URL.createObjectURL(new Blob([text], { type })); a.download = name; a.click(); setTimeout(() => URL.revokeObjectURL(a.href), 500);
@@ -67,5 +69,5 @@
     const annual = annualValues.length ? Math.round(annualValues.reduce((s, v) => s + v, 0) / annualValues.length * 100) / 100 : null;
     return { first, second, annual, firstGwa: gwa(first), secondGwa: gwa(second), annualGwa: gwa(annual) };
   };
-  window.FEATURES = { get, save, esc, userName, users, students, teacherStudents, notify, parentIdsFor, download, csv, SEMESTERS, GRADE_TERMS, GRADE_WEIGHTS, termValue, finalGrade, generalAverage, gwa, gwaText, gradesFor, studentAverages };
+  window.FEATURES = { get, save, esc, userName, photoUrl, users, students, teacherStudents, notify, parentIdsFor, download, csv, SEMESTERS, GRADE_TERMS, GRADE_WEIGHTS, termValue, finalGrade, generalAverage, gwa, gwaText, gradesFor, studentAverages };
 })();

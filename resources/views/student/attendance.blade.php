@@ -45,14 +45,14 @@
                     <div class="overflow-x-auto">
                         <table class="w-full text-left text-sm">
                             <thead
-                                class="bg-slate-50 text-xs uppercase text-slate-500 dark:bg-slate-800 dark:text-slate-400">
+                                class="bg-slate-50 text-[11px] font-semibold uppercase tracking-wider text-slate-500 dark:bg-slate-800 dark:text-slate-400">
                                 <tr>
-                                    <th class="p-4">Student</th>
-                                    <th class="p-4">Date</th>
-                                    <th class="p-4">Subject / session</th>
-                                    <th class="p-4">Status</th>
-                                    <th class="p-4">Remarks</th>
-                                    <th class="p-4">Action</th>
+                                    <th class="px-5 py-3.5">Student</th>
+                                    <th class="px-5 py-3.5">Date</th>
+                                    <th class="px-5 py-3.5">Subject / session</th>
+                                    <th class="px-5 py-3.5">Status</th>
+                                    <th class="px-5 py-3.5">Remarks</th>
+                                    <th class="px-5 py-3.5 text-right">Action</th>
                                 </tr>
                             </thead>
                             <tbody id="rows"></tbody>

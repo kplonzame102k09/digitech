@@ -16,7 +16,8 @@ class Announcement extends Model
         'category',
         'audience',
         'authorId',
-        'createdAt',
+        'createdBy',
+        'image',
         'updatedAt',
     ];
 

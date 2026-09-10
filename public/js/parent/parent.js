@@ -15,7 +15,7 @@
     Enrolled: ["bg-emerald-50", "text-emerald-700"],
     Verified: ["bg-emerald-50", "text-emerald-700"],
     Competent: ["bg-emerald-50", "text-emerald-700"],
-    Present: ["bg-emerald-50", "text-emerald-700"],
+    Present: ["bg-emerald-50", "text-emerald-700", "dark:bg-emerald-950", "dark:text-emerald-300"],
     Good: ["bg-emerald-50", "text-emerald-700"],
     "Very Good": ["bg-emerald-50", "text-emerald-700"],
     "With Honors": ["bg-emerald-50", "text-emerald-700"],
@@ -23,14 +23,14 @@
     "With Highest Honors": ["bg-emerald-50", "text-emerald-700"],
     Submitted: ["bg-blue-50", "text-blue-700"],
     Processing: ["bg-blue-50", "text-blue-700"],
-    Late: ["bg-amber-50", "text-amber-700"],
+    Late: ["bg-amber-50", "text-amber-700", "dark:bg-amber-950", "dark:text-amber-300"],
     "Under Review": ["bg-amber-50", "text-amber-700"],
     Pending: ["bg-amber-50", "text-amber-700"],
     Incomplete: ["bg-amber-50", "text-amber-700"],
     "In Progress": ["bg-amber-50", "text-amber-700"],
     "Ready for Release": ["bg-purple-50", "text-purple-700"],
     Released: ["bg-purple-50", "text-purple-700"],
-    Absent: ["bg-red-50", "text-red-700"],
+    Absent: ["bg-red-50", "text-red-700", "dark:bg-red-950", "dark:text-red-300"],
     Rejected: ["bg-red-50", "text-red-700"],
     Failed: ["bg-red-50", "text-red-700"],
     "Not Yet Competent": ["bg-red-50", "text-red-700"],
@@ -162,9 +162,6 @@
 
     $("[data-menu-toggle]")?.addEventListener("click", () =>
       $("#sidebar")?.classList.toggle("-translate-x-full"),
-    );
-    $$("[data-notifications]").forEach((button) =>
-      button.addEventListener("click", () => APP.showNotifications()),
     );
     $$("[data-logout]").forEach((button) =>
       button.addEventListener("click", () => AUTH.logout()),
@@ -441,6 +438,14 @@
         student ? studentName(student) : item.studentId || "—",
         row,
       );
+      const initialsEl = $("[data-attendance-initials]", row);
+      if (initialsEl) initialsEl.textContent = initials(student);
+      const photo = $("[data-attendance-photo]", row);
+      if (photo && student?.photo) {
+        photo.src = student.photo;
+        photo.alt = studentName(student);
+        photo.classList.remove("hidden");
+      }
       text(
         "[data-attendance-subject]",
         item.subject || item.session || "—",
@@ -684,7 +689,18 @@
         name: item.name || item.title || item.type || "Requirement",
         when: item.updatedAt || item.date,
       })),
-    ];
+    ]
+      .map((item) => {
+        const time = item.when ? new Date(item.when) : null;
+        return { item, time };
+      })
+      .sort((a, b) => {
+        if (a.time && b.time) return b.time - a.time;
+        if (a.time) return -1;
+        if (b.time) return 1;
+        return 0;
+      })
+      .map((entry) => entry.item);
     const table = $("#documentsTable");
     const body = $("#documentRows");
     body?.replaceChildren();
@@ -786,13 +802,65 @@
     APP.toast("Profile updated");
   }
 
+  function wireLinkRequestForm(parent) {
+    const form = $("#linkRequestForm");
+    const input = $("#requestedStudentId");
+    const status = $("#linkRequestStatus");
+    if (!form || !input || !status) return;
+    const parentName = `${parent.firstName || ""} ${parent.lastName || ""}`.trim() || parent.id;
+    form.addEventListener("submit", (event) => {
+      event.preventDefault();
+      const studentId = input.value.trim();
+      if (!studentId) {
+        status.textContent = "Enter the student ID to link.";
+        return;
+      }
+      const student = DG.getData("users", []).find((u) => u.id === studentId);
+      if (!student) {
+        status.textContent = `No student record found for "${studentId}".`;
+        return;
+      }
+      if ((parent.childId || parent.childIds?.includes?.(studentId) || parent.children?.some?.((child) => (typeof child === "object" ? child.id || child.studentId : child) === studentId))) {
+        status.textContent = `You are already linked to ${student.firstName || student.id}.`;
+        return;
+      }
+      const requests = DG.getData("parentLinkRequests", []);
+      const pending = requests.find((r) => r.parentId === parent.id && r.studentId === studentId && r.status === "Pending");
+      if (pending) {
+        status.textContent = "A request for this student is already pending review.";
+        return;
+      }
+      const now = new Date().toISOString();
+      requests.push({
+        id: DG.generateId("PLR"),
+        parentId: parent.id,
+        studentId,
+        status: "Pending",
+        createdAt: now,
+        updatedAt: now,
+      });
+      DG.saveData("parentLinkRequests", requests);
+      APP?.notifyAdmins?.(
+        "Parent link request",
+        `${parentName} requested a link to ${studentId} (${student.firstName || ""}).`,
+        "parentLinkRequest",
+        requests[requests.length - 1].id,
+      );
+      status.textContent = `A link request for ${studentId} has been sent to the registrar for review.`;
+      input.value = "";
+    });
+  }
+
   function init() {
     const parent = currentParent();
     if (!parent) return;
     const children = linkedChildren(parent);
     setupShell(parent);
     if (page() === "dashboard") renderDashboard(parent, children);
-    if (page() === "children") renderChildren(children);
+    if (page() === "children") {
+      renderChildren(children);
+      wireLinkRequestForm(parent);
+    }
     if (page() === "attendance") renderAttendance(children);
     if (page() === "grades") {
       renderGrades(children);
@@ -848,4 +916,5 @@
     }
   });
   window.PARENT = { init };
+  window.PARENT.init();
 })();

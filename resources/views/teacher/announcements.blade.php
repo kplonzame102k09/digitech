@@ -18,75 +18,66 @@
     <div class="lg:pl-64">
         @include('teacher.components.header')
         <main class="p-4 sm:p-6 lg:p-8">
-            <div class="mx-auto max-w-7xl">
-                <section class="teacher-hero mb-7 overflow-hidden rounded-3xl p-6 text-white shadow-xl sm:p-8">
-                    <p class="text-xs font-bold uppercase tracking-[0.18em] text-blue-600">Communication center</p>
-                    <div class="mt-2 flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
-                        <div>
-                            <h2 class="text-3xl font-extrabold tracking-tight">Class announcements</h2>
-                            <p class="mt-2 max-w-2xl text-white">Send clear updates to assigned learners and their parents.</p>
-                        </div>
-                        <span class="teacher-page-chip">
-                            <i data-lucide="shield-check" class="h-4 w-4"></i>
-                            Portal workspace
-                        </span>
-                    </div>
+            <div class="mx-auto max-w-3xl">
+                <section class="mb-6">
+                    <p class="text-xs font-bold uppercase tracking-[0.18em] text-violet-700">Communication center</p>
+                    <h2 class="mt-1 text-2xl font-extrabold tracking-tight">Announcements</h2>
+                    <p class="mt-1 text-sm text-slate-500">Send clear updates to assigned learners and their parents.</p>
                 </section>
-                <section class="teacher-toolbar card mb-6 p-5 sm:p-6">
-                    <div class="mb-5">
-                        <p class="text-xs font-bold uppercase tracking-[0.16em] text-violet-600">Communication center</p>
-                        <h3 class="mt-1 text-xl font-extrabold">Publish announcement</h3>
-                        <p class="mt-1 text-sm text-slate-500">Keep your college community informed with clear, timely updates.</p>
+                <section class="card mb-6 overflow-hidden">
+                    <div class="flex items-center gap-3 border-b border-slate-100 px-5 py-4 dark:border-slate-800">
+                        <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-violet-100 text-violet-700 dark:bg-violet-950 dark:text-violet-300">
+                            <i data-lucide="megaphone" class="h-4 w-4"></i>
+                        </span>
+                        <div>
+                            <h3 class="font-extrabold">Share an update</h3>
+                            <p class="text-xs text-slate-400">Publish a notice to the college community</p>
+                        </div>
                     </div>
-                    <form id="announcementForm" class="grid gap-4 md:grid-cols-2">
-                        <label class="text-sm font-semibold">
-                            Title
-                            <input id="title" class="input mt-1.5 w-full rounded-xl border px-3 py-3" placeholder="Announcement title"required>
-                        </label>
-                        <label class="text-sm font-semibold">
-                            Category
-                            <input id="category" class="input mt-1.5 w-full rounded-xl border px-3 py-3" placeholder="e.g. Registrar">
-                        </label>
-                        <label class="text-sm font-semibold">
-                            Audience
-                            <select id="audience" class="input mt-1.5 w-full rounded-xl border px-3 py-3">
+                    <form id="announcementForm" class="p-5">
+                        <textarea id="message" rows="3" class="input w-full rounded-xl border px-3 py-3" placeholder="What's the announcement?" required></textarea>
+                        <div class="mt-3 grid gap-3 sm:grid-cols-3">
+                            <input id="title" class="input rounded-xl border px-3 py-2.5 text-sm" placeholder="Title *" />
+                            <input id="category" class="input rounded-xl border px-3 py-2.5 text-sm" placeholder="Category (e.g. Class)" />
+                            <select id="audience" class="input rounded-xl border px-3 py-2.5 text-sm">
                                 <option>All</option>
                                 <option>Students</option>
                                 <option>Parents</option>
                                 <option>Teachers</option>
-                                <option>Guests</option>
                             </select>
-                        </label>
-                        <label class="text-sm font-semibold md:col-span-2">
-                            Message
-                            <textarea id="message" class="input mt-1.5 w-full rounded-xl border px-3 py-3" rows="4" placeholder="Write your announcement" required></textarea>
-                        </label>
-                        <div class="flex justify-end md:col-span-2">
-                            <button class="rounded-xl bg-emerald-600 px-5 py-3 text-sm font-semibold text-white">
-                                Publish announcement
+                        </div>
+                        <div class="mt-3 flex flex-wrap items-center gap-3">
+                            <label class="inline-flex cursor-pointer items-center gap-2 rounded-xl border border-slate-300 px-4 py-2.5 text-sm font-semibold hover:bg-slate-50 dark:border-slate-600 dark:hover:bg-slate-800">
+                                <i data-lucide="image-plus" class="h-4 w-4"></i>
+                                Add photo
+                                <input id="announcementImage" type="file" accept="image/*" class="hidden" />
+                            </label>
+                            <span id="announcementImageName" class="text-xs text-slate-400"></span>
+                        </div>
+                        <div id="announcementImagePreview" class="mt-3 hidden">
+                            <div class="relative inline-block">
+                                <img id="announcementImagePreviewImg" class="max-h-52 rounded-xl border border-slate-200 object-cover dark:border-slate-700" alt="Announcement photo preview" />
+                                <button type="button" id="announcementImageRemove" aria-label="Remove photo"
+                                    class="absolute -top-2 -right-2 flex h-6 w-6 items-center justify-center rounded-full bg-slate-900 text-white shadow">
+                                    <i data-lucide="x" class="h-3 w-3"></i>
+                                </button>
+                            </div>
+                        </div>
+                        <div class="mt-4 flex flex-wrap items-center justify-between gap-3">
+                            <span class="text-xs text-slate-400">Reaches every selected audience instantly.</span>
+                            <button type="submit" class="inline-flex items-center justify-center gap-2 rounded-xl bg-emerald-600 px-5 py-2.5 text-sm font-semibold text-white hover:bg-emerald-700">
+                                <i data-lucide="send" class="h-4 w-4"></i>
+                                Publish
                             </button>
                         </div>
                     </form>
                 </section>
-                <section class="card overflow-hidden">
-                    <div class="border-b border-slate-200 px-5 py-4 dark:border-slate-800">
-                        <h3 class="font-extrabold">Announcement feed</h3>
-                        <p class="text-xs text-slate-400">The latest notices available to this role.</p>
+                <section>
+                    <div class="mb-3 flex items-center gap-2 px-1">
+                        <i data-lucide="newspaper" class="h-4 w-4 text-slate-400"></i>
+                        <h3 class="text-sm font-bold text-slate-500">Latest updates</h3>
                     </div>
-                    <div class="overflow-x-auto">
-                        <table class="w-full text-left text-sm">
-                            <thead class="bg-slate-50 dark:bg-slate-800">
-                                <tr>
-                                    <th class="p-4">Title</th>
-                                    <th class="p-4">Audience</th>
-                                    <th class="p-4">Category</th>
-                                    <th class="p-4">Date</th>
-                                    <th class="p-4">Message</th>
-                                </tr>
-                            </thead>
-                            <tbody id="rows"></tbody>
-                        </table>
-                    </div>
+                    <div id="rows" class="space-y-4"></div>
                 </section>
             </div>
         </main>

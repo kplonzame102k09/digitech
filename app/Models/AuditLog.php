@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Str;
 
 class AuditLog extends Model
 {
@@ -73,5 +74,18 @@ class AuditLog extends Model
             ->orderBy('createdAt', 'desc')
             ->limit($limit)
             ->get();
+    }
+
+    /**
+     * Persist an activity entry with a fresh id and timestamp.
+     *
+     * @param  array<string, mixed>  $data
+     */
+    public static function record(array $data): self
+    {
+        return self::create(array_merge([
+            'id' => (string) Str::uuid(),
+            'createdAt' => now(),
+        ], $data));
     }
 }

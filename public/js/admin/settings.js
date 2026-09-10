@@ -16,6 +16,17 @@
     "requirements",
     "settings",
   ];
+  const RESET_LABELS = {
+    users: "Users",
+    enrollments: "Enrollments",
+    documentRequests: "Documents",
+    grades: "Grades",
+    competencies: "Competencies",
+    notifications: "Notifications",
+    announcements: "Announcements",
+    attendance: "Attendance",
+    requirements: "Requirements",
+  };
   let admin;
   let settings;
   let lastBackupAt = null;
@@ -68,8 +79,11 @@
       else field.value = value;
     });
   }
-  function saveSettings(event) {
+  async function saveSettings(event) {
     event.preventDefault();
+    const button = $("#settingsForm [type='submit']");
+    if (button) button.disabled = true;
+    setText("#settingsFeedback", "Saving...");
     settings = {
       ...settings,
       teacherRegistration: $("#teacherReg").checked,
@@ -86,12 +100,22 @@
       updatedBy: admin.id,
     };
     save("settings", settings);
-    addAudit(
-      "Settings updated",
-      "Institution, registration, academic, and notification defaults updated.",
-    );
-    setText("#settingsFeedback", "Settings saved successfully.");
-    APP.toast("Settings saved");
+    const sync = await DG.flushSync();
+    if (sync.ok) {
+      addAudit(
+        "Settings updated",
+        "Institution, registration, academic, and notification defaults updated.",
+      );
+      setText("#settingsFeedback", "Settings saved successfully.");
+      APP.toast("Settings saved");
+    } else {
+      setText(
+        "#settingsFeedback",
+        `Settings saved locally, but server sync failed (${sync.failed.join(", ")}). Retrying in the background.`,
+      );
+      APP.toast("Save failed to reach server", "error");
+    }
+    if (button) button.disabled = false;
     renderHealth();
   }
   function download(name, content, type) {
@@ -128,11 +152,12 @@
     APP.toast("Backup downloaded");
     renderAudit();
   }
-  function importBackup(event) {
+  async function importBackup(event) {
     const file = event.target.files?.[0];
     if (!file) return;
     const reader = new FileReader();
-    reader.addEventListener("load", () => {
+    reader.addEventListener("load", async () => {
+      setText("#backupFeedback", "Reading backup...");
       try {
         const backup = JSON.parse(reader.result);
         if (!backup?.collections || typeof backup.collections !== "object")
@@ -143,6 +168,15 @@
           )
         )
           return;
+        const restoredUsers = backup.collections.users;
+        if (
+          Array.isArray(restoredUsers) &&
+          !restoredUsers.some((user) => user?.id === admin.id)
+        ) {
+          throw new Error(
+            "This backup does not include your admin account — restoring it would lock you out.",
+          );
+        }
         storageKeys.forEach((key) => {
           if (Object.prototype.hasOwnProperty.call(backup.collections, key))
             save(key, backup.collections[key]);
@@ -151,12 +185,17 @@
           "Backup restored",
           `Backup from ${backup.exportedAt || "unknown date"} restored.`,
         );
-        setText("#backupFeedback", "Backup restored. Reloading portal data...");
+        setText("#backupFeedback", "Restoring on the server...");
         APP.toast("Backup restored");
-        setTimeout(() => location.reload(), 500);
+        const sync = await DG.flushSync();
+        if (!sync.ok) {
+          throw new Error(`Sync failed on: ${sync.failed.join(", ")}`);
+        }
+        setText("#backupFeedback", "Backup restored. Reloading portal data...");
+        setTimeout(() => location.reload(), 300);
       } catch (error) {
         setText("#backupFeedback", `Restore failed: ${error.message}`);
-        APP.toast("Invalid backup file", "error");
+        APP.toast("Restore failed", "error");
       }
     });
     reader.readAsText(file);
@@ -217,30 +256,45 @@
       container?.append(row);
     });
   }
-  function resetKey(key) {
-    const label = key === "documentRequests" ? "documents" : key;
-    if (
-      !window.confirm(
-        `Reset ${label}? Create a backup first if you may need the current records.`,
-      )
-    )
+  async function resetSelected() {
+    const keys = $$("#resetOptions input:checked").map(
+      (checkbox) => checkbox.dataset.resetKey,
+    );
+    if (!keys.length) {
+      setText("#resetFeedback", "Select at least one collection to reset.");
+      APP.toast("Nothing selected", "error");
       return;
-    save(key, []);
-    addAudit("Collection reset", `${key} collection was reset.`);
-    APP.toast(`${label} reset`);
+    }
+    const labels = keys
+      .map((key) => RESET_LABELS[key] || key)
+      .join(", ");
+    const includesUsers = keys.includes("users");
+    const message = includesUsers
+      ? `Reset ${labels}? The ${get("users").length} account(s) will be deleted except the primary admin. Create a backup first if you may need them.`
+      : `Reset ${labels}? Create a backup first if you may need the current records.`;
+    if (!window.confirm(message)) return;
+    const button = $("#resetSelectedBtn");
+    if (button) button.disabled = true;
+    setText("#resetFeedback", "Resetting on the server...");
+    keys.forEach((key) => save(key, []));
+    const sync = await DG.flushSync();
+    if (sync.ok) {
+      addAudit("Collections reset", `${labels} were reset.`);
+      setText("#resetFeedback", "Reset complete.");
+      APP.toast("Reset complete");
+    } else {
+      setText(
+        "#resetFeedback",
+        `Some resets failed on the server (${sync.failed.join(", ")}). Retrying in the background.`,
+      );
+      APP.toast("Some resets failed", "error");
+    }
+    if (button) button.disabled = false;
+    $$("#resetOptions input:checked").forEach(
+      (checkbox) => (checkbox.checked = false),
+    );
     renderHealth();
     renderAudit();
-  }
-  function resetAll() {
-    if (
-      !window.confirm(
-        "Reset all portal collections? This cannot be undone without a downloaded backup.",
-      )
-    )
-      return;
-    storageKeys.forEach((key) => save(key, key === "settings" ? {} : []));
-    lastBackupAt = null;
-    location.href = "/";
   }
   function init() {
     admin = AUTH.requireRole("admin");
@@ -257,9 +311,6 @@
     $("#open")?.addEventListener("click", () =>
       $("#side")?.classList.toggle("-translate-x-full"),
     );
-    $$("[data-notifications]").forEach((button) =>
-      button.addEventListener("click", () => APP.showNotifications()),
-    );
     $$("[data-theme-toggle]").forEach((button) =>
       button.addEventListener("click", () => APP.toggleTheme()),
     );
@@ -269,10 +320,7 @@
     $("#settingsForm")?.addEventListener("submit", saveSettings);
     $("[data-export-backup]")?.addEventListener("click", exportBackup);
     $("#backupFile")?.addEventListener("change", importBackup);
-    $$("[data-reset-key]").forEach((button) =>
-      button.addEventListener("click", () => resetKey(button.dataset.resetKey)),
-    );
-    $("[data-reset-all]")?.addEventListener("click", resetAll);
+    $("#resetSelectedBtn")?.addEventListener("click", resetSelected);
     renderHealth();
     renderAudit();
     lucide.createIcons();

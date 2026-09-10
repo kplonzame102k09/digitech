@@ -310,8 +310,7 @@
     APP.applyTheme();
     APP.updateNotif();
     $("#open")?.addEventListener("click", () => $("#side")?.classList.toggle("-translate-x-full"));
-    $$("[data-notifications]").forEach((button) => button.addEventListener("click", () => APP.showNotifications()));
-    $$("[data-theme-toggle]").forEach((button) => button.addEventListener("click", () => APP.toggleTheme()));
+        $$("[data-theme-toggle]").forEach((button) => button.addEventListener("click", () => APP.toggleTheme()));
     $$("[data-logout]").forEach((button) => button.addEventListener("click", () => AUTH.logout()));
     $("#semesterFilter")?.addEventListener("change", () => { render(); });
     $("#searchInput")?.addEventListener("input", (event) => {

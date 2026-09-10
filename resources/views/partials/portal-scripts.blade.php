@@ -29,6 +29,9 @@
         if (window.DG) {
             DG.loadProfileElements();
         }
+        if (window.APP && window.APP.autoClearBadges) {
+            APP.autoClearBadges();
+        }
         if (window.lucide) {
             lucide.createIcons();
         }
