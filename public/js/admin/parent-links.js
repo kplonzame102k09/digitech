@@ -38,7 +38,7 @@
                 <span class="text-xs text-slate-400">${esc(req.studentId)}</span>
               </td>
               <td class="p-4">${esc((req.createdAt || "").slice(0, 10) || "—")}</td>
-              <td class="p-4"><span class="inline-flex rounded-full bg-slate-100 px-2.5 py-1 text-[11px] font-semibold">${esc(req.status)}</span></td>
+              <td class="p-4"><span class="inline-flex rounded-full px-2.5 py-1 text-[11px] font-semibold">${esc(req.status)}</span></td>
               <td class="p-4">${actions}</td>
             </tr>`;
           })
