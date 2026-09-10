@@ -76,13 +76,13 @@
                         <span id="selectionCount" class="font-semibold text-green-700"></span>
                         <div id="bulkActions" class="ml-auto hidden flex items-center gap-2">
                             <button type="button" data-bulk-activate class="rounded-lg p-2 text-green-600 hover:bg-green-50" title="Activate selected">
-                                <i data-lucide="user-check" class="h-4 w-4"></i>
+                                <i data-lucide="user-check" class="h-5 w-5"></i>
                             </button>
                             <button type="button" data-bulk-deactivate class="rounded-lg p-2 text-slate-600 hover:bg-slate-100" title="Deactivate selected">
-                                <i data-lucide="user-x" class="h-4 w-4"></i>
+                                <i data-lucide="user-x" class="h-5 w-5"></i>
                             </button>
                             <button type="button" data-bulk-delete class="rounded-lg p-2 text-red-600 hover:bg-red-50" title="Delete selected">
-                                <i data-lucide="trash-2" class="h-4 w-4"></i>
+                                <i data-lucide="trash-2" class="h-5 w-5"></i>
                             </button>
                         </div>
                     </div>
