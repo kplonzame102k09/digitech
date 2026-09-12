@@ -53,6 +53,7 @@
                                 <option>Present</option>
                                 <option>Late</option>
                                 <option>Absent</option>
+                                <option>Excused</option>
                             </select>
                             <input id="remarks" class="input rounded-xl border px-3 py-2" placeholder="Remarks">
                             <div class="flex justify-end gap-2 md:col-span-6">

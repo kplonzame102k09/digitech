@@ -133,7 +133,7 @@
     const grades = DG.getData("grades", []).filter(
       (grade) =>
         grade.studentId === studentId &&
-        grade.published !== false &&
+        grade.published === true &&
         gradeFinal(grade) !== null,
     );
     return gradeAverage(grades);
@@ -464,7 +464,7 @@
 
   function publishedForStudent(studentId) {
     return DG.getData("grades", []).filter(
-      (grade) => grade.studentId === studentId && grade.published !== false,
+      (grade) => grade.studentId === studentId && grade.published === true,
     );
   }
 
@@ -815,7 +815,7 @@
         status.textContent = "Enter the student ID to link.";
         return;
       }
-      const student = DG.getData("users", []).find((u) => u.id === studentId);
+      const student = DG.getData("studentDirectory", DG.getData("users", [])).find((u) => u.id === studentId);
       if (!student) {
         status.textContent = `No student record found for "${studentId}".`;
         return;
@@ -840,12 +840,6 @@
         updatedAt: now,
       });
       DG.saveData("parentLinkRequests", requests);
-      APP?.notifyAdmins?.(
-        "Parent link request",
-        `${parentName} requested a link to ${studentId} (${student.firstName || ""}).`,
-        "parentLinkRequest",
-        requests[requests.length - 1].id,
-      );
       status.textContent = `A link request for ${studentId} has been sent to the registrar for review.`;
       input.value = "";
     });

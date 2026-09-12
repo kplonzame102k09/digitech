@@ -125,16 +125,18 @@
                         </button>
                     </form>
                     <p class="text-center text-sm text-slate-500 mt-6">
-                        No account?
+                        No account? 
                         <br>
-                        Go to the nearest Digitech College branch to get your credentials.
+                        <a href="{{ route('index') }}"><strong>Contact us</strong></a> 
+                        <br>
+                        Go to the nearest Digitech College branch.
                     </p>
                 </div>
             </div>
         </div>
     </div>
     <script>
-        document.addEventListener('DOMContentLoaded', function () { 
+        document.addEventListener('DOMContentLoaded', function () {
             lucide.createIcons();
             const roleSelect = document.getElementById('role');
             const userIdInput = document.getElementById('value');
@@ -156,6 +158,7 @@
             updateUserIdPlaceholder();
 });
     </script>
+    @include('partials.password-toggle')
 </body>
 
 </html>

@@ -17,7 +17,7 @@ class DocumentRequestController extends Controller
     public function index(Request $request): JsonResponse
     {
         $user = $request->user();
-        abort_unless($user?->isStudent(), 403);
+        $this->authorize('viewAny', DocumentRequest::class);
 
         $documentRequests = DocumentRequest::query()
             ->where('studentId', $user->user_id)
@@ -54,7 +54,7 @@ class DocumentRequestController extends Controller
     public function store(StoreDocumentRequestRequest $request): JsonResponse
     {
         $user = $request->user();
-        abort_unless($user?->isStudent(), 403);
+        $this->authorize('create', DocumentRequest::class);
 
         $validated = $request->validated();
 
@@ -100,12 +100,13 @@ class DocumentRequestController extends Controller
     public function show(Request $request, string $id): JsonResponse
     {
         $user = $request->user();
-        abort_unless($user?->isStudent(), 403);
 
         $documentRequest = DocumentRequest::query()
             ->where('id', $id)
             ->where('studentId', $user->user_id)
             ->firstOrFail();
+
+        $this->authorize('view', $documentRequest);
 
         return response()->json([
             'ok' => true,
@@ -148,12 +149,13 @@ class DocumentRequestController extends Controller
     public function destroy(Request $request, string $id): JsonResponse
     {
         $user = $request->user();
-        abort_unless($user?->isStudent(), 403);
 
         $documentRequest = DocumentRequest::query()
             ->where('id', $id)
             ->where('studentId', $user->user_id)
             ->firstOrFail();
+
+        $this->authorize('delete', $documentRequest);
 
         // Only allow deletion of pending requests
         if ($documentRequest->status !== 'Pending') {

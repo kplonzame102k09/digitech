@@ -14,12 +14,12 @@ use Illuminate\Support\Facades\Route;
 
 Route::get('/', function () {
     return view('index');
-})->name('home');
+})->name('index');
 
 Route::get('/auth/login', [LoginController::class, 'showLogin'])->name('auth.login');
 Route::get('/login', [LoginController::class, 'showLogin'])->name('login');
 Route::post('/login', [LoginController::class, 'login'])->middleware('throttle:login')->name('login.submit');
-Route::post('/logout', [LoginController::class, 'logout'])->name('logout');
+Route::post('/logout', [LoginController::class, 'logout'])->middleware('auth')->name('logout');
 Route::get('/auth/password/change', [PasswordController::class, 'show'])->middleware('auth')->name('auth.password.change');
 Route::post('/auth/password/change', [PasswordController::class, 'update'])->middleware('auth')->name('auth.password.update');
 
@@ -28,16 +28,17 @@ Route::get('/api/regions', [AddressController::class, 'regions']);
 Route::get('/api/cities/{provinceCode}', [AddressController::class, 'cities']);
 Route::get('/api/barangays/{cityCode}', [AddressController::class, 'barangays']);
 
-Route::middleware('auth')->prefix('api/portal')->group(function () {
+Route::middleware(['auth', 'password.updated'])->prefix('api/portal')->group(function () {
     Route::get('/', [PortalDataController::class, 'index']);
     Route::get('/boot', [PortalDataController::class, 'boot']);
     Route::post('/users/import', [PortalDataController::class, 'importUsers']);
     Route::get('/users/import/{batchId}', [PortalDataController::class, 'importStatus']);
-    Route::post('/photo', [PortalDataController::class, 'uploadPhoto']);
-    Route::post('/uploads', [PortalDataController::class, 'uploadImage']);
-    Route::post('/requirements/upload', [PortalDataController::class, 'uploadRequirementFile']);
+    Route::post('/photo', [PortalDataController::class, 'uploadPhoto'])->middleware('throttle:uploads');
+    Route::post('/uploads', [PortalDataController::class, 'uploadImage'])->middleware('throttle:uploads');
+    Route::post('/requirements/upload', [PortalDataController::class, 'uploadRequirementFile'])->middleware('throttle:uploads');
+    Route::get('/requirements/files/{file}', [PortalDataController::class, 'downloadRequirementFile']);
     Route::get('/account/activity', [AccountController::class, 'activity']);
-    Route::post('/account/password', [AccountController::class, 'changePassword']);
+    Route::post('/account/password', [AccountController::class, 'changePassword'])->name('account.password');
     Route::get('/{key}', [PortalDataController::class, 'show']);
     Route::put('/{key}', [PortalDataController::class, 'update']);
 });
@@ -46,6 +47,7 @@ Route::middleware(['auth', 'password.updated', 'role:admin'])->prefix('admin')->
     Route::get('/dashboard', fn () => view('admin.dashboard'))->name('dashboard');
     Route::get('/users', fn () => view('admin.users'))->name('users');
     Route::get('/enrollment', fn () => view('admin.enrollment'))->name('enrollment');
+    Route::get('/programs', fn () => view('admin.programs'))->name('programs');
     Route::get('/documents', fn () => view('admin.documents'))->name('documents');
     Route::get('/requirements', fn () => view('admin.requirements'))->name('requirements');
     Route::get('/grades', fn () => view('admin.grades'))->name('grades');

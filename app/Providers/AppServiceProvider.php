@@ -24,6 +24,10 @@ class AppServiceProvider extends ServiceProvider
             return Limit::perMinute(5)->by(Str::lower($request->string('user_id')->toString()).'|'.$request->ip());
         });
 
+        RateLimiter::for('uploads', function (Request $request): Limit {
+            return Limit::perMinute(10)->by($request->user()?->user_id ?? $request->ip());
+        });
+
         View::composer(
             [
                 'admin.*',

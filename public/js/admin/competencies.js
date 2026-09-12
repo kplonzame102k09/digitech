@@ -180,7 +180,6 @@
         render();
       });
       const student = studentFor(record);
-      //setText("[data-student-initials]", initials(student), row);
       const photo = $("[data-student-photo]", row);
       const initialsElement = $("[data-student-initials]", row);
 

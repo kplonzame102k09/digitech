@@ -16,20 +16,30 @@
         class="input mt-1.5 w-full rounded-xl border px-3 py-3"
         placeholder="City or municipality of birth" />
 </label>
-<label class="text-sm font-semibold">City / municipality
-    <input data-profile-field="city" maxlength="120"
+<label class="text-sm font-semibold">Barangay
+    <input data-profile-field="barangay" required maxlength="120"
         class="input mt-1.5 w-full rounded-xl border px-3 py-3"
-        placeholder="e.g. Iligan City" />
+        placeholder="e.g. Barangay Iyam" />
+</label>
+<label class="text-sm font-semibold">City / Municipality
+    <input data-profile-field="city" required maxlength="120"
+        class="input mt-1.5 w-full rounded-xl border px-3 py-3"
+        placeholder="e.g. Lucena City" />
 </label>
 <label class="text-sm font-semibold">Province
-    <input data-profile-field="province" maxlength="120"
+    <input data-profile-field="province" required maxlength="120"
         class="input mt-1.5 w-full rounded-xl border px-3 py-3"
-        placeholder="e.g. Lanao del Norte" />
+        placeholder="e.g. Quezon" />
 </label>
-<label class="text-sm font-semibold sm:col-span-2">Home address
-    <input data-profile-field="address" required maxlength="240"
+<label class="text-sm font-semibold">Region
+    <input data-profile-field="region" required maxlength="120"
         class="input mt-1.5 w-full rounded-xl border px-3 py-3"
-        placeholder="House number, street, city" />
+        placeholder="e.g. Region IV-A" />
+</label>
+<label class="text-sm font-semibold sm:col-span-2">Street address
+    <input data-profile-field="address" maxlength="240"
+        class="input mt-1.5 w-full rounded-xl border px-3 py-3"
+        placeholder="Street, house number — e.g. Kanto St., 123" />
 </label>
 <label class="text-sm font-semibold">Guardian name
     <input data-profile-field="guardianName" required maxlength="120"

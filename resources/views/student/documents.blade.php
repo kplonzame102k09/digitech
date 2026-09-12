@@ -28,16 +28,20 @@
                             <p class="mt-2 max-w-2xl text-white">Submit a request, share its purpose, and track each
                                 document from
                                 processing to release.</p>
-                        </div><button type="button"
-                            onclick="document.getElementById('formBox').classList.toggle('hidden')"
-                            class="inline-flex items-center justify-center gap-2 rounded-xl bg-emerald-600 px-5 py-3 text-sm font-semibold text-white hover:bg-emerald-700"><i
-                                data-lucide="plus"></i>New request</button>
+                        </div>
+                        <button type="button" onclick="document.getElementById('formBox').classList.toggle('hidden')"
+                            class="inline-flex items-center justify-center gap-2 rounded-xl bg-emerald-600 px-5 py-3 text-sm font-semibold 
+                            text-white hover:bg-emerald-700">
+                            <i data-lucide="plus"></i>
+                            New request
+                        </button>
                     </div>
                 </section>
                 <section class="mb-6 grid gap-4 sm:grid-cols-3">
-                    <div class="portal-stat card p-5"><span
-                            class="portal-stat-icon bg-blue-50 text-blue-600 dark:bg-blue-950/50 dark:text-blue-300"><i
-                                data-lucide="files"></i></span>
+                    <div class="portal-stat card p-5">
+                        <span class="portal-stat-icon bg-blue-50 text-blue-600 dark:bg-blue-950/50 dark:text-blue-300">
+                            <i data-lucide="files"></i>
+                        </span>
                         <p class="mt-4 text-sm text-slate-500">Total requests</p>
                         <p id="docTotal" class="mt-1 text-3xl font-extrabold">0</p>
                     </div>

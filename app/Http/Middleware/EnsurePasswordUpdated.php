@@ -12,8 +12,22 @@ class EnsurePasswordUpdated
     {
         $user = $request->user();
 
-        if ($user && $user->mustChangePassword && ! $request->routeIs('auth.password.*')) {
-            return redirect()->route('auth.password.change');
+        if ($user && $user->mustChangePassword) {
+            // The account/password call is how a flagged account rotates its
+            // password, so it must stay reachable even inside api/portal.
+            $exempt = $request->routeIs('auth.password.*')
+                || $request->routeIs('account.password');
+
+            if (! $exempt) {
+                if ($request->is('api/*') || $request->expectsJson()) {
+                    return response()->json([
+                        'ok' => false,
+                        'error' => 'You must change your password before continuing.',
+                    ], 403);
+                }
+
+                return redirect()->route('auth.password.change');
+            }
         }
 
         return $next($request);

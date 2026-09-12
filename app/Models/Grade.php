@@ -31,6 +31,7 @@ class Grade extends Model
         'id',
         'studentId',
         'subject',
+        'gradeKey',
         'semester',
         'prelim',
         'midterm',
@@ -63,6 +64,18 @@ class Grade extends Model
 
     public $incrementing = false;
 
+    protected static function booted(): void
+    {
+        static::saving(function (Grade $grade): void {
+            $grade->gradeKey = md5(implode('|', [
+                $grade->studentId ?? '',
+                $grade->subject ?? '',
+                $grade->schoolYear ?? '',
+                $grade->semester ?? '',
+            ]));
+        });
+    }
+
     public function student()
     {
         return $this->belongsTo(User::class, 'studentId', 'user_id');
@@ -88,18 +101,22 @@ class Grade extends Model
         $grades = collect([$this->prelim, $this->midterm, $this->finals])
             ->map(fn ($value) => $value !== null && $value !== '' ? (float) $value : null);
 
-        if ($grades->every(fn ($value) => $value === null)) {
+        $weights = [self::PRELIM_WEIGHT, self::MIDTERM_WEIGHT, self::FINALS_WEIGHT];
+
+        $present = $grades
+            ->map(fn (?float $value, int $index): ?array => $value !== null ? [$value, $weights[$index]] : null)
+            ->filter();
+
+        if ($present->isEmpty()) {
             $this->finalGrade = null;
 
             return null;
         }
 
-        $this->finalGrade = round(
-            (float) $grades[0] * self::PRELIM_WEIGHT +
-            (float) $grades[1] * self::MIDTERM_WEIGHT +
-            (float) $grades[2] * self::FINALS_WEIGHT,
-            2
-        );
+        $weightedSum = $present->sum(fn (array $pair): float => $pair[0] * $pair[1]);
+        $totalWeight = $present->sum(fn (array $pair): float => $pair[1]);
+
+        $this->finalGrade = round($weightedSum / $totalWeight, 2);
 
         return $this->finalGrade;
     }

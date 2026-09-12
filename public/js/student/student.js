@@ -66,6 +66,129 @@
     }
   };
 
+  const TERMINAL_ENROLLMENT_STATUSES = ["Approved", "Enrolled", "Under Review", "Rejected", "Needs Correction"];
+  const isLocked = (enr) =>
+    enr && TERMINAL_ENROLLMENT_STATUSES.includes(enr.status);
+
+  const catalogueSettings = () => DG.getData("settings", {}) || {};
+  const programmeRows = () => catalogueSettings().programs || [];
+  const qualificationRows = () => catalogueSettings().tvetQualifications || [];
+  const levelOptionsFor = (name) => {
+    const wanted = String(name || "").trim().toLowerCase();
+    const row = (qualificationRows() || []).find(
+      (r) => String(r?.name || "").trim().toLowerCase() === wanted,
+    );
+    if (row && Array.isArray(row.levels) && row.levels.length) return row.levels;
+    return Array.isArray(catalogueSettings().tvetLevels)
+      ? catalogueSettings().tvetLevels
+      : [];
+  };
+
+  const fillSelect = (id, entries, selected, blankLabel) => {
+    const select = $(`#${id}`);
+    if (!select) return;
+    select.replaceChildren();
+    const blank = document.createElement("option");
+    blank.value = "";
+    blank.textContent = blankLabel || "Select...";
+    select.append(blank);
+    const chosen = String(selected || "");
+    let matched = false;
+    entries.forEach((entry) => {
+      const option = document.createElement("option");
+      option.value = String(entry.value ?? "");
+      option.textContent = String(entry.label ?? entry.value ?? "");
+      option.title = String(entry.title ?? "");
+      if (option.value && option.value === chosen) matched = true;
+      select.append(option);
+    });
+    if (chosen && !matched) {
+      const option = document.createElement("option");
+      option.value = chosen;
+      option.textContent = `${chosen} (saved)`;
+      option.selected = true;
+      select.append(option);
+    }
+    select.value = chosen;
+  };
+
+  const setRequired = (id, on) => {
+    const el = $(id);
+    if (!el) return;
+    if (on) el.setAttribute("required", "required");
+    else el.removeAttribute("required");
+  };
+
+  const refreshStrandHint = () => {
+    const select = $("#strand");
+    const row = programmeRows().find((r) => r.name === select?.value);
+    if (select?.value) {
+      text("#strandHint", row?.description ? `Offered: ${row.description}` : "");
+    } else {
+      text("#strandHint", "Pick the strand or program you are enrolling in.");
+    }
+  };
+
+  const refreshTrackHint = (isTvet) => {
+    const select = $("#track");
+    const source = isTvet ? qualificationRows() : programmeRows();
+    const row = source.find((r) => r.name === select?.value);
+    text("#trackHint", row?.description ? `About this: ${row.description}` : "");
+  };
+
+  const refreshTrainingHint = (isTvet) => {
+    const select = $("#training");
+    if (!isTvet) {
+      text("#trainingHint", "Training levels only apply to TVET enrollments.");
+      return;
+    }
+    const track = $("#track")?.value || "";
+    text(
+      "#trainingHint",
+      select?.value
+        ? `Level for ${track || "the qualification"}.`
+        : "Pick the NC level for this qualification.",
+    );
+  };
+
+  const renderCatalogueFields = (enr) => {
+    const programType = String($("#programType")?.value || "Senior High");
+    const isTvet = programType === "TVET";
+    const programs = programmeRows();
+    const quals = qualificationRows();
+
+    fillSelect(
+      "strand",
+      programs.map((r) => ({ value: r.name, label: r.name, title: r.description })),
+      enr?.strand || "",
+      "Select program",
+    );
+    refreshStrandHint();
+
+    const trackSource = isTvet ? quals : programs;
+    fillSelect(
+      "track",
+      trackSource.map((r) => ({ value: r.name, label: r.name, title: r.description })),
+      enr?.track || "",
+      isTvet ? "Select qualification" : "Select track",
+    );
+    refreshTrackHint(isTvet);
+
+    const track = $("#track")?.value || "";
+    const levels = isTvet ? levelOptionsFor(track) : catalogueSettings().tvetLevels || [];
+    fillSelect(
+      "training",
+      levels.map((l) => ({ value: l, label: l })),
+      enr?.trainingLevel || "",
+      isTvet ? "Select level" : "Select level",
+    );
+    refreshTrainingHint(isTvet);
+
+    setRequired("#strand", !isTvet);
+    setRequired("#track", isTvet);
+    setRequired("#training", isTvet);
+  };
+
   async function renderDashboard() {
     text("#name", U.firstName || fullName());
     
@@ -177,7 +300,8 @@
   }
 
   async function renderEnrollment() {
-    text("#fullName", fullName());
+    const nameInput = $("#fullName");
+    if (nameInput) nameInput.value = fullName();
     const sid = $("#studentId");
     if (sid) sid.value = U.user_id || U.id || "";
     const contact = $("#contact");
@@ -204,15 +328,61 @@
 
       const enr = cache.enrollments[0]; // Get latest enrollment
       if (enr) {
-        ["programType", "gradeLevel", "strand", "track", "schoolYear"].forEach((id) => {
-          const el = $(`#${id}`);
-          if (el && enr[id]) el.value = enr[id];
-        });
-        const training = $("#training");
-        if (training && enr.trainingLevel) training.value = enr.trainingLevel;
+        const programType = $("#programType");
+        if (programType && enr.programType) programType.value = enr.programType;
+        const gradeLevel = $("#gradeLevel");
+        if (gradeLevel && enr.gradeLevel) gradeLevel.value = enr.gradeLevel;
+        const schoolYear = $("#schoolYear");
+        if (schoolYear && enr.schoolYear) schoolYear.value = enr.schoolYear;
+        renderCatalogueFields(enr);
         const status = $("#status");
         if (status) status.innerHTML = badge(enr.status);
+      } else {
+        renderCatalogueFields(null);
       }
+
+      const locked = isLocked(cache.enrollments[0]);
+      if (locked) {
+        [
+          "programType",
+          "gradeLevel",
+          "strand",
+          "track",
+          "training",
+          "schoolYear",
+        ].forEach((id) => {
+          const el = $(`#${id}`);
+          if (el) el.disabled = true;
+        });
+        ["#saveDraftBtn", "#submitEnrollmentBtn"].forEach((id) => {
+          const button = $(id);
+          if (button) button.disabled = true;
+        });
+        const status = $("#status");
+        if (status) {
+          status.innerHTML +=
+            '<p class="mt-2 text-xs font-semibold text-amber-600">This enrollment is locked — contact the registrar to make changes.</p>';
+        }
+      }
+
+      $("#programType")?.addEventListener("change", () => {
+        renderCatalogueFields(cache.enrollments?.[0]);
+      });
+      $("#strand")?.addEventListener("change", refreshStrandHint);
+      $("#track")?.addEventListener("change", () => {
+        const isTvet = String($("#programType")?.value) === "TVET";
+        refreshTrackHint(isTvet);
+        if (isTvet) {
+          const track = $("#track")?.value || "";
+          fillSelect(
+            "training",
+            levelOptionsFor(track).map((l) => ({ value: l, label: l })),
+            $("#training")?.value || "",
+            "Select level",
+          );
+          refreshTrainingHint(isTvet);
+        }
+      });
     } catch (error) {
       showError("Failed to load enrollment data");
     }
@@ -220,7 +390,13 @@
 
   window.saveEnrollment = async function saveEnrollment(status) {
     if (!U) return;
-    
+
+    const latest = cache.enrollments?.[0];
+    if (isLocked(latest)) {
+      APP?.toast?.("This enrollment is locked and cannot be edited.");
+      return;
+    }
+
     const buttonId = status === "Draft" ? "#saveDraftBtn" : "#submitEnrollmentBtn";
     const saveButton = $(buttonId);
     showLoading(saveButton);
@@ -241,18 +417,28 @@
         guardianContact: $("#guardianContact")?.value || "",
       };
 
-      if (!payload.gradeLevel || !payload.strand || !payload.guardianName) {
-        APP?.toast?.("Please complete required enrollment fields");
+      const isTvet = payload.programType === "TVET";
+      const missing = [];
+      if (!payload.gradeLevel) missing.push("grade level");
+      if (!payload.guardianName) missing.push("guardian name");
+      if (isTvet) {
+        if (!payload.track) missing.push("qualification");
+        if (!payload.trainingLevel) missing.push("training level");
+      } else if (!payload.strand) {
+        missing.push("strand / program");
+      }
+
+      if (missing.length) {
+        APP?.toast?.(`Please complete required fields: ${missing.join(", ")}`);
         hideLoading(saveButton);
         return;
       }
 
       let response;
-      const enr = cache.enrollments?.[0]; // Get latest enrollment
-      
-      if (enr) {
+
+      if (latest) {
         // Update existing enrollment
-        response = await API.student.enrollments.update(enr.id, payload);
+        response = await API.student.enrollments.update(latest.id, payload);
       } else {
         // Create new enrollment
         response = await API.student.enrollments.create(payload);

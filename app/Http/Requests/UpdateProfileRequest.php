@@ -31,10 +31,15 @@ class UpdateProfileRequest extends FormRequest
             'address' => ['nullable', 'string', 'max:255'],
             'birthDate' => ['nullable', 'date'],
             'birthPlace' => ['nullable', 'string', 'max:255'],
+            'barangay' => ['nullable', 'string', 'max:120'],
             'city' => ['nullable', 'string', 'max:120'],
             'province' => ['nullable', 'string', 'max:120'],
+            'region' => ['nullable', 'string', 'max:120'],
             'guardianName' => ['nullable', 'string', 'max:255'],
             'guardianContact' => ['nullable', 'string', 'max:20'],
+            'occupation' => ['nullable', 'string', 'max:120'],
+            'emergencyContact' => ['nullable', 'string', 'max:120'],
+            'specialization' => ['nullable', 'string', 'max:120'],
             'photo' => ['nullable', 'string', 'max:5000'],
         ];
     }

@@ -15,7 +15,7 @@ class GradeController extends Controller
     public function index(Request $request): JsonResponse
     {
         $user = $request->user();
-        abort_unless($user?->isStudent(), 403);
+        $this->authorize('viewAny', Grade::class);
 
         $query = Grade::query()
             ->where('studentId', $user->user_id)
@@ -41,7 +41,7 @@ class GradeController extends Controller
     public function summary(Request $request): JsonResponse
     {
         $user = $request->user();
-        abort_unless($user?->isStudent(), 403);
+        $this->authorize('viewAny', Grade::class);
 
         $grades = Grade::query()
             ->where('studentId', $user->user_id)
@@ -72,13 +72,14 @@ class GradeController extends Controller
     public function show(Request $request, string $id): JsonResponse
     {
         $user = $request->user();
-        abort_unless($user?->isStudent(), 403);
 
         $grade = Grade::query()
             ->where('id', $id)
             ->where('studentId', $user->user_id)
             ->where('published', true)
             ->firstOrFail();
+
+        $this->authorize('view', $grade);
 
         return response()->json([
             'ok' => true,

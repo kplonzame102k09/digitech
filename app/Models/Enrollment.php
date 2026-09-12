@@ -100,4 +100,23 @@ class Enrollment extends Model
 
         return $query->exists();
     }
+
+    /**
+     * Whether the student already has a draft or submitted enrollment for the
+     * school year. These pending rows are not countably "active" yet, but two
+     * of them queued at once would still create conflicting records, so the
+     * portal rejects them as duplicates too.
+     */
+    public static function hasPending($studentId, $schoolYear, $excludeId = null)
+    {
+        $query = self::where('studentId', $studentId)
+            ->where('schoolYear', $schoolYear)
+            ->whereIn('status', ['Draft', 'Submitted']);
+
+        if ($excludeId) {
+            $query->where('id', '!=', $excludeId);
+        }
+
+        return $query->exists();
+    }
 }

@@ -76,6 +76,7 @@
     <script>
         lucide.createIcons();
     </script>
+    @include('partials.password-toggle')
 </body>
 
 </html>

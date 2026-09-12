@@ -57,7 +57,7 @@
   function populateFields(user) {
     $$("[data-profile-field]").forEach((input) => {
       const key = input.dataset.profileField;
-      const value = user[key];
+      let value = user[key];
       if (input.type === "date") {
         input.value = (value || "").toString().slice(0, 10);
       } else {
@@ -78,7 +78,7 @@
     };
 
     const changed = {};
-    const needsTrim = new Set(["firstName", "lastName", "middleName", "email"]);
+    const needsTrim = new Set(["firstName", "lastName", "middleName", "email", "barangay", "city", "province", "region", "address"]);
     $$("[data-profile-field]").forEach((input) => {
       const key = input.dataset.profileField;
       const raw = input.value ?? "";

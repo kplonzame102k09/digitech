@@ -68,14 +68,10 @@ return new class extends Migration
         Schema::table('grades', function (Blueprint $table): void {
             $table->dropColumn(['term', 'period']);
         });
-
-        DB::statement('CREATE UNIQUE INDEX grades_student_subject_semester_unique ON grades (studentId, subject(100), schoolYear, semester)');
     }
 
     public function down(): void
     {
-        DB::statement('DROP INDEX grades_student_subject_semester_unique ON grades');
-
         Schema::table('grades', function (Blueprint $table): void {
             $table->dropColumn(['semester', 'prelim', 'midterm', 'finals', 'finalGrade', 'units', 'schoolYear']);
         });

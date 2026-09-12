@@ -11,7 +11,6 @@
     </script>
     <script src="https://unpkg.com/lucide@latest"></script>
     <link rel="stylesheet" href="{{ asset('css/custom.css') }}" />
-    @vite([ 'resources/css/app.css', 'resources/js/app.js' ])
 </head>
 <body class="min-h-screen bg-slate-50 text-slate-800 dark:bg-slate-950 dark:text-slate-100">
     @include('admin.components.sidebar')
@@ -43,6 +42,7 @@
                                 <option value="teacher">Teachers</option>
                                 <option value="admin">Admins</option>
                                 <option value="parent">Parents</option>
+                                <option value="guest">Guests</option>
                             </select>
                             <select id="statusFilter" class="input rounded-xl border px-3 py-3">
                                 <option value="">All statuses</option>
@@ -178,7 +178,7 @@
                 </label>
                 <label class="block text-[11px] font-medium text-slate-700 dark:text-slate-300">
                     Password
-                    <input id="password" type="password" minlength="6" class="mt-1 w-full rounded-lg border border-slate-200 bg-white px-3 py-2.5 text-xs outline-none transition focus:border-green-500 focus:ring-2 focus:ring-green-100 dark:border-slate-700 dark:bg-slate-900"
+                    <input id="password" type="password" minlength="12" class="mt-1 w-full rounded-lg border border-slate-200 bg-white px-3 py-2.5 text-xs outline-none transition focus:border-green-500 focus:ring-2 focus:ring-green-100 dark:border-slate-700 dark:bg-slate-900"
                         placeholder="Required for a new account; leave blank to keep current password" />
                 </label>
                 <label class="block text-[11px] font-medium text-slate-700 dark:text-slate-300">
@@ -222,6 +222,18 @@
                     <select id="barangay" required disabled class="mt-1 w-full rounded-lg border border-slate-200 bg-white px-3 py-2.5 text-xs outline-none transition focus:border-green-500 focus:ring-2 focus:ring-green-100 dark:border-slate-700 dark:bg-slate-900">
                         <option value="">Select Barangay</option>
                     </select>
+                </label>
+                <label class="block text-[11px] font-medium text-slate-700 dark:text-slate-300">
+                    Birth date
+                    <input id="birthDate" type="date" class="mt-1 w-full rounded-lg border border-slate-200 bg-white px-3 py-2.5 text-xs outline-none transition focus:border-green-500 focus:ring-2 focus:ring-green-100 dark:border-slate-700 dark:bg-slate-900" />
+                </label>
+                <label class="block text-[11px] font-medium text-slate-700 dark:text-slate-300">
+                    Birth place
+                    <input id="birthPlace" type="text" class="mt-1 w-full rounded-lg border border-slate-200 bg-white px-3 py-2.5 text-xs outline-none transition focus:border-green-500 focus:ring-2 focus:ring-green-100 dark:border-slate-700 dark:bg-slate-900" placeholder="e.g. Quezon City" />
+                </label>
+                <label class="block text-[11px] font-medium text-slate-700 dark:text-slate-300 sm:col-span-2">
+                    Address
+                    <input id="address" type="text" class="mt-1 w-full rounded-lg border border-slate-200 bg-white px-3 py-2.5 text-xs outline-none transition focus:border-green-500 focus:ring-2 focus:ring-green-100 dark:border-slate-700 dark:bg-slate-900" placeholder="Street, building, house number" />
                 </label>
             </div>
             <div class="mt-6 flex flex-wrap items-center justify-between gap-3">
@@ -281,7 +293,7 @@
                         </td>
                         <td data-row-user-id class="p-4 font-mono text-xs"></td>
                         <td class="p-4"><span data-user-role></span></td>
-                        <td data-user-email class="p-4"></td>
+                        <td class="p-4"><span data-user-email></span></td>
                         <td class="p-4"><span data-user-status></span></td>
                         <td class="p-4">
                             <div class="flex justify-end gap-2">
@@ -305,5 +317,6 @@
                     </tr>
                 </template>
     @include('partials.portal-scripts', ['portalPage' => 'admin/users.js'])
+    @include('partials.password-toggle')
 </body>
 </html>

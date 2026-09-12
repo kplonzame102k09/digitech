@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Jobs\ImportUsers;
+use App\Models\Requirement;
 use App\Models\User;
 use App\Services\PortalDataService;
 use Illuminate\Bus\Batch;
@@ -10,7 +11,9 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Bus;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
+use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class PortalDataController extends Controller
 {
@@ -66,7 +69,7 @@ class PortalDataController extends Controller
 
         /** @var User $user */
         $user = $request->user();
-        abort_unless($user->isAdmin(), 403);
+        $this->authorize('create', User::class);
 
         $jobs = collect($validated['users'])
             ->chunk(10)
@@ -88,7 +91,7 @@ class PortalDataController extends Controller
     {
         /** @var User $user */
         $user = $request->user();
-        abort_unless($user->isAdmin(), 403);
+        $this->authorize('viewAny', User::class);
 
         $batch = Bus::findBatch($batchId);
         abort_unless($batch instanceof Batch, 404);
@@ -116,23 +119,47 @@ class PortalDataController extends Controller
         $user = $request->user();
         abort_unless($user && in_array($user->role, ['admin', 'student'], true), 403);
 
-        $request->validate([
+        $validated = $request->validate([
             'file' => ['required', 'file', 'mimes:pdf,jpeg,jpg,png,webp', 'max:5120'],
+            'studentId' => ['sometimes', 'nullable', 'string'],
         ]);
 
-        $path = $request->file('file')->store('requirement-files', 'public');
+        // Requirement files live on the private disk and are only reachable
+        // through the ownership-checked download route.
+        $path = $request->file('file')->store('requirement-files', 'private');
+
+        $fileName = basename($path);
 
         return response()->json([
             'ok' => true,
-            'fileUrl' => Storage::url($path),
+            'fileUrl' => url('/api/portal/requirements/files/'.rawurlencode($fileName)),
+            'studentId' => $user->role === 'student' ? $user->user_id : ($validated['studentId'] ?? null),
         ]);
+    }
+
+    public function downloadRequirementFile(Request $request, string $file): StreamedResponse
+    {
+        /** @var User $user */
+        $user = $request->user();
+        abort_unless($user, 401);
+
+        $fileName = basename($file);
+        $path = 'requirement-files/'.$fileName;
+        $disk = Storage::disk('private');
+        abort_unless($disk->exists($path), 404);
+
+        if (! $user->isAdmin() && ! $this->canAccessRequirementFile($user, $fileName)) {
+            abort(403);
+        }
+
+        return $disk->download($path);
     }
 
     public function uploadImage(Request $request): JsonResponse
     {
         /** @var User $user */
         $user = $request->user();
-        abort_unless($user->isAdmin() || $user->role === 'teacher', 403);
+        abort_unless($user && in_array($user->role, ['admin', 'teacher'], true), 403);
 
         $request->validate([
             'image' => ['required', 'image', 'mimes:jpeg,jpg,png,webp,gif', 'max:5120'],
@@ -157,6 +184,15 @@ class PortalDataController extends Controller
         ]);
 
         $path = $request->file('photo')->store('profile-photos', 'public');
+
+        // Replacing a photo removes the previous one so uploads never pile up.
+        $previous = $user->photo;
+        if (is_string($previous) && $previous !== ''
+            && ! str_starts_with($previous, ['http://', 'https://', 'data:'])
+            && ! str_starts_with($previous, '/')) {
+            Storage::disk('public')->delete($previous);
+        }
+
         $user->update(['photo' => $path]);
 
         return response()->json([
@@ -168,16 +204,58 @@ class PortalDataController extends Controller
 
     private function canUpdateCollection(User $user, string $key): bool
     {
-        if ($user->isAdmin()) {
+        return $this->portal->canWriteCollection($user, $key);
+    }
+
+    private function canAccessRequirementFile(User $user, string $fileName): bool
+    {
+        // Turn the LIKE wildcards into literals so a file named "a_b.pdf" or
+        // "50%.pdf" cannot bleed into other rows, then require an exact
+        // basename match so a partial name like "res.pdf" never resolves to
+        // an unrelated student's "thesis-res.pdf".
+        $like = '%'.addcslashes($fileName, '%_\\').'%';
+
+        $requirement = Requirement::query()
+            ->where('fileUrl', 'like', $like)
+            ->get()
+            ->first(fn (Requirement $row): bool => basename((string) $row->fileUrl) === $fileName);
+
+        // Only an actual requirement row can authorize a download. The old
+        // fallback that let any student grab an unlinked (orphan) upload is
+        // deliberately gone.
+        if (! $requirement) {
+            return false;
+        }
+
+        $studentId = $requirement->studentId;
+
+        if ($user->isStudent() && $user->user_id === $studentId) {
             return true;
         }
 
-        return match ($user->role) {
-            'teacher' => in_array($key, ['announcements', 'attendance', 'competencies', 'grades', 'notifications', 'users'], true),
-            'student' => in_array($key, ['documentRequests', 'enrollments', 'notifications', 'requirements', 'users'], true),
-            'parent' => in_array($key, ['notifications', 'parentLinkRequests', 'users'], true),
-            'guest' => in_array($key, ['notifications', 'users'], true),
-            default => false,
-        };
+        if ($user->isParent()) {
+            $childIds = collect([$user->childId])
+                ->concat($user->childIds ?? [])
+                ->filter(static fn (mixed $id): bool => is_string($id) && $id !== '')
+                ->all();
+
+            if (in_array($studentId, $childIds, true)) {
+                return true;
+            }
+
+            $pivotChildIds = DB::table('parent_student')
+                ->join('users as linked', 'linked.id', '=', 'parent_student.student_id')
+                ->where('parent_student.parent_id', $user->getKey())
+                ->pluck('linked.user_id')
+                ->all();
+
+            return in_array($studentId, $pivotChildIds, true);
+        }
+
+        if ($user->isTeacher()) {
+            return in_array($studentId, $this->portal->getEnrolledStudentIds($user) ?? [], true);
+        }
+
+        return false;
     }
 }

@@ -43,6 +43,14 @@ async function flushSync() {
       });
       if (!response.ok) throw new Error(`Sync failed with status ${response.status}`);
     } catch (error) {
+      // Permission-denied is permanent for this payload: the account no
+      // longer has write access (e.g. auditLogs were removed from a
+      // teacher's writable collections), so endlessly re-queueing it would
+      // hammer the server. Drop the key instead and keep the rest moving.
+      if (error && /403/.test(error.message || "")) {
+        console.warn("Skipped syncing", key, "– write access denied");
+        continue;
+      }
       console.error("Failed to sync", key, error);
       pendingSync[key] = value;
       failed.push(key);

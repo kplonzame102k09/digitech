@@ -58,6 +58,7 @@ class PasswordController extends Controller
             'teacher' => '/teacher/dashboard',
             'admin' => '/admin/dashboard',
             'parent' => '/parent/dashboard',
+            'guest' => '/guest/announcements',
         ];
 
         return redirect($redirects[$user->role] ?? '/')->with('success', 'Your password has been updated.');

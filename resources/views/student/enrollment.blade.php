@@ -131,18 +131,27 @@
                             </label>
                             <label class="text-sm font-semibold">
                                 Strand / program
-                                <input id="strand" required class="input mt-1.5 w-full rounded-xl border px-3 py-2.5"
-                                    placeholder="e.g. ICT" />
+                                <select id="strand" required
+                                    class="input mt-1.5 w-full rounded-xl border px-3 py-2.5">
+                                    <option value="">Select program</option>
+                                </select>
+                                <span id="strandHint" class="mt-1 block text-xs text-slate-500"></span>
                             </label>
                             <label class="text-sm font-semibold">
                                 Track / qualification
-                                <input id="track" class="input mt-1.5 w-full rounded-xl border px-3 py-2.5"
-                                    placeholder="e.g. CSS NC II" />
+                                <select id="track"
+                                    class="input mt-1.5 w-full rounded-xl border px-3 py-2.5">
+                                    <option value="">Select track</option>
+                                </select>
+                                <span id="trackHint" class="mt-1 block text-xs text-slate-500"></span>
                             </label>
                             <label class="text-sm font-semibold">
                                 Training level
-                                <input id="training" class="input mt-1.5 w-full rounded-xl border px-3 py-2.5"
-                                    placeholder="Optional for TVET" />
+                                <select id="training"
+                                    class="input mt-1.5 w-full rounded-xl border px-3 py-2.5">
+                                    <option value="">Select level</option>
+                                </select>
+                                <span id="trainingHint" class="mt-1 block text-xs text-slate-500"></span>
                             </label>
                             <label class="text-sm font-semibold">
                                 School year

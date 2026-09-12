@@ -417,6 +417,9 @@
       password: "",
       contact: user?.contact || "",
       strand: user?.strand || "",
+      address: user?.address || "",
+      birthDate: user?.birthDate ? String(user.birthDate).slice(0, 10) : "",
+      birthPlace: user?.birthPlace || "",
       childId:
         user?.childId || user?.childIds?.[0] || user?.children?.[0] || "",
     };
@@ -456,6 +459,9 @@
       "province",
       "city",
       "barangay",
+      "address",
+      "birthDate",
+      "birthPlace",
     ];
     const values = Object.fromEntries(
       fields.map((id) => [id, document.getElementById(id)?.value.trim() || ""]),
@@ -463,19 +469,17 @@
     const duplicate = users.find(
       (user) =>
         user.id !== editingId &&
-        ((values.email &&
-          user.email?.toLowerCase() === values.email.toLowerCase()) ||
-          (values.username &&
-            user.username?.toLowerCase() === values.username.toLowerCase())),
+        values.email &&
+        user.email?.toLowerCase() === values.email.toLowerCase(),
     );
     if (duplicate) {
-      setText("#formFeedback", "Email or username is already in use.");
+      setText("#formFeedback", "That email address is already in use.");
       return;
     }
-    if (!editingId && values.password.length < 6) {
+    if (!editingId && values.password.length < 12) {
       setText(
         "#formFeedback",
-        "New accounts require a password with at least 6 characters.",
+        "New accounts require a password with at least 12 characters.",
       );
       return;
     }
@@ -503,11 +507,14 @@
       barangay: values.barangay,
       updatedAt: new Date().toISOString(),
     });
+    if (values.address) user.address = values.address;
+    if (values.birthDate) user.birthDate = values.birthDate;
+    if (values.birthPlace) user.birthPlace = values.birthPlace;
     if (values.password) user.password = values.password;
     if (user.role === "parent") {
       user.childId = values.childId || "";
       user.childIds = values.childId ? [values.childId] : [];
-      user.children = user.childIds;
+      user.children = values.childId ? [values.childId] : [];
     } else {
       delete user.childId;
       delete user.childIds;
@@ -569,8 +576,8 @@
       `Enter a new temporary password for ${fullName(user)}:`,
     );
     if (!password) return;
-    if (password.length < 6) {
-      APP.toast("Password must be at least 6 characters", "error");
+    if (password.length < 12) {
+      APP.toast("Password must be at least 12 characters", "error");
       return;
     }
     user.password = password;
@@ -789,12 +796,14 @@ function generateUserId(role, existingUsers) {
         const batch = await response.json();
         if (batch.failedJobs > 0 || batch.cancelled) {
           window.clearInterval(timer);
+          sessionStorage.removeItem("dg-import-batch");
           APP.toast("Some users could not be imported. Check the server logs.", "error");
           return;
         }
 
         if (batch.finished) {
           window.clearInterval(timer);
+          sessionStorage.removeItem("dg-import-batch");
           APP.toast(`${importedCount} users imported`);
           window.setTimeout(() => location.reload(), 700);
         }
@@ -806,6 +815,17 @@ function generateUserId(role, existingUsers) {
     }, 1000);
   }
 
+  function resumePendingImport() {
+    try {
+      const pending = sessionStorage.getItem("dg-import-batch");
+      if (!pending) return;
+      const { batchId, importedCount } = JSON.parse(pending);
+      watchImport(batchId, importedCount);
+    } catch (error) {
+      sessionStorage.removeItem("dg-import-batch");
+    }
+  }
+
 function importUsers() {
   const input = document.createElement("input");
 
@@ -813,7 +833,7 @@ function importUsers() {
   input.accept = ".csv,text/csv";
 
   const FIELD_ALIASES = {
-    // id: ["id", "userid", "user_id", "user-id", "userId"],
+    id: ["id", "userid", "user_id", "user-id", "userId"],
     name: ["name", "fullname", "full_name", "names", "fullnames", "fullName", "FullName",],
     firstname: ["firstname", "first_name", "first", "givenname", "given_name", "firstName"],
     middlename: ["middlename", "middle_name", "middle", "middleName"],
@@ -932,6 +952,8 @@ function importUsers() {
       let importedCount = 0;
       let generatedCount = 0;
       let skippedCount = 0;
+      let duplicateIdCount = 0;
+      const seenIds = new Set();
 
       rows.slice(1).forEach((row) => {
         const role = normalizeRole(cell(row, "role") || "student");
@@ -973,7 +995,12 @@ function importUsers() {
         if (!userId) {
           userId = generateUserId(role, users);
           generatedCount++;
+        } else if (seenIds.has(userId) || users.some((user) => user.id === userId)) {
+          duplicateIdCount++;
+          skippedCount++;
+          return;
         }
+        seenIds.add(userId);
 
         const newUser = {
           id: userId,
@@ -986,7 +1013,7 @@ function importUsers() {
         if (lastName) newUser.lastName = lastName;
         if (middleName) newUser.middleName = middleName;
         if (email) newUser.email = email;
-        if (password && password.length >= 6) newUser.password = password;
+        if (password && password.length >= 12) newUser.password = password;
         if (cell(row, "contact")) newUser.contact = cell(row, "contact");
         if (cell(row, "username")) newUser.username = cell(row, "username");
         if (cell(row, "strand")) newUser.strand = cell(row, "strand");
@@ -1027,9 +1054,14 @@ function importUsers() {
             `${result.users} users queued for import` +
               ` (names from ${nameSource})` +
               (generatedCount > 0 ? `, ${generatedCount} User IDs generated` : "") +
+              (duplicateIdCount > 0 ? `, ${duplicateIdCount} duplicate IDs skipped` : "") +
               (skippedCount > 0 ? `, ${skippedCount} empty rows skipped` : ""),
           );
           watchImport(result.batchId, result.users);
+          sessionStorage.setItem(
+            "dg-import-batch",
+            JSON.stringify({ batchId: result.batchId, importedCount: result.users }),
+          );
         })
         .catch((error) => {
           console.error("Failed to queue user import:", error);
@@ -1051,6 +1083,7 @@ function importUsers() {
     }
     APP.applyTheme();
     APP.updateNotif();
+    resumePendingImport();
     $("#open")?.addEventListener("click", () =>
       $("#side")?.classList.toggle("-translate-x-full"),
     );

@@ -35,7 +35,7 @@
                         </p>
                     </div>
                 </section>
-                <div class="mb-6 flex flex-wrap items-center gap-2 rounded-2xl border border-slate-200 bg-white p-3 dark:border-slate-700 dark:bg-slate-900">
+                <!-- <div class="mb-6 flex flex-wrap items-center gap-2 rounded-2xl border border-slate-200 bg-white p-3 dark:border-slate-700 dark:bg-slate-900">
                     <a href="{{ route('student.enrollment') }}" class="inline-flex items-center gap-2 rounded-xl bg-emerald-600 px-4 py-3 text-sm font-semibold text-white hover:bg-emerald-700">
                         <i data-lucide="clipboard-list" class="h-4 w-4"></i>
                         Enrollment
@@ -44,7 +44,7 @@
                         <i data-lucide="chart-no-axes-combined" class="h-4 w-4"></i>
                         View grades
                     </a>
-                </div>
+                </div> -->
                 <section class="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
                     <div class="portal-stat card p-5">
                         <span class="portal-stat-icon bg-emerald-50 text-emerald-600 dark:bg-emerald-950/50 dark:text-emerald-300">

@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\StoreEnrollmentRequest;
 use App\Http\Requests\UpdateEnrollmentRequest;
 use App\Models\Enrollment;
+use Illuminate\Database\QueryException;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
@@ -18,7 +19,7 @@ class EnrollmentController extends Controller
     public function index(Request $request): JsonResponse
     {
         $user = $request->user();
-        abort_unless($user?->isStudent(), 403);
+        $this->authorize('viewAny', Enrollment::class);
 
         $enrollments = Enrollment::query()
             ->where('studentId', $user->user_id)
@@ -56,9 +57,10 @@ class EnrollmentController extends Controller
     {
         $user = $request->user();
 
+        $this->authorize('create', Enrollment::class);
+
         $validated = $request->validated();
 
-        // Check for duplicate active enrollment for the same school year
         if (Enrollment::hasDuplicateActive($user->user_id, $validated['schoolYear'])) {
             return response()->json([
                 'ok' => false,
@@ -66,44 +68,64 @@ class EnrollmentController extends Controller
             ], 422);
         }
 
-        $enrollment = Enrollment::query()->create([
-            'id' => Str::uuid()->toString(),
-            'studentId' => $user->user_id,
-            'status' => 'Draft',
-            'programType' => $validated['programType'],
-            'gradeLevel' => $validated['gradeLevel'],
-            'strand' => $validated['strand'],
-            'track' => $validated['track'] ?? null,
-            'schoolYear' => $validated['schoolYear'],
-            'trainingLevel' => $validated['trainingLevel'] ?? null,
-        ]);
+        if (Enrollment::hasPending($user->user_id, $validated['schoolYear'])) {
+            return response()->json([
+                'ok' => false,
+                'error' => 'You already have a pending enrollment for this school year.',
+            ], 422);
+        }
 
-        // Update user profile with enrollment details
-        $user->update([
-            'contact' => $validated['contact'],
-            'birthDate' => $validated['birthDate'],
-            'address' => $validated['address'],
-            'guardianName' => $validated['guardianName'],
-            'guardianContact' => $validated['guardianContact'],
-            'strand' => $validated['strand'],
-        ]);
+        try {
+            $enrollment = Enrollment::query()->create([
+                'id' => Str::uuid()->toString(),
+                'studentId' => $user->user_id,
+                'status' => $validated['status'] ?? 'Draft',
+                'programType' => $validated['programType'],
+                'gradeLevel' => $validated['gradeLevel'],
+                'strand' => $validated['strand'],
+                'track' => $validated['track'] ?? null,
+                'schoolYear' => $validated['schoolYear'],
+                'trainingLevel' => $validated['trainingLevel'] ?? null,
+            ]);
 
-        return response()->json([
-            'ok' => true,
-            'enrollment' => [
-                'id' => $enrollment->id,
-                'studentId' => $enrollment->studentId,
-                'status' => $enrollment->status,
-                'programType' => $enrollment->programType,
-                'gradeLevel' => $enrollment->gradeLevel,
-                'strand' => $enrollment->strand,
-                'track' => $enrollment->track,
-                'schoolYear' => $enrollment->schoolYear,
-                'trainingLevel' => $enrollment->trainingLevel,
-                'createdAt' => $enrollment->created_at?->toIso8601String(),
-                'updatedAt' => $enrollment->updated_at?->toIso8601String(),
-            ],
-        ], 201);
+            // Update user profile with enrollment details
+            $user->update([
+                'contact' => $validated['contact'],
+                'birthDate' => $validated['birthDate'],
+                'address' => $validated['address'],
+                'guardianName' => $validated['guardianName'],
+                'guardianContact' => $validated['guardianContact'],
+                'strand' => $validated['strand'],
+            ]);
+
+            return response()->json([
+                'ok' => true,
+                'enrollment' => [
+                    'id' => $enrollment->id,
+                    'studentId' => $enrollment->studentId,
+                    'status' => $enrollment->status,
+                    'programType' => $enrollment->programType,
+                    'gradeLevel' => $enrollment->gradeLevel,
+                    'strand' => $enrollment->strand,
+                    'track' => $enrollment->track,
+                    'schoolYear' => $enrollment->schoolYear,
+                    'trainingLevel' => $enrollment->trainingLevel,
+                    'createdAt' => $enrollment->created_at?->toIso8601String(),
+                    'updatedAt' => $enrollment->updated_at?->toIso8601String(),
+                ],
+            ], 201);
+        } catch (QueryException $e) {
+            if (str_contains($e->getMessage(), 'Duplicate entry')
+                || str_contains($e->getMessage(), 'UNIQUE constraint')
+                || str_contains($e->getMessage(), 'unique constraint')) {
+                return response()->json([
+                    'ok' => false,
+                    'error' => 'You already have a pending enrollment for this school year.',
+                ], 422);
+            }
+
+            throw $e;
+        }
     }
 
     /**
@@ -112,12 +134,13 @@ class EnrollmentController extends Controller
     public function show(Request $request, string $id): JsonResponse
     {
         $user = $request->user();
-        abort_unless($user?->isStudent(), 403);
 
         $enrollment = Enrollment::query()
             ->where('id', $id)
             ->where('studentId', $user->user_id)
             ->firstOrFail();
+
+        $this->authorize('view', $enrollment);
 
         return response()->json([
             'ok' => true,
@@ -149,17 +172,25 @@ class EnrollmentController extends Controller
     public function update(UpdateEnrollmentRequest $request, string $id): JsonResponse
     {
         $user = $request->user();
-        abort_unless($user?->isStudent(), 403);
 
         $enrollment = Enrollment::query()
             ->where('id', $id)
             ->where('studentId', $user->user_id)
             ->firstOrFail();
 
+        $this->authorize('update', $enrollment);
+
         $validated = $request->validated();
 
         $enrollmentStatus = $enrollment->status;
         $isMutableEnrollment = in_array($enrollmentStatus, [Enrollment::DRAFT, Enrollment::SUBMITTED], true);
+
+        if (! $isMutableEnrollment) {
+            return response()->json([
+                'ok' => false,
+                'error' => 'Only draft or submitted enrollments can be edited.',
+            ], 422);
+        }
 
         // Check for duplicate if changing school year
         if (isset($validated['schoolYear']) && $validated['schoolYear'] !== $enrollment->schoolYear) {
@@ -169,24 +200,27 @@ class EnrollmentController extends Controller
                     'error' => 'You already have an active enrollment for this school year.',
                 ], 422);
             }
-        }
 
-        // Students may only edit the status of enrollments still in Draft/Submitted;
-        // approval decisions are owned by admins.
-        if (isset($validated['status'])) {
-            $validated['status'] = $isMutableEnrollment ? $validated['status'] : $enrollmentStatus;
+            if (Enrollment::hasPending($user->user_id, $validated['schoolYear'], $id)) {
+                return response()->json([
+                    'ok' => false,
+                    'error' => 'You already have a pending enrollment for this school year.',
+                ], 422);
+            }
         }
 
         $enrollment->update($validated);
 
-        // Update user profile if enrollment details changed
+        // Update user profile if enrollment details changed. Only values that
+        // passed the UpdateEnrollmentRequest rules may reach the user record;
+        // the raw request fallback previously let unvalidated input through.
         $profileFields = [
-            'contact' => $validated['contact'] ?? $request->input('contact'),
-            'birthDate' => $validated['birthDate'] ?? $request->input('birthDate'),
-            'address' => $validated['address'] ?? $request->input('address'),
-            'guardianName' => $validated['guardianName'] ?? $request->input('guardianName'),
-            'guardianContact' => $validated['guardianContact'] ?? $request->input('guardianContact'),
-            'strand' => $validated['strand'] ?? $request->input('strand'),
+            'contact' => $validated['contact'] ?? null,
+            'birthDate' => $validated['birthDate'] ?? null,
+            'address' => $validated['address'] ?? null,
+            'guardianName' => $validated['guardianName'] ?? null,
+            'guardianContact' => $validated['guardianContact'] ?? null,
+            'strand' => $validated['strand'] ?? null,
         ];
 
         $profileChanges = array_filter($profileFields, fn ($value) => $value !== null);
@@ -225,12 +259,13 @@ class EnrollmentController extends Controller
     public function destroy(Request $request, string $id): JsonResponse
     {
         $user = $request->user();
-        abort_unless($user?->isStudent(), 403);
 
         $enrollment = Enrollment::query()
             ->where('id', $id)
             ->where('studentId', $user->user_id)
             ->firstOrFail();
+
+        $this->authorize('delete', $enrollment);
 
         // Only allow deletion of draft enrollments
         if ($enrollment->status !== 'Draft') {

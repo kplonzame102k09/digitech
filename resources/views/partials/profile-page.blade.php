@@ -49,7 +49,7 @@
 
                 <section data-profile-panel="details">
                     <div class="grid gap-6 lg:grid-cols-[0.8fr_1.2fr]">
-                        <section class="card p-6 sm:p-7">
+                        <section class="p-6 sm:p-7">
                             <div class="flex flex-col items-center text-center">
                                 <div class="relative">
                                     <img id="bigAvatar" data-profile-photo
@@ -123,7 +123,7 @@
 
                 <section data-profile-panel="security" class="hidden">
                     <div class="grid gap-6 lg:grid-cols-[0.8fr_1.2fr]">
-                        <section class="card p-6 sm:p-7">
+                        <section class="card sticky top-6 p-6 sm:p-7">
                             <div class="flex items-start gap-3 border-b border-slate-200 pb-5 dark:border-slate-700">
                                 <span
                                     class="flex h-10 w-10 items-center justify-center rounded-xl bg-purple-50 text-purple-600 dark:bg-purple-950/50 dark:text-purple-300">
@@ -215,6 +215,7 @@
     </div>
     <div id="modalRoot"></div>
     @include('partials.portal-scripts', ['portalPage' => 'profile.js'])
+    @include('partials.password-toggle')
 </body>
 
 </html>

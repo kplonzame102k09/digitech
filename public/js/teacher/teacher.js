@@ -626,7 +626,14 @@
       q("[data-row-prelim]", row).value = gradeInput(gTerm(record, "prelim"));
       q("[data-row-midterm]", row).value = gradeInput(gTerm(record, "midterm"));
       q("[data-row-finals]", row).value = gradeInput(gTerm(record, "finals"));
-      q("[data-row-published]", row).value = record.published ? "true" : "false";
+      const pubEl = q("[data-row-published]", row);
+      if (pubEl) {
+        const approved = record.published === true;
+        pubEl.textContent = approved ? "Published" : "Pending approval";
+        pubEl.className = approved
+          ? "inline-flex items-center gap-1.5 rounded-full bg-emerald-50 px-2 py-1 text-xs font-semibold text-emerald-700 dark:bg-emerald-950/50 dark:text-emerald-300"
+          : "inline-flex items-center gap-1.5 rounded-full bg-slate-100 px-2 py-1 text-xs font-semibold text-slate-500 dark:bg-slate-800 dark:text-slate-300";
+      }
       const finalCell = q("[data-row-final]", row);
       if (finalCell) finalCell.textContent = gFinal(record) === null ? "—" : gFinal(record).toFixed(2);
       [
@@ -643,13 +650,6 @@
           renderGradeModalSummary(modalRowRecords());
         }),
       );
-      q("[data-row-published]", row)?.addEventListener("change", (event) => {
-        record.published = event.target.value === "true";
-        if (record.published) {
-          record.publishedAt = new Date().toISOString();
-          record.publishedBy = U.id;
-        }
-      });
       q("[data-row-remove]", row)?.addEventListener("click", () => {
         const all = get("grades", []);
         const index = all.findIndex((item) => item.id === record.id);
@@ -758,7 +758,7 @@
       record.finals = numberOrNull(q("[data-row-finals]", row)?.value);
       record.finalGrade = gFinalFrom(record.prelim, record.midterm, record.finals);
       record.remarks = record.finalGrade === null ? (record.remarks || null) : record.finalGrade >= 75 ? "Passed" : "Failed";
-      record.published = q("[data-row-published]", row)?.value === "true";
+      record.published = false;
       record.publishedAt = record.published ? record.publishedAt || now : null;
       record.publishedBy = record.published ? record.publishedBy || U.id : null;
       record.updatedBy = U.id;

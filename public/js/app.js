@@ -215,7 +215,10 @@ function notifyAdmins(title, message, source = "portal", recordId) {
         read: false,
         source,
       };
-      if (recordId) notification[`${source}Id`] = recordId;
+      if (recordId) {
+        notification[`${source}Id`] = recordId;
+        notification.recordId = recordId;
+      }
       upsertNotification(notifications, notification, source, recordId);
       return notification;
     });
@@ -248,7 +251,10 @@ function notifyUsers(userIds, title, message, source = "portal", recordId) {
       read: false,
       source,
     };
-    if (recordId) notification[`${source}Id`] = recordId;
+    if (recordId) {
+      notification[`${source}Id`] = recordId;
+      notification.recordId = recordId;
+    }
     upsertNotification(notifications, notification, source, recordId);
   });
   DG.saveData("notifications", notifications);
@@ -279,14 +285,11 @@ function observeAdminNotificationEvents() {
     "requirements",
     "documentRequests",
     "announcements",
+    "grades",
   ]);
   const recordId = (record) => record?.id || record?.studentId;
   const byId = (records) =>
     new Map((Array.isArray(records) ? records : []).map((record) => [recordId(record), record]));
-  const studentName = (studentId) => {
-    const student = DG.getData("users", []).find((user) => user.id === studentId);
-    return `${student?.firstName || "Student"} ${student?.lastName || ""}`.trim();
-  };
 
   DG.saveData = (key, value) => {
     if (!watchedKeys.has(key)) return saveData(key, value);
@@ -297,62 +300,11 @@ function observeAdminNotificationEvents() {
 
     const before = byId(previous);
     const after = byId(value);
-    after.forEach((record, id) => {
-      const oldRecord = before.get(id);
-      const isNew = !oldRecord;
-      const wasSubmitted = oldRecord?.status === "Submitted";
-      const isSubmitted = record.status === "Submitted";
-
-      if (
-        key === "enrollments" &&
-        currentUser.role === "student" &&
-        isSubmitted &&
-        !wasSubmitted
-      ) {
-        notifyAdmins(
-          "New enrollment submitted",
-          `${studentName(record.studentId)} submitted enrollment ${record.id} for review.`,
-          "enrollment",
-          record.id,
-        );
-      }
-
-      if (
-        key === "requirements" &&
-        currentUser.role === "student" &&
-        isSubmitted &&
-        !wasSubmitted
-      ) {
-        notifyAdmins(
-          "Requirement submitted",
-          `${studentName(record.studentId)} submitted ${record.name || "a requirement"} for review.`,
-          "requirement",
-          record.id,
-        );
-      }
-
-      if (key === "documentRequests" && currentUser.role === "student" && isNew) {
-        notifyAdmins(
-          "New document request",
-          `${studentName(record.studentId)} requested ${record.documentType || "a document"}.`,
-          "document",
-          record.id,
-        );
-      }
-
-      if (
-        key === "announcements" &&
-        currentUser.role === "teacher" &&
-        isNew
-      ) {
-        notifyAdmins(
-          "Teacher announcement published",
-          `${currentUser.firstName || "Teacher"} published “${record.title || "an announcement"}”.`,
-          "announcement",
-          record.id,
-        );
-      }
-    });
+    // Admin alerts for registrations, submissions, requirements, grades and
+    // parent-link requests are created server-side (the client-side users
+    // mirror no longer lists admins, that is why the old observer was
+    // removed). Nothing else happens here today; the wrapper stays for the
+    // diff bookkeeping above.
     return result;
   };
 }
@@ -368,7 +320,7 @@ function upsertNotification(list, notification, source, recordId) {
       existing.userId === notification.userId &&
       (existing.source || "portal") === source &&
       (recordId
-        ? existing[`${source}Id`] === recordId
+        ? existing.recordId === recordId || existing[`${source}Id`] === recordId
         : existing.title === notification.title && existing.message === notification.message),
   );
   if (index >= 0) list[index] = notification;

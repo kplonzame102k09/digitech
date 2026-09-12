@@ -333,14 +333,24 @@
     $("#announcementImageRemove")?.addEventListener("click", resetPhotoUI);
     render();
   }
+  function safePreviewUrl(url) {
+    const value = String(url || "").trim();
+    if (!value) return null;
+    if (value.startsWith("/api/portal/requirements/files/")) return value;
+    if (/^https?:\/\//i.test(value)) return value;
+    if (value.startsWith("//")) return "https:" + value;
+    return null;
+  }
+
   function openRequirementPreview(r) {
     const root = document.getElementById("modalRoot");
     if (!root) return;
     APP.closeModal();
-    const url = r.fileUrl || "";
-    const ext = (url.split("?")[0] || "").toLowerCase();
-    const isImage = /\.(jpe?g|png|webp|gif)$/.test(ext);
-    const isPdf = ext.endsWith(".pdf");
+    const url = safePreviewUrl(r.fileUrl || "");
+    const hasPreview = url !== null;
+    const ext = (url || "").split("?")[0].toLowerCase();
+    const isImage = hasPreview && /\.(jpe?g|png|webp|gif)$/.test(ext);
+    const isPdf = hasPreview && ext.endsWith(".pdf");
     const student = F.users().find((u) => u.id === r.studentId);
     const backdrop = document.createElement("div");
     backdrop.className =
@@ -359,10 +369,10 @@
         <button type="button" data-preview-close class="shrink-0 rounded-xl p-2 text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800" aria-label="Close"><i data-lucide="x" class="h-5 w-5"></i></button>
       </div>
       <div class="mt-4 max-h-[65vh] overflow-auto rounded-xl border border-slate-200 bg-slate-50 dark:border-slate-700 dark:bg-slate-800">
-        ${isImage ? `<img src="${F.esc(url)}" alt="${F.esc(r.name)}" class="mx-auto max-h-[58vh] object-contain">` : isPdf ? `<iframe src="${F.esc(url)}" title="${F.esc(r.name)}" class="h-[58vh] w-full"></iframe>` : `<div class="flex flex-col items-center gap-2 p-10 text-center"><i data-lucide="file-text" class="h-8 w-8 text-slate-400"></i><p class="text-sm text-slate-500">No inline preview for this file type.</p></div>`}
+        ${!hasPreview ? `<div class="flex flex-col items-center gap-2 p-10 text-center"><i data-lucide="file-x" class="h-8 w-8 text-slate-400"></i><p class="text-sm text-slate-500">No file attached or the attached file cannot be previewed.</p></div>` : isImage ? `<img src="${F.esc(url)}" alt="${F.esc(r.name)}" class="mx-auto max-h-[58vh] object-contain">` : isPdf ? `<iframe src="${F.esc(url)}" title="${F.esc(r.name)}" class="h-[58vh] w-full"></iframe>` : `<div class="flex flex-col items-center gap-2 p-10 text-center"><i data-lucide="file-text" class="h-8 w-8 text-slate-400"></i><p class="text-sm text-slate-500">No inline preview for this file type.</p></div>`}
       </div>
       <div class="mt-4 flex justify-end gap-3">
-        <a href="${F.esc(url)}" target="_blank" rel="noopener" class="rounded-xl border border-slate-200 px-4 py-2 text-sm font-semibold dark:border-slate-700">Open original</a>
+        ${hasPreview ? `<a href="${F.esc(url)}" target="_blank" rel="noopener" class="rounded-xl border border-slate-200 px-4 py-2 text-sm font-semibold dark:border-slate-700">Open original</a>` : ""}
         <button type="button" data-preview-close class="rounded-xl bg-blue-600 px-4 py-2 text-sm font-semibold text-white">Close</button>
       </div>`;
     panel.querySelectorAll("[data-preview-close]").forEach((b) => b.addEventListener("click", close));

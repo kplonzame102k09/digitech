@@ -38,6 +38,9 @@ class User extends Authenticatable
         'employeeId',
         'department',
         'profile_extra',
+        'occupation',
+        'emergencyContact',
+        'specialization',
     ];
 
     protected $hidden = [
@@ -79,6 +82,11 @@ class User extends Authenticatable
     public function isParent(): bool
     {
         return $this->role === 'parent';
+    }
+
+    public function isGuest(): bool
+    {
+        return $this->role === 'guest';
     }
 
     public function linkedChildren()

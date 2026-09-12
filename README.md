@@ -1,58 +1,119 @@
-<p align="center"><a href="https://laravel.com" target="_blank"><img src="https://raw.githubusercontent.com/laravel/art/master/logo-lockup/5%20SVG/2%20CMYK/1%20Full%20Color/laravel-logolockup-cmyk-red.svg" width="400" alt="Laravel Logo"></a></p>
+# Digitech College Portal
 
-<p align="center">
-<a href="https://github.com/laravel/framework/actions"><img src="https://github.com/laravel/framework/workflows/tests/badge.svg" alt="Build Status"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/dt/laravel/framework" alt="Total Downloads"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/v/laravel/framework" alt="Latest Stable Version"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/l/laravel/framework" alt="License"></a>
-</p>
+A Laravel-based student information portal for Digitech College. Five portal
+roles (admin, teacher, student, parent, guest) share one domain model that each
+page mirrors locally and pushes back over `PUT /api/portal/{collection}`. The
+server is the source of truth: it enforces per-role read scoping, write-field
+whitelists, and lifecycle guards on every sync.
 
-## About Laravel
+## Roles and landing pages
 
-Laravel is a web application framework with expressive, elegant syntax. We believe development must be an enjoyable and creative experience to be truly fulfilling. Laravel takes the pain out of development by easing common tasks used in many web projects, such as:
+| Role    | Landing page             | Typical access                                    |
+|---------|--------------------------|---------------------------------------------------|
+| admin   | `/admin/dashboard`       | Full CRUD, publishing, approvals, user management |
+| teacher | `/teacher/dashboard`     | Own students, grades, attendance, announcements   |
+| student | `/student/dashboard`     | Enrollment, requirements, documents, grades       |
+| parent  | `/parent/dashboard`      | Linked children's data                            |
+| guest   | `/guest/announcements`   | Prospective-student announcements & documents     |
 
-- [Simple, fast routing engine](https://laravel.com/docs/routing).
-- [Powerful dependency injection container](https://laravel.com/docs/container).
-- Multiple back-ends for [session](https://laravel.com/docs/session) and [cache](https://laravel.com/docs/cache) storage.
-- Expressive, intuitive [database ORM](https://laravel.com/docs/eloquent).
-- Database agnostic [schema migrations](https://laravel.com/docs/migrations).
-- [Robust background job processing](https://laravel.com/docs/queues).
-- [Real-time event broadcasting](https://laravel.com/docs/broadcasting).
-
-Laravel is accessible, powerful, and provides tools required for large, robust applications.
-
-## Learning Laravel
-
-Laravel has the most extensive and thorough [documentation](https://laravel.com/docs) and video tutorial library of all modern web application frameworks, making it a breeze to get started with the framework.
-
-In addition, [Laracasts](https://laracasts.com) contains thousands of video tutorials on a range of topics including Laravel, modern PHP, unit testing, and JavaScript. Boost your skills by digging into our comprehensive video library.
-
-You can also watch bite-sized lessons with real-world projects on [Laravel Learn](https://laravel.com/learn), where you will be guided through building a Laravel application from scratch while learning PHP fundamentals.
-
-## Agentic Development
-
-Laravel's predictable structure and conventions make it ideal for AI coding agents like Claude Code, Cursor, and GitHub Copilot. Install [Laravel Boost](https://laravel.com/docs/ai) to supercharge your AI workflow:
+## Setup
 
 ```bash
-composer require laravel/boost --dev
-
-php artisan boost:install
+composer install
+cp .env.example .env
+php artisan key:generate
+php artisan migrate
+php artisan db:seed --class=DemoUserSeeder   # optional demo accounts
+npm install && npm run build                  # if assets are not prebuilt
+php artisan serve
 ```
 
-Boost provides your agent 15+ tools and skills that help agents build Laravel applications while following best practices.
+### Environment variables
 
-## Contributing
+- `DB_*` – MySQL connection (app expects MySQL; SQLite is not supported by all
+  migrations).
+- `APP_DEBUG` – must be `false` in production.
+- `SESSION_DRIVER` / `CACHE_STORE` / `QUEUE_CONNECTION` – use a persistent
+  driver (database/redis) in production, never `file`/`array` on multi-server.
+- Test suite (see below): `DB_TEST_DATABASE`.
 
-Thank you for considering contributing to the Laravel framework! The contribution guide can be found in the [Laravel documentation](https://laravel.com/docs/contributions).
+### Demo accounts (password: `password`)
 
-## Code of Conduct
+| User               | user_id          | Email                       |
+|--------------------|------------------|-----------------------------|
+| Registrar admin    | ADMIN-2026-000001| admin@gmail.com             |
+| Teacher            | TCH-2026-000001  | teacher@school.local        |
+| Student            | STU-2026-000001  | juan.delacruz@student.local |
+| Student            | STU-2026-000002  | maria.reyes@student.local   |
+| Student            | STU-2026-000003  | jose.garcia@student.local   |
+| Parent (Juan's)    | PAR-2026-000001  | parent@school.local         |
+| Guest              | GST-2026-000001  | guest@school.local          |
 
-In order to ensure that the Laravel community is welcoming to all, please review and abide by the [Code of Conduct](https://laravel.com/docs/contributions#code-of-conduct).
+New/imported accounts without a real password are issued a random one and
+flagged `mustChangePassword`; they are forced through `/auth/password/change`
+before any role page (see `EnsurePasswordUpdated` middleware).
 
-## Security Vulnerabilities
+## Architecture notes
 
-If you discover a security vulnerability within Laravel, please send an e-mail to Taylor Otwell via [taylor@laravel.com](mailto:taylor@laravel.com). All security vulnerabilities will be promptly addressed.
+- **`app/Services/PortalDataService.php`** – the sync engine. `putCollection`
+  (calls `syncDomainRows`/`syncUsers`) validates every row through
+  `scopedDomainFields`, upserts it, then `reconcileDomainRows` treats the
+  payload as the client's full mirror. Non-admins may only delete their own
+  rows; **an empty/partial payload never wipes data** except for an admin's
+  full replacement.
+- **Alerts are server-side.** Submission/registration alerts (enrollments,
+  requirements, documents, grades, parent links, teacher announcements) are
+  minted by `createAdminAlert` for every active admin, honoring the
+  "notify admins" setting and collapsing on `(admin, source, recordId)`.
+  The old client-side observer was removed because the client users mirror no
+  longer contains admins (privacy scoping).
+- **Admin user-management guards.** A user sync can never delete the acting
+  admin, deactivate/demote the last active admin, or delete an account that
+  owns domain rows (returns `422` with the blocking ids). Deactivate instead.
+- **Password minimum** is 12 characters; `login` and `uploads` routes are rate
+  limited.
 
-## License
+## Testing
 
-The Laravel framework is open-sourced software licensed under the [MIT license](https://opensource.org/licenses/MIT).
+### Harness suite (no DB migration, safe on live data)
+
+Standalone PHP harnesses in the project root bootstrap the app and run inside
+`DB::transaction()`/`rollback()`, so **they never modify live data**:
+
+```bash
+php test-batch1-scoping.php        # 23 checks: read/write scoping
+php test-batch2-uploads.php        # 13 checks: upload/download permissions/sanitization
+php test-batch3-guards.php         # 13 checks: enums, dedupe, lifecycle guards
+php test-batch4-notifications.php  # 15 checks: notification forgery + dedupe
+php test-batch5-admin-alerts.php   # 10 checks: server-side admin alerts
+php test-batch6-guards.php         # 10 checks: admin user-sync guards
+```
+
+### PHPUnit suite
+
+`tests/bootstrap.php` routes the suite to a **scratch database**:
+
+```bash
+php artisan test        # DB_DATABASE=digitech_portal_test when unset
+DB_TEST_DATABASE=my_scratch_db php artisan test
+```
+
+**Never** run `php artisan test` against a database holding real data —
+`RefreshDatabase` rebuilds the schema from migrations and destroys it. The app
+DB user needs `CREATE DATABASE` privileges (or a pre-created scratch DB with
+full grants). Grant example:
+
+```sql
+CREATE DATABASE IF NOT EXISTS digitech_portal_test;
+GRANT ALL PRIVILEGES ON digitech_portal_test.* TO 'newuser'@'localhost';
+```
+
+## Production checklist
+
+- [ ] `APP_DEBUG=false`, `APP_ENV=production`
+- [ ] `APP_KEY` set, `.env` not committed, `config:cache` + `route:cache`
+- [ ] `SESSION_DRIVER`/`CACHE_STORE`/`QUEUE_CONNECTION` on persistent drivers
+- [ ] MySQL user scoped to the portal database (no `CREATE DATABASE`)
+- [ ] `php artisan storage:link` (uploaded requirement files / banners)
+- [ ] HTTPS termination; admin/teacher/parent accounts use 12+ char passwords
+- [ ] `php artisan migrate --force` on deploy
