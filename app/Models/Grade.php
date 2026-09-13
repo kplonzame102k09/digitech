@@ -98,7 +98,20 @@ class Grade extends Model
 
     public function recalculateFinalGrade(): ?float
     {
-        $grades = collect([$this->prelim, $this->midterm, $this->finals])
+        $final = self::previewFinal($this->prelim, $this->midterm, $this->finals);
+        $this->finalGrade = $final;
+
+        return $final;
+    }
+
+    /**
+     * Authoritative final-grade preview (resampled weights over present
+     * terms only). Single source of truth replacing client-side zero-fill
+     * math in public/js (features.js, teacher.js, student.js).
+     */
+    public static function previewFinal(mixed $prelim, mixed $midterm, mixed $finals): ?float
+    {
+        $grades = collect([$prelim, $midterm, $finals])
             ->map(fn ($value) => $value !== null && $value !== '' ? (float) $value : null);
 
         $weights = [self::PRELIM_WEIGHT, self::MIDTERM_WEIGHT, self::FINALS_WEIGHT];
@@ -108,17 +121,13 @@ class Grade extends Model
             ->filter();
 
         if ($present->isEmpty()) {
-            $this->finalGrade = null;
-
             return null;
         }
 
         $weightedSum = $present->sum(fn (array $pair): float => $pair[0] * $pair[1]);
         $totalWeight = $present->sum(fn (array $pair): float => $pair[1]);
 
-        $this->finalGrade = round($weightedSum / $totalWeight, 2);
-
-        return $this->finalGrade;
+        return round($weightedSum / $totalWeight, 2);
     }
 
     public function scopeForSchoolYear(Builder $query, string $schoolYear): Builder

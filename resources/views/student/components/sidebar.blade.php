@@ -62,6 +62,12 @@
             Announcements
             <span data-nav-notif="announcement" class="ml-auto hidden min-w-5 rounded-full bg-red-500 px-1.5 py-0.5 text-center text-[10px] font-bold leading-4 text-white"></span>
         </a>
+        <a href="{{ route('student.classrooms') }}"
+          class="flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium
+          {{ request()->routeIs('student.classrooms') ? 'nav-active' : 'text-slate-600 hover:bg-slate-100 dark:text-slate-300 dark:hover:bg-slate-800'}}">
+          <i data-lucide="school" class="w-4"></i>
+            Classrooms
+        </a>
         <a href="{{ route('student.profile') }}"
           class="flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium
           {{ request()->routeIs('student.profile') ? 'nav-active' : 'text-slate-600 hover:bg-slate-100 dark:text-slate-300 dark:hover:bg-slate-800'}}">

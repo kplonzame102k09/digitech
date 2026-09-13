@@ -281,10 +281,12 @@
                 <div class="flex items-center gap-3">
                      <img
                         data-student-photo
+                        src="{{ asset('images/16432.png') }}"
                         alt="Student profile photo"
                         class="h-9 w-9 rounded-full object-cover"
+                        onerror="this.onerror=null;this.src='{{ asset('images/16432.png') }}'"
                     />
-                    <span data-student-initials class="flex h-9 w-9 items-center justify-center rounded-full bg-green-50 text-xs font-bold text-green-700"></span>
+                    <span data-student-initials class="hidden h-9 w-9 items-center justify-center rounded-full bg-green-50 text-xs font-bold text-green-700"></span>
                     <div>
                         <b data-student-name class="block"></b>
                         <small data-student-id class="text-xs text-slate-400"></small>

@@ -166,7 +166,7 @@
                 <div class="flex items-center gap-3">
                     <div class="relative h-11 w-11 shrink-0">
                         <img data-child-photo src="{{ asset('images/16432.png') }}" alt="Student profile photo"
-                            class="h-11 w-11 rounded-2xl object-cover" />
+                            class="h-11 w-11 rounded-2xl object-cover" onerror="this.onerror=null;this.src='{{ asset('images/16432.png') }}'" />
 
                         <div data-child-initials
                             class="absolute inset-0 hidden items-center justify-center rounded-2xl bg-green-100 text-sm font-bold text-green-700 dark:bg-green-950 dark:text-green-300">

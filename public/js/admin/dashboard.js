@@ -327,8 +327,8 @@
   }
 
   function init() {
-    const parent = AUTH.requireRole("admin");
-    if (!parent) return;
+    const admin = AUTH.requireRole("admin");
+    if (!admin) return;
     const users = DG.getData("users", []);
     const enrollments = DG.getData("enrollments", []);
     const documents = DG.getData("documentRequests", []);
@@ -336,11 +336,7 @@
     const competencies = DG.getData("competencies", []);
     const notifications = DG.getData("notifications", []);
     const attendance = DG.getData("attendance", []);
-    const avatar = $("#avatar");
-    if (avatar) {
-      avatar.src = getProfilePhoto(parent);
-      avatar.alt = `${fullName(parent)} profile photo`;
-    }
+    DG.loadProfileElements();
     APP.applyTheme();
     APP.updateNotif();
     lucide.createIcons();

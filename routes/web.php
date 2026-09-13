@@ -3,6 +3,8 @@
 use App\Http\Controllers\AccountController;
 use App\Http\Controllers\AddressController;
 use App\Http\Controllers\Admin\ProfileController as AdminProfileController;
+use App\Http\Controllers\Analytics\AttendanceAnalyticsController;
+use App\Http\Controllers\Analytics\GradeAnalyticsController;
 use App\Http\Controllers\Authentication\LoginController;
 use App\Http\Controllers\Authentication\PasswordController;
 use App\Http\Controllers\PortalDataController;
@@ -10,6 +12,15 @@ use App\Http\Controllers\Student\DocumentRequestController;
 use App\Http\Controllers\Student\EnrollmentController;
 use App\Http\Controllers\Student\GradeController;
 use App\Http\Controllers\Student\ProfileController;
+use App\Http\Controllers\Student\ClassroomDetailController;
+use App\Http\Controllers\Student\ClassroomJoinController;
+use App\Http\Controllers\Student\ClassroomMeetingController as StudentClassroomMeetingController;
+use App\Http\Controllers\Student\ClassroomWorkController;
+use App\Http\Controllers\Teacher\ClassroomActivityController;
+use App\Http\Controllers\Teacher\ClassroomMeetingController as TeacherClassroomMeetingController;
+use App\Http\Controllers\Teacher\ClassroomController as TeacherClassroomController;
+use App\Http\Controllers\Teacher\ClassroomSubmissionController;
+use App\Http\Controllers\ClassroomFileController;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', function () {
@@ -39,6 +50,10 @@ Route::middleware(['auth', 'password.updated'])->prefix('api/portal')->group(fun
     Route::get('/requirements/files/{file}', [PortalDataController::class, 'downloadRequirementFile']);
     Route::get('/account/activity', [AccountController::class, 'activity']);
     Route::post('/account/password', [AccountController::class, 'changePassword'])->name('account.password');
+    // Phase 1: server-side analytics (additive; legacy bulk PUT below untouched).
+    Route::get('/analytics/attendance', [AttendanceAnalyticsController::class, 'show']);
+    Route::get('/analytics/grades/summary', [GradeAnalyticsController::class, 'summary']);
+    Route::post('/analytics/grades/preview', [GradeAnalyticsController::class, 'preview']);
     Route::get('/{key}', [PortalDataController::class, 'show']);
     Route::put('/{key}', [PortalDataController::class, 'update']);
 });
@@ -72,6 +87,8 @@ Route::middleware(['auth', 'password.updated', 'role:student'])->prefix('student
     Route::get('/grades', fn () => view('student.grades'))->name('grades');
     Route::get('/announcements', fn () => view('student.announcements'))->name('announcements');
     Route::get('/profile', fn () => view('student.profile'))->name('profile');
+    Route::get('/classrooms', fn () => view('student.classrooms'))->name('classrooms');
+    Route::get('/classrooms/{id}', fn (string $id) => view('student.classroom-detail', ['classroomId' => $id]))->name('classrooms.show');
 
     // API routes for student operations
     Route::apiResource('api/enrollments', EnrollmentController::class);
@@ -81,6 +98,16 @@ Route::middleware(['auth', 'password.updated', 'role:student'])->prefix('student
     Route::get('/api/profile', [ProfileController::class, 'show'])->name('api.profile.show');
     Route::put('/api/profile', [ProfileController::class, 'update'])->name('api.profile.update');
     Route::post('/api/profile/photo', [ProfileController::class, 'uploadPhoto'])->name('api.profile.photo');
+    // Classrooms: roster + join (code or invite token).
+    Route::get('/api/classrooms', [ClassroomJoinController::class, 'mine'])->name('api.classrooms.mine');
+    Route::post('/api/classrooms/join', [ClassroomJoinController::class, 'join'])->middleware('throttle:classroom-joins')->name('api.classrooms.join');
+    Route::get('/api/classrooms/{id}', [ClassroomDetailController::class, 'show'])->name('api.classrooms.show');
+    // Classroom activities + submissions (fixed classroom subject; files on private disk).
+    Route::get('/api/classrooms/{classroomId}/activities', [ClassroomWorkController::class, 'activities'])->name('api.classrooms.activities');
+    Route::post('/api/activities/{activityId}/submit', [ClassroomWorkController::class, 'submit'])->middleware('throttle:uploads')->name('api.activities.submit');
+    // Classroom video (self-hosted LiveKit; server-minted tokens only).
+    Route::get('/api/classrooms/{classroomId}/meetings', [StudentClassroomMeetingController::class, 'index'])->name('api.classrooms.meetings');
+    Route::post('/api/classrooms/{classroomId}/video/token', [StudentClassroomMeetingController::class, 'token'])->middleware('throttle:classroom-joins')->name('api.classrooms.video.token');
 });
 
 Route::middleware(['auth', 'password.updated', 'role:teacher'])->prefix('teacher')->name('teacher.')->group(function () {
@@ -91,6 +118,46 @@ Route::middleware(['auth', 'password.updated', 'role:teacher'])->prefix('teacher
     Route::get('/grades', fn () => view('teacher.grades'))->name('grades');
     Route::get('/profile', fn () => view('teacher.profile'))->name('profile');
     Route::get('/students', fn () => view('teacher.students'))->name('students');
+    Route::get('/classrooms', fn () => view('teacher.classrooms'))->name('classrooms');
+    // Classroom management API (REST; never mirrored via bulk PUT sync).
+    Route::get('/api/classrooms', [TeacherClassroomController::class, 'index'])->name('api.classrooms.index');
+    Route::post('/api/classrooms', [TeacherClassroomController::class, 'store'])->name('api.classrooms.store');
+    Route::get('/api/classrooms/{id}', [TeacherClassroomController::class, 'show'])->name('api.classrooms.show');
+    Route::put('/api/classrooms/{id}', [TeacherClassroomController::class, 'update'])->name('api.classrooms.update');
+    Route::post('/api/classrooms/{id}/regenerate', [TeacherClassroomController::class, 'regenerate'])->name('api.classrooms.regenerate');
+    Route::post('/api/classrooms/{id}/archive', [TeacherClassroomController::class, 'archive'])->name('api.classrooms.archive');
+    Route::delete('/api/classrooms/{id}/students/{studentId}', [TeacherClassroomController::class, 'removeStudent'])->name('api.classrooms.removeStudent');
+    // Classroom detail page.
+    Route::get('/classrooms/{id}', fn (string $id) => view('teacher.classroom-detail', ['classroomId' => $id]))->name('classrooms.show');
+    // Activities (no per-activity subject; fixed classroom subject applies).
+    Route::get('/api/classrooms/{id}/activities', [ClassroomActivityController::class, 'index'])->name('api.classroom-activities.index');
+    Route::post('/api/classrooms/{id}/activities', [ClassroomActivityController::class, 'store'])->name('api.classroom-activities.store');
+    Route::delete('/api/classrooms/{id}/activities/{activityId}', [ClassroomActivityController::class, 'destroy'])->name('api.classroom-activities.destroy');
+    // Submissions: view/score/return/export + gradebook (fixed subject).
+    Route::get('/api/classrooms/{id}/submissions', [ClassroomSubmissionController::class, 'index'])->name('api.classroom-submissions.index');
+    Route::get('/api/classrooms/{id}/submissions/export', [ClassroomSubmissionController::class, 'export'])->name('api.classroom-submissions.export');
+    Route::get('/api/classrooms/{id}/submissions/{submissionId}', [ClassroomSubmissionController::class, 'show'])->name('api.classroom-submissions.show');
+    Route::post('/api/classrooms/{id}/submissions/{submissionId}/score', [ClassroomSubmissionController::class, 'score'])->name('api.classroom-submissions.score');
+    Route::post('/api/classrooms/{id}/submissions/{submissionId}/return', [ClassroomSubmissionController::class, 'return'])->name('api.classroom-submissions.return');
+    Route::get('/api/classrooms/{id}/gradebook', [ClassroomSubmissionController::class, 'gradebook'])->name('api.classroom-gradebook.index');
+    Route::put('/api/classrooms/{id}/gradebook/{studentId}', [ClassroomSubmissionController::class, 'gradeStudent'])->name('api.classroom-gradebook.grade');
+    // Classroom video meetings (self-hosted LiveKit; no recording).
+    Route::get('/api/classrooms/{id}/meetings', [TeacherClassroomMeetingController::class, 'index'])->name('api.classroom-meetings.index');
+    Route::post('/api/classrooms/{id}/meetings', [TeacherClassroomMeetingController::class, 'store'])->name('api.classroom-meetings.store');
+    Route::post('/api/classrooms/{id}/meetings/{meetingId}/start', [TeacherClassroomMeetingController::class, 'start'])->name('api.classroom-meetings.start');
+    Route::post('/api/classrooms/{id}/meetings/{meetingId}/end', [TeacherClassroomMeetingController::class, 'end'])->name('api.classroom-meetings.end');
+    Route::post('/api/classrooms/{id}/meetings/{meetingId}/cancel', [TeacherClassroomMeetingController::class, 'cancel'])->name('api.classroom-meetings.cancel');
+    Route::delete('/api/classrooms/{id}/meetings/{meetingId}', [TeacherClassroomMeetingController::class, 'destroy'])->name('api.classroom-meetings.destroy');
+    Route::post('/api/classrooms/{id}/video/token', [TeacherClassroomMeetingController::class, 'token'])->middleware('throttle:classroom-joins')->name('api.classrooms.video.token');
+});
+
+// Classroom invite-link landing (any authenticated user; students can join).
+Route::middleware(['auth', 'password.updated'])->group(function () {
+    Route::get('/classroom/join/{token}', fn (string $token) => view('classroom.join', ['token' => $token]))->name('classroom.join');
+    Route::get('/api/classrooms/preview/{token}', [ClassroomJoinController::class, 'preview'])->name('api.classrooms.preview');
+    // Classroom files live on the private disk behind ownership checks.
+    Route::post('/api/classroom-files', [ClassroomFileController::class, 'upload'])->middleware('throttle:uploads')->name('api.classroom-files.upload');
+    Route::get('/api/classroom-files/{file}', [ClassroomFileController::class, 'download'])->name('api.classroom-files.download');
 });
 
 Route::middleware(['auth', 'password.updated', 'role:parent'])->prefix('parent')->name('parent.')->group(function () {

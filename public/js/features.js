@@ -3,11 +3,16 @@
   const save = (key, value) => DG.saveData(key, value);
   const esc = (value) => APP.esc(value ?? "");
   const userName = (u) => `${u?.firstName || ""} ${u?.lastName || ""}`.trim() || u?.id || "Unknown";
+  const DEFAULT_AVATAR = (window.DG && window.DG.DEFAULT_AVATAR) || "/images/16432.png";
   const photoUrl = (u) => {
+    if (window.DG && typeof window.DG.normalizePhotoUrl === "function") {
+      return window.DG.normalizePhotoUrl(u?.photo);
+    }
     const photo = u?.photo;
-    if (!photo) return "";
-    if (/^(?:https?:|data:|\/)/.test(photo)) return photo;
-    return `${window.location.origin}/storage/${photo.replace(/^\/+/, "")}`;
+    if (!photo) return DEFAULT_AVATAR;
+    if (/^(?:https?:|data:)/.test(photo)) return photo;
+    if (photo.startsWith('/')) return photo;
+    return `/storage/${photo.replace(/^\/+/, "")}`;
   };
   const users = () => get("users", []);
   const students = () => users().filter((u) => u.role === "student");
@@ -69,5 +74,33 @@
     const annual = annualValues.length ? Math.round(annualValues.reduce((s, v) => s + v, 0) / annualValues.length * 100) / 100 : null;
     return { first, second, annual, firstGwa: gwa(first), secondGwa: gwa(second), annualGwa: gwa(annual) };
   };
-  window.FEATURES = { get, save, esc, userName, photoUrl, users, students, teacherStudents, notify, parentIdsFor, download, csv, SEMESTERS, GRADE_TERMS, GRADE_WEIGHTS, termValue, finalGrade, generalAverage, gwa, gwaText, gradesFor, studentAverages };
+  // Phase 1 server-backed helpers (additive; local math above remains as
+  // instant fallback so pages work offline / when the API is unreachable).
+  const serverGet = async (url) => {
+    const response = await fetch(url, {
+      headers: { Accept: "application/json", "X-Requested-With": "XMLHttpRequest" },
+      credentials: "same-origin",
+    });
+    if (!response.ok) throw new Error(`Request failed (${response.status})`);
+    return response.json();
+  };
+  const fetchGradeSummary = async (params = {}) => {
+    const query = new URLSearchParams(
+      Object.entries(params).filter(([, v]) => v !== null && v !== undefined && v !== ""),
+    ).toString();
+    return serverGet(`/api/portal/analytics/grades/summary${query ? `?${query}` : ""}`);
+  };
+  const previewFinalGrade = async (prelim, midterm, finals) => {
+    const token = document.querySelector('meta[name="csrf-token"]')?.content || "";
+    const response = await fetch("/api/portal/analytics/grades/preview", {
+      method: "POST",
+      headers: { "Content-Type": "application/json", Accept: "application/json", "X-CSRF-TOKEN": token, "X-Requested-With": "XMLHttpRequest" },
+      credentials: "same-origin",
+      body: JSON.stringify({ prelim, midterm, finals }),
+    });
+    if (!response.ok) throw new Error(`Preview failed (${response.status})`);
+    return response.json();
+  };
+  const fetchAttendanceAnalytics = async () => serverGet("/api/portal/analytics/attendance");
+  window.FEATURES = { get, save, esc, userName, photoUrl, DEFAULT_AVATAR, users, students, teacherStudents, notify, parentIdsFor, download, csv, SEMESTERS, GRADE_TERMS, GRADE_WEIGHTS, termValue, finalGrade, generalAverage, gwa, gwaText, gradesFor, studentAverages, fetchGradeSummary, previewFinalGrade, fetchAttendanceAnalytics };
 })();

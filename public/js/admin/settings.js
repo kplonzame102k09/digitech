@@ -300,11 +300,7 @@
     admin = AUTH.requireRole("admin");
     if (!admin) return;
     settings = get("settings", {});
-    const avatar = $("#avatar");
-    if (avatar) {
-      avatar.src = getProfilePhoto(admin);
-      avatar.alt = `${fullName(admin)} profile photo`;
-    }
+    DG.loadProfileElements();
     hydrate();
     APP.applyTheme();
     APP.updateNotif();

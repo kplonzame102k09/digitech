@@ -136,8 +136,16 @@
       try {
         await DG.uploadProfilePhoto(file);
         DG.loadProfileElements();
-        const photo = new URL(DG.getProfilePhoto(freshUser()), location.origin).href;
-        $$("[data-profile-photo]").forEach((img) => (img.src = photo));
+        const photo = DG.getProfilePhoto(DG.getCurrentUser());
+        $$("[data-profile-photo]").forEach((img) => {
+          img.dataset.fallbackApplied = "";
+          img.onerror = () => {
+            if (img.dataset.fallbackApplied === "true") return;
+            img.dataset.fallbackApplied = "true";
+            img.src = (DG.DEFAULT_AVATAR || "/images/16432.png");
+          };
+          img.src = photo;
+        });
         toast("Profile photo updated");
       } catch (error) {
         toast("Failed to upload photo: " + error.message, "error");

@@ -82,17 +82,18 @@
     const initialsElement = $("[data-student-initials]", row);
     if (!photo) return;
 
-    const defaultPhoto = "/images/16432.png";
-    const photoUrl = student?.photo || defaultPhoto;
+    const defaultPhoto = (DG.DEFAULT_AVATAR || "/images/16432.png");
+    const photoUrl = DG.normalizePhotoUrl(student?.photo);
 
     photo.src = photoUrl;
     photo.alt = `${fullName(student)} profile photo`;
     photo.classList.remove("hidden");
     initialsElement?.classList.add("hidden");
     photo.addEventListener("error", () => {
-      if (photo.src.endsWith(defaultPhoto)) return;
+      if (photo.dataset.fallbackApplied === "true") return;
+      photo.dataset.fallbackApplied = "true";
       photo.src = defaultPhoto;
-    }, { once: true });
+    });
   }
 
   function relatedRecords(record) {
@@ -696,11 +697,7 @@
     if (!admin) return;
     users = get("users");
     enrollments = get("enrollments");
-    const avatar = $("#avatar");
-    if (avatar) {
-      avatar.src = getProfilePhoto(admin);
-      avatar.alt = `${fullName(admin)} profile photo`;
-    }
+    DG.loadProfileElements();
     APP.applyTheme();
     APP.updateNotif();
     $("#open")?.addEventListener("click", () =>

@@ -9,6 +9,7 @@ let csrfToken = "";
 let apiBase = "/api/portal";
 let logoutUrl = "/logout";
 const pendingSync = Object.create(null);
+const DEFAULT_AVATAR = "/images/16432.png";
 
 function saveData(key, data) {
   memoryStore[key] = data;
@@ -117,7 +118,18 @@ function logoutUser() {
   document.body.appendChild(form);
   form.submit();
 }
-function getProfilePhoto(user = getCurrentUser()) { return user?.photo || "/images/16432.png"; }
+function getProfilePhoto(user = getCurrentUser()) {
+  const photo = user?.photo;
+  if (!photo) return DEFAULT_AVATAR;
+  return normalizePhotoUrl(photo);
+}
+
+function normalizePhotoUrl(photo) {
+  if (!photo) return DEFAULT_AVATAR;
+  if (/^(?:https?:|data:)/.test(photo)) return photo;
+  if (photo.startsWith('/')) return photo;
+  return `/storage/${photo.replace(/^\/+/, "")}`;
+}
 function setProfilePhoto(photo, user = getCurrentUser()) {
   if (!user) return null;
   const updated = { ...user, photo };
@@ -179,8 +191,17 @@ async function uploadRequirementFile(file) {
 function loadProfileElements() {
   const user = getCurrentUser();
   if (!user) return;
-  document.querySelectorAll("[data-profile-photo]").forEach((img) => { img.src = getProfilePhoto(user); img.alt = `${user.firstName} ${user.lastName}`; });
+  document.querySelectorAll("[data-profile-photo]").forEach((img) => {
+    img.src = getProfilePhoto(user);
+    img.alt = `${user.firstName} ${user.lastName}`;
+    img.onerror = () => {
+      if (img.dataset.fallbackApplied !== "true") {
+        img.dataset.fallbackApplied = "true";
+        img.src = DEFAULT_AVATAR;
+      }
+    };
+  });
   document.querySelectorAll("[data-user-name]").forEach((el) => { el.textContent = `${user.firstName} ${user.lastName}`; });
   document.querySelectorAll("[data-user-id]").forEach((el) => { el.textContent = user.id; });
 }
-window.DG = { saveData, getData, removeData, clearData, generateId, generateUserId, userIdExists, getCurrentUser, setCurrentUser, logoutUser, getProfilePhoto, setProfilePhoto, uploadProfilePhoto, uploadImage, uploadRequirementFile, loadProfileElements, hydrateFromBoot, flushSync, dedupeNotifications, STORAGE_KEYS };
+window.DG = { saveData, getData, removeData, clearData, generateId, generateUserId, userIdExists, getCurrentUser, setCurrentUser, logoutUser, getProfilePhoto, normalizePhotoUrl, DEFAULT_AVATAR, setProfilePhoto, uploadProfilePhoto, uploadImage, uploadRequirementFile, loadProfileElements, hydrateFromBoot, flushSync, dedupeNotifications, STORAGE_KEYS };

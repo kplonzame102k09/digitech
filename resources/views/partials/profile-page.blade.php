@@ -52,9 +52,9 @@
                         <section class="p-6 sm:p-7">
                             <div class="flex flex-col items-center text-center">
                                 <div class="relative">
-                                    <img id="bigAvatar" data-profile-photo
+                                    <img id="bigAvatar" data-profile-photo src="{{ asset('images/16432.png') }}"
                                         class="h-28 w-28 rounded-3xl border-4 border-white object-cover shadow-xl dark:border-slate-800"
-                                        alt="{{ ucfirst($role) }} profile photo" />
+                                        alt="{{ ucfirst($role) }} profile photo" onerror="this.onerror=null;this.src='{{ asset('images/16432.png') }}'" />
                                     <label for="profilePhotoInput"
                                         class="absolute -bottom-2 -right-2 inline-flex h-10 w-10 cursor-pointer items-center justify-center rounded-full bg-white shadow-lg transition {{ $accentTextClass }} hover:bg-slate-50 focus-within:ring-2 focus-within:ring-white focus-within:ring-offset-2 focus-within:ring-offset-slate-800"
                                         title="Change profile photo">

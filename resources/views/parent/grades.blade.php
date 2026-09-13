@@ -100,8 +100,8 @@
             <div class="flex items-center gap-4">
                 <span data-grade-photo-wrap
                     class="flex h-14 w-14 shrink-0 items-center justify-center overflow-hidden rounded-2xl bg-gradient-to-br from-purple-100 to-blue-100 dark:from-purple-950 dark:to-blue-950">
-                    <img data-grade-photo alt="" class="hidden h-full w-full object-cover" />
-                    <span data-grade-initials class="text-sm font-extrabold text-purple-700 dark:text-purple-300"></span>
+                    <img data-grade-photo src="{{ asset('images/16432.png') }}" alt="Student profile photo" class="h-full w-full object-cover" onerror="this.onerror=null;this.src='{{ asset('images/16432.png') }}'" />
+                    <span data-grade-initials class="hidden text-sm font-extrabold text-purple-700 dark:text-purple-300"></span>
                 </span>
                 <div>
                     <p class="text-xs font-semibold uppercase tracking-[0.16em] text-purple-600">Semestral grade details</p>
@@ -170,7 +170,8 @@
         <tr class="border-t border-slate-100 dark:border-slate-800">
             <td class="p-4">
                 <div class="flex items-center gap-3">
-                    <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-purple-100 to-blue-100 text-xs font-extrabold text-purple-700 dark:from-purple-950 dark:to-blue-950 dark:text-purple-300" data-grade-initials></span>
+                    <img data-grade-row-photo src="{{ asset('images/16432.png') }}" alt="Student profile photo" class="h-10 w-10 shrink-0 rounded-full object-cover" onerror="this.onerror=null;this.src='{{ asset('images/16432.png') }}'" />
+                    <span class="hidden h-10 w-10 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-purple-100 to-blue-100 text-xs font-extrabold text-purple-700 dark:from-purple-950 dark:to-blue-950 dark:text-purple-300" data-grade-initials></span>
                     <b data-grade-student class="font-semibold"></b>
                 </div>
             </td>

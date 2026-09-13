@@ -22,15 +22,378 @@
       : `<tr><td colspan="8" class="p-8 text-center text-slate-500">${F.esc(empty)}</td></tr>`;
     lucide.createIcons();
   };
+  const round = (num, decimals) => {
+    const factor = Math.pow(10, decimals);
+    return Math.round(num * factor) / factor;
+  };
   function attendance() {
     const isTeacher = U.role === "teacher",
       isAdmin = U.role === "admin";
-    let scope = isTeacher
+    const computeScope = () => isTeacher
       ? F.teacherStudents(U).map((s) => s.id)
       : isAdmin
         ? F.students().map((s) => s.id)
         : [U.id];
+    let scope = computeScope();
+    
+    let attendanceChart = null;
+    const setText = (id, value) => {
+      const el = document.getElementById(id);
+      if (el) el.textContent = value;
+    };
+    const isPresentLike = (status) =>
+      status === "Present" || status === "Late" || status === "Excused";
+
+    const fetchServerAnalytics = async () => {
+      const response = await fetch("/api/portal/analytics/attendance", {
+        headers: { Accept: "application/json", "X-Requested-With": "XMLHttpRequest" },
+        credentials: "same-origin",
+      });
+      if (!response.ok) throw new Error(`Analytics ${response.status}`);
+      const data = await response.json().catch(() => ({}));
+      if (!data || data.ok !== true) throw new Error("Bad analytics payload");
+      return data;
+    };
+
+    const drawTrendChart = (labels, attendanceRateData, absentData) => {
+      const ctx = document.getElementById("attendanceChart");
+      if (!ctx) return;
+      if (typeof Chart === "undefined") {
+        const c = ctx.getContext ? ctx.getContext("2d") : null;
+        if (c) {
+          c.clearRect(0, 0, ctx.width || 300, ctx.height || 150);
+          c.fillStyle = "#94a3b8";
+          c.font = "13px sans-serif";
+          c.textAlign = "center";
+          c.fillText("Chart library failed to load", (ctx.width || 300) / 2, (ctx.height || 150) / 2);
+        }
+        return;
+      }
+      if (attendanceChart) attendanceChart.destroy();
+      attendanceChart = new Chart(ctx, {
+        type: "line",
+        data: {
+          labels: labels,
+          datasets: [
+            {
+              label: "Attendance Rate %",
+              data: attendanceRateData,
+              borderColor: "rgb(16, 185, 129)",
+              backgroundColor: "rgba(16, 185, 129, 0.1)",
+              tension: 0.3,
+              fill: true,
+              pointRadius: 4,
+              pointHoverRadius: 6
+            },
+            {
+              label: "Absent Rate %",
+              data: absentData,
+              borderColor: "rgb(244, 63, 94)",
+              backgroundColor: "rgba(244, 63, 94, 0.1)",
+              tension: 0.3,
+              fill: true,
+              pointRadius: 4,
+              pointHoverRadius: 6
+            }
+          ]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: true,
+          plugins: {
+            legend: { position: "top", labels: { usePointStyle: true, padding: 20 } },
+            tooltip: { mode: "index", intersect: false }
+          },
+          scales: {
+            y: { beginAtZero: true, max: 100, ticks: { callback: function(value) { return value + "%"; } } },
+            x: { grid: { display: false } }
+          },
+          interaction: { mode: "nearest", axis: "x", intersect: false }
+        }
+      });
+    };
+
+    const renderOverallAnalyticsLocal = () => {
+      if (!isAdmin) return;
+      
+      const attendanceData = F.get("attendance", []);
+      const totalRecords = attendanceData.length;
+      
+      if (totalRecords === 0) {
+        setText("totalRecords", "0");
+        setText("overallRate", "0%");
+        setText("totalPresent", "0");
+        setText("totalAbsent", "0");
+        
+        if (attendanceChart) {
+          attendanceChart.destroy();
+          attendanceChart = null;
+        }
+        const ctx = document.getElementById("attendanceChart");
+        if (ctx) {
+          const c = ctx.getContext ? ctx.getContext("2d") : null;
+          if (c) {
+            c.clearRect(0, 0, ctx.width || 300, ctx.height || 150);
+            c.fillStyle = "#94a3b8";
+            c.font = "13px sans-serif";
+            c.textAlign = "center";
+            c.fillText("No attendance data yet", (ctx.width || 300) / 2, (ctx.height || 150) / 2);
+          }
+        }
+        return;
+      }
+      
+      const present = attendanceData.filter((r) => r.status === "Present").length;
+      const absent = attendanceData.filter((r) => r.status === "Absent").length;
+      const late = attendanceData.filter((r) => r.status === "Late").length;
+      const excused = attendanceData.filter((r) => r.status === "Excused").length;
+      
+      const overallRate = totalRecords > 0 
+        ? round(((present + late + excused) / totalRecords) * 100, 1) 
+        : 0;
+      
+      setText("totalRecords", String(totalRecords));
+      setText("overallRate", overallRate + "%");
+      setText("totalPresent", String(present + late + excused));
+      setText("totalAbsent", String(absent));
+      
+      // Prepare data for line chart - group by date (valid YYYY-MM-DD only, last 30 days)
+      const dateGroups = {};
+      attendanceData.forEach((record) => {
+        const date = record.date || "";
+        if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) return;
+        if (!dateGroups[date]) {
+          dateGroups[date] = { present: 0, absent: 0, total: 0 };
+        }
+        dateGroups[date].total++;
+        if (isPresentLike(record.status)) dateGroups[date].present++;
+        else if (record.status === "Absent") dateGroups[date].absent++;
+      });
+      
+      // Sort dates and keep the most recent 30
+      const sortedDates = Object.keys(dateGroups).sort().slice(-30);
+      const attendanceRateData = sortedDates.map((date) => {
+        const dayData = dateGroups[date];
+        return dayData.total > 0 ? round((dayData.present / dayData.total) * 100, 1) : 0;
+      });
+      const absentData = sortedDates.map((date) => {
+        const dayData = dateGroups[date];
+        return dayData.total > 0 ? round((dayData.absent / dayData.total) * 100, 1) : 0;
+      });
+      
+      // Format dates for display
+      const formattedDates = sortedDates.map((date) => {
+        const [y, m, d] = date.split("-");
+        if (y && m && d) {
+          return new Date(Number(y), Number(m) - 1, Number(d)).toLocaleDateString("en-PH", {
+            month: "short",
+            day: "numeric"
+          });
+        }
+        return date;
+      });
+
+      drawTrendChart(formattedDates, attendanceRateData, absentData);
+    };
+
+    const renderTeacherCards = (list) => {
+      const container = $("#teacherAnalytics");
+      if (!container) return;
+      container.innerHTML = list.length
+        ? list.map((stat) => {
+            const teacherName = stat.name || stat.teacher?.id || "Unknown";
+            const teacherId = stat.id || stat.teacher?.id || "";
+            const teacherRole = stat.role || stat.teacher?.role || "teacher";
+            const photoUrl = stat.photoUrl || (stat.teacher ? F.photoUrl(stat.teacher) : "/images/16432.png");
+            const initials = (
+              teacherName === teacherId
+                ? String(teacherName).slice(0, 2)
+                : String(teacherName).split(/\s+/).map((w) => w[0]).slice(0, 2).join("")
+            ).toUpperCase();
+            const rate = stat.rate ?? stat.attendanceRate ?? 0;
+            const total = stat.total ?? stat.totalRecords ?? 0;
+            const rateColor = rate >= 80
+              ? "text-emerald-600"
+              : rate >= 60
+                ? "text-amber-600"
+                : "text-rose-600";
+            return `<div class="rounded-xl border border-slate-200 bg-slate-50 p-4 dark:border-slate-700 dark:bg-slate-800">
+              <div class="flex items-center gap-3 mb-3">
+                <span class="relative flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-violet-100 dark:bg-violet-950">
+                  <span class="text-sm font-bold text-violet-700 dark:text-violet-300">${F.esc(initials)}</span>
+                  <img src="${F.esc(photoUrl)}" alt="${F.esc(teacherName)}" loading="lazy" class="absolute inset-0 h-10 w-10 rounded-full object-cover" onerror="this.onerror=null;this.src='/images/16432.png'" />
+                </span>
+                <div class="min-w-0 flex-1">
+                  <b class="block truncate text-sm">${F.esc(teacherName)}</b>
+                  <small class="text-xs text-slate-400">${F.esc(teacherId)} · ${F.esc(teacherRole)}</small>
+                </div>
+              </div>
+              <div class="grid grid-cols-2 gap-3 text-center">
+                <div class="rounded-lg bg-white p-2 dark:bg-slate-900">
+                  <p class="text-[10px] uppercase tracking-wider text-slate-400">Total Records</p>
+                  <p class="text-lg font-bold text-slate-700 dark:text-slate-200">${total}</p>
+                </div>
+                <div class="rounded-lg bg-white p-2 dark:bg-slate-900">
+                  <p class="text-[10px] uppercase tracking-wider text-slate-400">Attendance Rate</p>
+                  <p class="text-lg font-bold ${rateColor}">${rate}%</p>
+                </div>
+              </div>
+              <div class="mt-3 grid grid-cols-4 gap-2 text-center">
+                <div><p class="text-[10px] text-slate-400">Present</p><p class="text-sm font-semibold text-emerald-600">${stat.present ?? 0}</p></div>
+                <div><p class="text-[10px] text-slate-400">Absent</p><p class="text-sm font-semibold text-rose-600">${stat.absent ?? 0}</p></div>
+                <div><p class="text-[10px] text-slate-400">Late</p><p class="text-sm font-semibold text-amber-600">${stat.late ?? 0}</p></div>
+                <div><p class="text-[10px] text-slate-400">Excused</p><p class="text-sm font-semibold text-blue-600">${stat.excused ?? 0}</p></div>
+              </div>
+            </div>`;
+          }).join("")
+        : `<div class="col-span-full text-center p-8 text-slate-500">No teacher attendance data available</div>`;
+      lucide.createIcons();
+    };
+
+    const renderOverallAnalytics = async () => {
+      if (!isAdmin) return;
+      try {
+        const server = await fetchServerAnalytics();
+        const o = server.overall || {};
+        setText("totalRecords", String(o.totalRecords ?? 0));
+        setText("overallRate", (o.overallRate ?? 0) + "%");
+        setText("totalPresent", String(o.present ?? 0));
+        setText("totalAbsent", String(o.absent ?? 0));
+        const t = server.trends || {};
+        drawTrendChart(t.labels || [], t.attendanceRate || [], t.absentRate || []);
+        if (Array.isArray(server.byRecorder)) renderTeacherCards(server.byRecorder);
+        else renderTeacherAnalyticsLocal();
+        return;
+      } catch (_) {
+        renderOverallAnalyticsLocal();
+      }
+    };
+    
+    const renderTeacherAnalyticsLocal = () => {
+      if (!isAdmin) return;
+
+      const attendanceData = F.get("attendance", []);
+      const liveUsers = F.users();
+      const teachers = liveUsers.filter((u) => u.role === "teacher" || u.role === "admin");
+      
+      const analytics = teachers.map((teacher) => {
+        const teacherRecords = attendanceData.filter((r) => r.recordedBy === teacher.id);
+        const totalRecords = teacherRecords.length;
+        
+        if (totalRecords === 0) {
+          return {
+            teacher,
+            totalRecords: 0,
+            present: 0,
+            absent: 0,
+            late: 0,
+            excused: 0,
+            attendanceRate: 0
+          };
+        }
+        
+        const present = teacherRecords.filter((r) => r.status === "Present").length;
+        const absent = teacherRecords.filter((r) => r.status === "Absent").length;
+        const late = teacherRecords.filter((r) => r.status === "Late").length;
+        const excused = teacherRecords.filter((r) => r.status === "Excused").length;
+        
+        const attendanceRate = totalRecords > 0 
+          ? round(((present + late + excused) / totalRecords) * 100, 1) 
+          : 0;
+        
+        return {
+          teacher,
+          totalRecords,
+          present,
+          absent,
+          late,
+          excused,
+          attendanceRate
+        };
+      }).sort((a, b) => b.totalRecords - a.totalRecords);
+      
+      const container = $("#teacherAnalytics");
+      if (!container) return;
+      
+      container.innerHTML = analytics.length
+        ? analytics.map((stat) => {
+            const teacherName = F.userName(stat.teacher) || stat.teacher.id;
+            const photoUrl = F.photoUrl(stat.teacher);
+            const initials = (
+              teacherName === stat.teacher.id
+                ? teacherName.slice(0, 2)
+                : teacherName.split(/\s+/).map((w) => w[0]).slice(0, 2).join("")
+            ).toUpperCase();
+            
+            const rateColor = stat.attendanceRate >= 80 
+              ? "text-emerald-600" 
+              : stat.attendanceRate >= 60 
+                ? "text-amber-600" 
+                : "text-rose-600";
+            
+            return `<div class="rounded-xl border border-slate-200 bg-slate-50 p-4 dark:border-slate-700 dark:bg-slate-800">
+              <div class="flex items-center gap-3 mb-3">
+                <span class="relative flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-violet-100 dark:bg-violet-950">
+                  <span class="text-sm font-bold text-violet-700 dark:text-violet-300">${F.esc(initials)}</span>
+                  <img src="${F.esc(photoUrl)}" alt="${F.esc(teacherName)}" loading="lazy" class="absolute inset-0 h-10 w-10 rounded-full object-cover" onerror="this.onerror=null;this.src='/images/16432.png'" />
+                </span>
+                <div class="min-w-0 flex-1">
+                  <b class="block truncate text-sm">${F.esc(teacherName)}</b>
+                  <small class="text-xs text-slate-400">${F.esc(stat.teacher.id)} · ${F.esc(stat.teacher.role || "teacher")}</small>
+                </div>
+              </div>
+              <div class="grid grid-cols-2 gap-3 text-center">
+                <div class="rounded-lg bg-white p-2 dark:bg-slate-900">
+                  <p class="text-[10px] uppercase tracking-wider text-slate-400">Total Records</p>
+                  <p class="text-lg font-bold text-slate-700 dark:text-slate-200">${stat.totalRecords}</p>
+                </div>
+                <div class="rounded-lg bg-white p-2 dark:bg-slate-900">
+                  <p class="text-[10px] uppercase tracking-wider text-slate-400">Attendance Rate</p>
+                  <p class="text-lg font-bold ${rateColor}">${stat.attendanceRate}%</p>
+                </div>
+              </div>
+              <div class="mt-3 grid grid-cols-4 gap-2 text-center">
+                <div>
+                  <p class="text-[10px] text-slate-400">Present</p>
+                  <p class="text-sm font-semibold text-emerald-600">${stat.present}</p>
+                </div>
+                <div>
+                  <p class="text-[10px] text-slate-400">Absent</p>
+                  <p class="text-sm font-semibold text-rose-600">${stat.absent}</p>
+                </div>
+                <div>
+                  <p class="text-[10px] text-slate-400">Late</p>
+                  <p class="text-sm font-semibold text-amber-600">${stat.late}</p>
+                </div>
+                <div>
+                  <p class="text-[10px] text-slate-400">Excused</p>
+                  <p class="text-sm font-semibold text-blue-600">${stat.excused}</p>
+                </div>
+              </div>
+            </div>`;
+          }).join("")
+        : `<div class="col-span-full text-center p-8 text-slate-500">No teacher attendance data available</div>`;
+      
+      lucide.createIcons();
+    };
+
+    const renderTeacherAnalytics = async () => {
+      if (!isAdmin) return;
+      try {
+        const server = await fetchServerAnalytics();
+        if (Array.isArray(server.byRecorder)) {
+          renderTeacherCards(server.byRecorder);
+          return;
+        }
+      } catch (_) {
+        // fall through to local computation
+      }
+      renderTeacherAnalyticsLocal();
+    };
+
     const render = () => {
+      scope = computeScope();
+      const liveUsers = F.users();
       const data = F.get("attendance", []).filter((r) =>
         scope.includes(r.studentId),
       );
@@ -38,7 +401,7 @@
         data
           .sort((a, b) => String(b.date).localeCompare(String(a.date)))
           .map((r) => {
-            const s = users.find((u) => u.id === r.studentId);
+            const s = liveUsers.find((u) => u.id === r.studentId);
             const nm = F.userName(s) || r.studentId;
             const initials = (
               nm === r.studentId
@@ -66,7 +429,7 @@
                 <div class="flex items-center gap-3">
                   <span class="relative flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-blue-50 dark:bg-blue-950">
                     <span class="flex h-9 w-9 items-center justify-center rounded-full text-xs font-bold text-blue-700 dark:text-blue-300">${F.esc(initials)}</span>
-                    ${F.photoUrl(s) ? `<img src="${F.esc(F.photoUrl(s))}" alt="${F.esc(nm)}" loading="lazy" class="absolute inset-0 h-9 w-9 rounded-full object-cover" onerror="this.style.display='none'" />` : ""}
+                    <img src="${F.esc(F.photoUrl(s))}" alt="${F.esc(nm)}" loading="lazy" class="absolute inset-0 h-9 w-9 rounded-full object-cover" onerror="this.onerror=null;this.src='/images/16432.png'" />
                   </span>
                   <div>
                     <b class="block">${F.esc(nm)}</b>
@@ -85,6 +448,11 @@
       $("#rows")
         ?.querySelectorAll("[data-edit]")
         .forEach((b) => (b.onclick = () => editAttendance(b.dataset.edit)));
+      
+      if (isAdmin) {
+        renderOverallAnalytics();
+        renderTeacherAnalytics();
+      }
     };
     const editAttendance = (id) => {
       const all = F.get("attendance", []);
@@ -137,6 +505,10 @@
       );
       $("#attendanceDialog").classList.add("hidden");
       render();
+      if (isAdmin) {
+        renderOverallAnalytics();
+        renderTeacherAnalytics();
+      }
       APP.toast("Attendance saved");
     });
     $("#export")?.addEventListener("click", () => {
@@ -159,6 +531,10 @@
       );
     });
     render();
+    if (isAdmin) {
+      renderOverallAnalytics();
+      renderTeacherAnalytics();
+    }
   }
   function announcements() {
     const canCreate = U.role === "admin" || U.role === "teacher";
@@ -212,9 +588,7 @@
             AUDIENCE_BADGE[aud] ||
             "bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-300";
           const authorPhoto = F.photoUrl(author);
-          const avatar = authorPhoto
-            ? `<img src="${F.esc(authorPhoto)}" alt="${F.esc(name)}" class="h-11 w-11 shrink-0 rounded-full object-cover" onerror="this.style.display='none'" />`
-            : `<span class="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-violet-500 to-fuchsia-500 text-sm font-bold text-white">${F.esc(initials)}</span>`;
+          const avatar = `<img src="${F.esc(authorPhoto)}" alt="${F.esc(name)}" class="h-11 w-11 shrink-0 rounded-full object-cover" onerror="this.onerror=null;this.src='/images/16432.png'" />`;
           return `<article class="card p-5">
               <div class="flex items-start gap-3">
                 ${avatar}

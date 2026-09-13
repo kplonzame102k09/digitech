@@ -158,17 +158,16 @@
       const photo = $("[data-user-photo]", row);
       setText(initialsElement, initials(user));
       if (photo) {
-        photo.src = user.photo || "/images/16432.png";
+        const photoUrl = DG.normalizePhotoUrl(user?.photo);
+        photo.src = photoUrl;
         photo.alt = `${fullName(user)} profile photo`;
+        photo.classList.remove("hidden");
         initialsElement?.classList.add("hidden");
         photo.addEventListener("error", () => {
-          if (photo.dataset.fallbackApplied !== "true") {
-            photo.dataset.fallbackApplied = "true";
-            photo.src = "/images/16432.png";
-            return;
-          }
-          photo.classList.add("hidden");
-          initialsElement?.classList.remove("hidden");
+          if (photo.dataset.fallbackApplied === "true") return;
+          photo.dataset.fallbackApplied = "true";
+          photo.src = (DG.DEFAULT_AVATAR || "/images/16432.png");
+          photo.classList.remove("hidden");
         });
       }
       setText("[data-row-user-name]", fullName(user), row);
@@ -1076,11 +1075,7 @@ function importUsers() {
     currentUser = AUTH.requireRole("admin");
     if (!currentUser) return;
     users = get(usersKey);
-    const avatar = $("#avatar");
-    if (avatar) {
-      avatar.src = getProfilePhoto(currentUser);
-      avatar.alt = `${fullName(currentUser)} profile photo`;
-    }
+    DG.loadProfileElements();
     APP.applyTheme();
     APP.updateNotif();
     resumePendingImport();

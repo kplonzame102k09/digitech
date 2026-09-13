@@ -367,12 +367,7 @@
     normalizePrograms();
     normalizeQualifications();
 
-    const avatar = $("#avatar");
-    if (avatar) {
-      avatar.src = getProfilePhoto(admin);
-      avatar.alt = `${fullName(admin)} profile photo`;
-    }
-
+    DG.loadProfileElements();
     APP.applyTheme();
     APP.updateNotif();
     $("#open")?.addEventListener("click", () =>

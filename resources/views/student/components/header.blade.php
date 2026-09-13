@@ -19,8 +19,8 @@
             <span id="topNotif"
                 class="absolute -right-1 -top-1 hidden h-4 min-w-4 rounded-full bg-red-500 px-1 text-[9px] font-bold text-white"></span>
         </button>
-        <img id="avatar" data-profile-photo
-            class="w-9 h-9 rounded-full bg-green-100 text-green-700 flex items-center justify-center text-sm font-bold"
-            alt="Profile" />
+        <img id="avatar" data-profile-photo src="{{ asset('images/16432.png') }}"
+            class="w-9 h-9 rounded-full object-cover"
+            alt="Profile" onerror="this.onerror=null;this.src='{{ asset('images/16432.png') }}'" />
     </div>
 </header>

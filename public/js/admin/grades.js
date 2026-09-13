@@ -60,15 +60,18 @@
   };
 
   function bindPhoto(photoEl, initialsEl, student) {
-    const defaultPhoto = "/images/16432.png";
+    const defaultPhoto = (DG.DEFAULT_AVATAR || "/images/16432.png");
     if (photoEl && student) {
-      photoEl.src = student.photo || defaultPhoto;
+      const photoUrl = DG.normalizePhotoUrl(student.photo);
+      photoEl.src = photoUrl;
       photoEl.alt = `${fullName(student)} profile photo`;
       photoEl.classList.remove("hidden");
       initialsEl?.classList.add("hidden");
       photoEl.onerror = () => {
-        if (photoEl.src.endsWith(defaultPhoto)) return;
+        if (photoEl.dataset.fallbackApplied === "true") return;
+        photoEl.dataset.fallbackApplied = "true";
         photoEl.src = defaultPhoto;
+        photoEl.classList.remove("hidden");
       };
     } else if (initialsEl && student) {
       initialsEl.textContent = initials(student);
@@ -302,11 +305,7 @@
     if (!admin) return;
     users = get("users");
     grades = get("grades");
-    const avatar = $("#avatar");
-    if (avatar) {
-      avatar.src = getProfilePhoto(admin);
-      avatar.alt = `${fullName(admin)} profile photo`;
-    }
+    DG.loadProfileElements();
     APP.applyTheme();
     APP.updateNotif();
     $("#open")?.addEventListener("click", () => $("#side")?.classList.toggle("-translate-x-full"));

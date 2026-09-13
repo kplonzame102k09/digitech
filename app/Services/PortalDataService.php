@@ -189,11 +189,38 @@ class PortalDataService
             DB::table('grades')->where('teacherId', $actor->user_id)->pluck('studentId')->all(),
             DB::table('competencies')->where('createdBy', $actor->user_id)->orWhere('updatedBy', $actor->user_id)->pluck('studentId')->all(),
             DB::table('attendance')->where('recordedBy', $actor->user_id)->pluck('studentId')->all(),
+            $this->classroomStudentIds($actor),
         ])
             ->flatten()
             ->unique()
             ->values()
             ->all();
+    }
+
+    /**
+     * Portal user_ids of students in the teacher's active classrooms.
+     * Joins resolve classroom_student.student_id (users.id) back to user_id.
+     *
+     * @return array<int, string>
+     */
+    public function classroomStudentIds(?User $actor): array
+    {
+        if (! $actor?->isTeacher()) {
+            return [];
+        }
+
+        try {
+            return DB::table('classroom_student')
+                ->join('classrooms', 'classrooms.id', '=', 'classroom_student.classroom_id')
+                ->join('users as s', 's.id', '=', 'classroom_student.student_id')
+                ->where('classrooms.teacherId', $actor->user_id)
+                ->where('classrooms.status', 'active')
+                ->pluck('s.user_id')
+                ->all();
+        } catch (\Throwable) {
+            // Classrooms tables not yet migrated: fall back to no ids.
+            return [];
+        }
     }
 
     public function getCollection(string $key, ?User $actor = null, ?array $enrolledStudentIds = null): mixed

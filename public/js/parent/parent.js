@@ -169,10 +169,7 @@
     $$("[data-theme-toggle]").forEach((button) =>
       button.addEventListener("click", () => APP.toggleTheme()),
     );
-    $$("[data-profile-photo]").forEach((image) => {
-      image.src = DG.getProfilePhoto(parent);
-      image.alt = `${parent.firstName || ""} ${parent.lastName || ""}`.trim();
-    });
+    DG.loadProfileElements();
     APP.applyTheme();
     APP.updateNotif();
     lucide.createIcons();
@@ -188,20 +185,18 @@
     const initialsElement = $("[data-child-initials]", card);
 
     if (photo) {
-        photo.src = DG.getProfilePhoto(student);
+        const photoUrl = DG.getProfilePhoto(student);
+        photo.src = photoUrl;
         photo.alt = `${studentName(student)} profile photo`;
 
         photo.classList.remove("hidden");
         initialsElement?.classList.add("hidden");
 
         photo.onerror = () => {
-            photo.classList.add("hidden");
-
-            if (initialsElement) {
-                initialsElement.textContent = initials(student);
-                initialsElement.classList.remove("hidden");
-                initialsElement.classList.add("flex");
-            }
+            if (photo.dataset.fallbackApplied === "true") return;
+            photo.dataset.fallbackApplied = "true";
+            photo.src = (DG.DEFAULT_AVATAR || "/images/16432.png");
+            photo.classList.remove("hidden");
         };
     }
     text("[data-child-initials]", initials(student), card);
@@ -516,6 +511,16 @@
       const row = cloneTemplate("gradesRowTemplate");
       if (!row) return;
       const avg = gradeAverage(grades);
+      const rowPhoto = $("[data-grade-row-photo]", row);
+      if (rowPhoto) {
+        rowPhoto.src = DG.getProfilePhoto(student);
+        rowPhoto.alt = `${studentName(student)} profile photo`;
+        rowPhoto.onerror = () => {
+          if (rowPhoto.dataset.fallbackApplied === "true") return;
+          rowPhoto.dataset.fallbackApplied = "true";
+          rowPhoto.src = (DG.DEFAULT_AVATAR || "/images/16432.png");
+        };
+      }
       text("[data-grade-initials]", initials(student), row);
       text("[data-grade-student]", studentName(student), row);
       text("[data-grade-student-id]", student.id, row);
@@ -554,19 +559,19 @@
     const initialsEl = $("#gradesModal [data-grade-initials]");
     if (photo) {
       photo.classList.add("hidden");
+      const defaultAvatar = (DG.DEFAULT_AVATAR || "/images/16432.png");
       const fallback = () => {
-        if (initialsEl) {
-          initialsEl.textContent = initials(student);
-          initialsEl.classList.remove("hidden");
-        }
+        if (photo.dataset.fallbackApplied === "true") return;
+        photo.dataset.fallbackApplied = "true";
+        photo.src = defaultAvatar;
+        photo.classList.remove("hidden");
       };
       initialsEl?.classList.add("hidden");
       const src = DG.getProfilePhoto(student);
-      if (src) {
-        photo.src = src;
-        photo.classList.remove("hidden");
-        photo.onerror = fallback;
-      } else fallback();
+      photo.src = src;
+      photo.alt = `${studentName(student)} profile photo`;
+      photo.classList.remove("hidden");
+      photo.onerror = fallback;
     }
     renderGradeModalRows();
     $("#gradesModal")?.showModal();
@@ -874,7 +879,6 @@
 
     document.addEventListener("DOMContentLoaded", () => {
     const input = document.getElementById("profilePhotoInput");
-    const photos = document.querySelectorAll("[data-profile-photo]");
     if (!input) return;
     input.addEventListener("change", async () => {
       const file = input.files?.[0];
@@ -899,12 +903,7 @@
       }
       DG.loadProfileElements();
     });
-    const savedPhoto = DG.getProfilePhoto(DG.getCurrentUser());
-    if (savedPhoto) {
-      photos.forEach(img => {
-        img.src = savedPhoto;
-      });
-    }
+    DG.loadProfileElements();
     if (window.lucide) {
       lucide.createIcons();
     }

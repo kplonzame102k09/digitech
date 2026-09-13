@@ -23,9 +23,9 @@
                 <i data-lucide="bell" class="h-4 w-4"> </i> 
                 <span id="topNotif" class="absolute -right-1 -top-1 hidden h-4 min-w-4 rounded-full bg-red-500 px-1 text-[9px] font-bold text-white"> </span>
             </button> 
-            {{-- PROFILE PHOTO --}} 
+            {{-- PROFILE PHOTO --}}
             <img id="avatar" data-profile-photo src="{{ asset('images/16432.png') }}" class="h-9 w-9 rounded-full object-cover"
-                alt="Admin profile photo"> 
+                alt="Admin profile photo" onerror="this.onerror=null;this.src='{{ asset('images/16432.png') }}'"> 
             </div>
     </div>
 </header>

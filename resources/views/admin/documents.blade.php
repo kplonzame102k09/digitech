@@ -248,9 +248,9 @@
                          <span class="relative flex h-9 w-9 shrink-0 items-center justify-center">
                         <img data-student-photo src="{{ asset('images/16432.png') }}"
                             class="absolute inset-0 h-9 w-9 rounded-full object-cover"
-                            alt="Student profile photo" />
+                            alt="Student profile photo" onerror="this.onerror=null;this.src='{{ asset('images/16432.png') }}'" />
                         <span data-student-initials
-                            class="flex h-9 w-9 items-center justify-center rounded-full bg-green-50 text-xs font-bold text-green-700"></span>
+                            class="hidden h-9 w-9 items-center justify-center rounded-full bg-green-50 text-xs font-bold text-green-700"></span>
                     </span>
                     <div>
                         <b data-student-name class="block"></b>

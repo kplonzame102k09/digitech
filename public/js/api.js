@@ -60,6 +60,16 @@ const API = {
     },
   },
 
+  // Phase 1 server-side analytics (authoritative; local JS math is fallback)
+  analytics: {
+    attendance: () => API.get('/api/portal/analytics/attendance'),
+    gradeSummary: (params = {}) => {
+      const query = new URLSearchParams(params).toString();
+      return API.get(`/api/portal/analytics/grades/summary${query ? `?${query}` : ''}`);
+    },
+    gradePreview: (data) => API.post('/api/portal/analytics/grades/preview', data),
+  },
+
   // Student-specific API endpoints
   student: {
     enrollments: {

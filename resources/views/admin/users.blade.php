@@ -279,11 +279,11 @@
                         <td class="p-4">
                             <div class="flex items-center gap-3">
                                 <span class="relative flex h-9 w-9 shrink-0 items-center justify-center">
-                                    <img data-user-photo
+                                    <img data-user-photo src="{{ asset('images/16432.png') }}"
                                         class="absolute inset-0 h-9 w-9 rounded-full object-cover"
-                                        alt="User profile photo" />
+                                        alt="User profile photo" onerror="this.onerror=null;this.src='{{ asset('images/16432.png') }}'" />
                                     <span data-user-initials
-                                        class="flex h-9 w-9 items-center justify-center rounded-full bg-green-50 text-xs font-bold text-green-700"></span>
+                                        class="hidden h-9 w-9 items-center justify-center rounded-full bg-green-50 text-xs font-bold text-green-700"></span>
                                 </span>
                                 <div>
                                     <b data-row-user-name class="block"></b>

@@ -32,19 +32,18 @@
     fallbackClass = avatarFallbackClass,
   ) => {
     const initials = studentInitials(student);
-    if (!student?.photo) {
-      return `<span class="${fallbackClass} ${size} ${shape}">${esc(initials)}</span>`;
-    }
-    return `<img data-student-avatar="${esc(student.id || "")}" data-initials="${esc(initials)}" data-shape="${shape}" data-size="${size}" data-fallback-class="${esc(fallbackClass)}" src="${esc(student.photo)}" alt="${esc(fullName(student))}" loading="lazy" class="shrink-0 object-cover ${size} ${shape}" />`;
+    const photoUrl = DG.normalizePhotoUrl(student?.photo);
+    const fallbackSrc = (DG.DEFAULT_AVATAR || "/images/16432.png");
+    return `<img data-student-avatar="${esc(student?.id || "")}" data-initials="${esc(initials)}" data-shape="${shape}" data-size="${size}" data-fallback-class="${esc(fallbackClass)}" src="${esc(photoUrl)}" alt="${esc(fullName(student))}" loading="lazy" class="shrink-0 object-cover ${size} ${shape}" onerror="this.onerror=null;this.src='${fallbackSrc}'" />`;
   };
 
   const bindAvatarFallbacks = (root) => {
+    const fallbackSrc = (DG.DEFAULT_AVATAR || "/images/16432.png");
     qq("[data-student-avatar]", root).forEach((img) => {
       img.onerror = () => {
-        const span = document.createElement("span");
-        span.className = `${img.dataset.fallbackClass || avatarFallbackClass} ${img.dataset.size || "h-10 w-10"} ${img.dataset.shape || "rounded-xl"}`;
-        span.textContent = img.dataset.initials || "ST";
-        img.replaceWith(span);
+        if (img.dataset.fallbackApplied === "true") return;
+        img.dataset.fallbackApplied = "true";
+        img.src = fallbackSrc;
       };
     });
   };
@@ -201,11 +200,7 @@
       }),
     );
 
-    const avatar = $("avatar");
-    if (avatar) {
-      avatar.src = DG.getProfilePhoto(U);
-      avatar.alt = `${fullName(U)} profile photo`;
-    }
+    DG.loadProfileElements();
   }
 
   function studentModal(studentId) {
@@ -569,23 +564,17 @@
     $("modalSemester").value = semester;
     const photo = document.querySelector("#gradesModal [data-grade-photo]");
     const fallback = document.querySelector("#gradesModal [data-grade-initials]");
-    if (photo) photo.classList.add("hidden");
+    const defaultAvatar = (DG.DEFAULT_AVATAR || "/images/16432.png");
     if (fallback) fallback.classList.add("hidden");
-    if (student.photo) {
-      photo.src = student.photo;
+    if (photo) {
+      photo.src = DG.normalizePhotoUrl(student?.photo);
+      photo.alt = `${fullName(student)} profile photo`;
       photo.classList.remove("hidden");
       photo.onerror = () => {
-        photo.classList.add("hidden");
-        if (fallback) {
-          fallback.textContent = `${student.firstName?.[0] || ""}${student.lastName?.[0] || ""}`.toUpperCase() || "ST";
-          fallback.classList.remove("hidden");
-          fallback.classList.add("flex");
-        }
+        if (photo.dataset.fallbackApplied === "true") return;
+        photo.dataset.fallbackApplied = "true";
+        photo.src = defaultAvatar;
       };
-    } else if (fallback) {
-      fallback.textContent = `${student.firstName?.[0] || ""}${student.lastName?.[0] || ""}`.toUpperCase() || "ST";
-      fallback.classList.remove("hidden");
-      fallback.classList.add("flex");
     }
     renderGradeModalRows();
     $("gradesModal")?.showModal();

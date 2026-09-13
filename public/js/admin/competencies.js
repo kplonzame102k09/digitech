@@ -184,20 +184,18 @@
       const initialsElement = $("[data-student-initials]", row);
 
       if (student && photo) {
-          photo.src = student.photo || "/images/16432.png";
+          const photoUrl = DG.normalizePhotoUrl(student.photo);
+          photo.src = photoUrl;
           photo.alt = `${fullName(student)} profile photo`;
 
           photo.classList.remove("hidden");
           initialsElement?.classList.add("hidden");
 
           photo.onerror = () => {
-              photo.classList.add("hidden");
-
-              if (initialsElement) {
-                  initialsElement.textContent = initials(student);
-                  initialsElement.classList.remove("hidden");
-                  initialsElement.classList.add("flex");
-              }
+              if (photo.dataset.fallbackApplied === "true") return;
+              photo.dataset.fallbackApplied = "true";
+              photo.src = (DG.DEFAULT_AVATAR || "/images/16432.png");
+              photo.classList.remove("hidden");
           };
       }
       setText("[data-student-name]", studentName(record), row);
@@ -472,11 +470,7 @@
     if (!admin) return;
     users = get("users");
     competencies = get("competencies");
-    const avatar = $("#avatar");
-    if (avatar) {
-      avatar.src = getProfilePhoto(admin);
-      avatar.alt = `${fullName(admin)} profile photo`;
-    }
+    DG.loadProfileElements();
     APP.applyTheme();
     APP.updateNotif();
     $("#open")?.addEventListener("click", () =>

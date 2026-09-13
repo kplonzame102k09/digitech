@@ -105,8 +105,8 @@
         <div class="card p-6 dark:text-white">
             <div class="flex items-start justify-between gap-4">
                 <div class="flex items-center gap-4">
-                    <img data-grade-photo alt="Student profile photo"
-                        class="hidden h-14 w-14 rounded-full object-cover" />
+                    <img data-grade-photo src="{{ asset('images/16432.png') }}" alt="Student profile photo"
+                        class="h-14 w-14 rounded-full object-cover" onerror="this.onerror=null;this.src='{{ asset('images/16432.png') }}'" />
                     <span data-grade-initials
                         class="hidden h-14 w-14 items-center justify-center rounded-full bg-green-50 text-lg font-bold text-green-700"></span>
                     <div>
@@ -202,8 +202,8 @@
         <tr class="border-t border-slate-100 dark:border-slate-800">
             <td class="p-4">
                 <div class="flex items-center gap-3">
-                    <img data-student-photo alt="Student profile photo"
-                        class="hidden h-9 w-9 rounded-full object-cover" />
+                    <img data-student-photo src="{{ asset('images/16432.png') }}" alt="Student profile photo"
+                        class="h-9 w-9 rounded-full object-cover" onerror="this.onerror=null;this.src='{{ asset('images/16432.png') }}'" />
                     <span data-student-initials
                         class="hidden h-9 w-9 items-center justify-center rounded-full bg-green-50 text-xs font-bold text-green-700"></span>
                     <b data-student-name class="block"></b>

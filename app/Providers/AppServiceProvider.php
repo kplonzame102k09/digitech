@@ -28,6 +28,10 @@ class AppServiceProvider extends ServiceProvider
             return Limit::perMinute(10)->by($request->user()?->user_id ?? $request->ip());
         });
 
+        RateLimiter::for('classroom-joins', function (Request $request): Limit {
+            return Limit::perMinute(10)->by($request->user()?->user_id ?? $request->ip());
+        });
+
         View::composer(
             [
                 'admin.*',

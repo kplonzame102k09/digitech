@@ -22,6 +22,12 @@
                 <i data-lucide="users" class="w-4"></i>
                 Students
             </a>
+            <a href="{{ route('teacher.classrooms') }}" class="flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium
+                {{ request()->routeIs('teacher.classrooms')
+                ? 'nav-active' : 'text-slate-600 hover:bg-slate-100 dark:text-slate-300 dark:hover:bg-slate-800'}}">
+                <i data-lucide="school" class="w-4"></i>
+                Classrooms
+            </a>
             <a href="{{ route('teacher.grades') }}" class="flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium 
                 {{ request()->routeIs('teacher.grades') 
                 ? 'nav-active' : 'text-slate-600 hover:bg-slate-100 dark:text-slate-300 dark:hover:bg-slate-800'}}"><i
