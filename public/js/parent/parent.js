@@ -11,32 +11,32 @@
   const page = () => document.body.dataset.parentPage;
 
   const statusClasses = {
-    Approved: ["bg-emerald-50", "text-emerald-700"],
-    Enrolled: ["bg-emerald-50", "text-emerald-700"],
-    Verified: ["bg-emerald-50", "text-emerald-700"],
-    Competent: ["bg-emerald-50", "text-emerald-700"],
-    Present: ["bg-emerald-50", "text-emerald-700", "dark:bg-emerald-950", "dark:text-emerald-300"],
-    Good: ["bg-emerald-50", "text-emerald-700"],
-    "Very Good": ["bg-emerald-50", "text-emerald-700"],
-    "With Honors": ["bg-emerald-50", "text-emerald-700"],
-    "With High Honors": ["bg-emerald-50", "text-emerald-700"],
-    "With Highest Honors": ["bg-emerald-50", "text-emerald-700"],
-    Submitted: ["bg-blue-50", "text-blue-700"],
-    Processing: ["bg-blue-50", "text-blue-700"],
-    Late: ["bg-amber-50", "text-amber-700", "dark:bg-amber-950", "dark:text-amber-300"],
-    "Under Review": ["bg-amber-50", "text-amber-700"],
-    Pending: ["bg-amber-50", "text-amber-700"],
-    Incomplete: ["bg-amber-50", "text-amber-700"],
-    "In Progress": ["bg-amber-50", "text-amber-700"],
-    "Ready for Release": ["bg-purple-50", "text-purple-700"],
-    Released: ["bg-purple-50", "text-purple-700"],
-    Absent: ["bg-red-50", "text-red-700", "dark:bg-red-950", "dark:text-red-300"],
-    Rejected: ["bg-red-50", "text-red-700"],
-    Failed: ["bg-red-50", "text-red-700"],
-    "Not Yet Competent": ["bg-red-50", "text-red-700"],
-    "Not Started": ["bg-slate-100", "text-slate-600"],
-    Draft: ["bg-slate-100", "text-slate-600"],
-    Passed: ["bg-emerald-50", "text-emerald-700"],
+    Approved: ["bg-emerald-50", "text-emerald-700", "dark:bg-emerald-950/40", "dark:text-emerald-300"],
+    Enrolled: ["bg-emerald-50", "text-emerald-700", "dark:bg-emerald-950/40", "dark:text-emerald-300"],
+    Verified: ["bg-emerald-50", "text-emerald-700", "dark:bg-emerald-950/40", "dark:text-emerald-300"],
+    Competent: ["bg-emerald-50", "text-emerald-700", "dark:bg-emerald-950/40", "dark:text-emerald-300"],
+    Present: ["bg-emerald-50", "text-emerald-700", "dark:bg-emerald-950/40", "dark:text-emerald-300", "dark:bg-emerald-950", "dark:text-emerald-300"],
+    Good: ["bg-emerald-50", "text-emerald-700", "dark:bg-emerald-950/40", "dark:text-emerald-300"],
+    "Very Good": ["bg-emerald-50", "text-emerald-700", "dark:bg-emerald-950/40", "dark:text-emerald-300"],
+    "With Honors": ["bg-emerald-50", "text-emerald-700", "dark:bg-emerald-950/40", "dark:text-emerald-300"],
+    "With High Honors": ["bg-emerald-50", "text-emerald-700", "dark:bg-emerald-950/40", "dark:text-emerald-300"],
+    "With Highest Honors": ["bg-emerald-50", "text-emerald-700", "dark:bg-emerald-950/40", "dark:text-emerald-300"],
+    Submitted: ["bg-blue-50", "text-blue-700", "dark:bg-blue-950/40", "dark:text-blue-300"],
+    Processing: ["bg-blue-50", "text-blue-700", "dark:bg-blue-950/40", "dark:text-blue-300"],
+    Late: ["bg-amber-50", "text-amber-700", "dark:bg-amber-950/40", "dark:text-amber-300", "dark:bg-amber-950", "dark:text-amber-300"],
+    "Under Review": ["bg-amber-50", "text-amber-700", "dark:bg-amber-950/40", "dark:text-amber-300"],
+    Pending: ["bg-amber-50", "text-amber-700", "dark:bg-amber-950/40", "dark:text-amber-300"],
+    Incomplete: ["bg-amber-50", "text-amber-700", "dark:bg-amber-950/40", "dark:text-amber-300"],
+    "In Progress": ["bg-amber-50", "text-amber-700", "dark:bg-amber-950/40", "dark:text-amber-300"],
+    "Ready for Release": ["bg-purple-50", "text-purple-700", "dark:bg-purple-950/40", "dark:text-purple-300"],
+    Released: ["bg-purple-50", "text-purple-700", "dark:bg-purple-950/40", "dark:text-purple-300"],
+    Absent: ["bg-red-50", "text-red-700", "dark:bg-red-950/40", "dark:text-red-300", "dark:bg-red-950", "dark:text-red-300"],
+    Rejected: ["bg-red-50", "text-red-700", "dark:bg-red-950/40", "dark:text-red-300"],
+    Failed: ["bg-red-50", "text-red-700", "dark:bg-red-950/40", "dark:text-red-300"],
+    "Not Yet Competent": ["bg-red-50", "text-red-700", "dark:bg-red-950/40", "dark:text-red-300"],
+    "Not Started": ["bg-slate-100", "text-slate-600", "dark:bg-slate-800", "dark:text-slate-300"],
+    Draft: ["bg-slate-100", "text-slate-600", "dark:bg-slate-800", "dark:text-slate-300"],
+    Passed: ["bg-emerald-50", "text-emerald-700", "dark:bg-emerald-950/40", "dark:text-emerald-300"],
   };
 
   const GT = () => window.FEATURES || {};
@@ -600,7 +600,7 @@
     const records = modalGradeRecords();
     if (!records.length) {
       body.innerHTML =
-        '<tr><td colspan="7" class="p-8 text-center text-slate-500">No published grades for this semester yet.</td></tr>';
+        '<tr><td colspan="7" class="p-8 text-center text-slate-500 dark:text-slate-400">No published grades for this semester yet.</td></tr>';
       renderGradeModalSummary(records);
       return;
     }
@@ -874,6 +874,22 @@
     if (page() === "documents") renderDocuments(children);
     if (page() === "announcements") renderAnnouncements(parent);
     if (page() === "profile") renderProfile(parent);
+    // Live updates: re-render the current page with fresh data when idle.
+    // Wire-up helpers are NOT re-run, so form listeners are never duplicated.
+    document.addEventListener("digitech:sync", () => {
+      if (!window.DG_SYNC?.idle()) return;
+      const me = currentParent();
+      if (!me) return;
+      const kids = linkedChildren(me);
+      if (page() === "dashboard") renderDashboard(me, kids);
+      if (page() === "children") renderChildren(kids);
+      if (page() === "attendance") renderAttendance(kids);
+      if (page() === "grades") renderGrades(kids);
+      if (page() === "documents") renderDocuments(kids);
+      if (page() === "announcements") renderAnnouncements(me);
+      if (page() === "profile") renderProfile(me);
+      lucide.createIcons();
+    });
     lucide.createIcons();
   }
 

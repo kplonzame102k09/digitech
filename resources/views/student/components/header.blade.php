@@ -10,11 +10,11 @@
         </div>
     </div>
     <div class="flex items-center gap-2">
-        <button onclick="APP.toggleTheme()" class="p-2.5 rounded-xl border dark:border-slate-700">
+        <button onclick="APP.toggleTheme()" class="p-2.5 rounded-xl hover:bg-green-500 hover:text-white dark:hover:bg-green-500">
             <i data-lucide="moon" data-theme-icon class="h-4 w-4"></i>
         </button>
         <button type="button" data-notifications
-            class="relative p-2.5 rounded-xl border dark:border-slate-700">
+            class="relative p-2.5 rounded-xl hover:bg-green-500 hover:text-white dark:hover:bg-green-500">
             <i data-lucide="bell" class="h-4 w-4"></i>
             <span id="topNotif"
                 class="absolute -right-1 -top-1 hidden h-4 min-w-4 rounded-full bg-red-500 px-1 text-[9px] font-bold text-white"></span>

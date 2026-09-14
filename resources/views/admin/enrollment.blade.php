@@ -19,53 +19,44 @@
         @include('admin.components.header')
         <main class="p-4 sm:p-6 lg:p-8">
             <div class="mx-auto max-w-7xl">
-                <section class="student-hero mb-7 p-6 sm:p-8">
+                <section class="mb-2 p-6 sm:p-8">
                     <div>
-                        <p class="text-sm font-semibold text-purple-600">Enrollment</p>
+                        <p class="text-sm font-semibold text-purple-600 dark:text-purple-400">Enrollment</p>
                         <h2 class="mt-1 text-3xl font-bold tracking-tight">Enrollment Records</h2>
-                        <p class="mt-2 max-w-2xl text-white">
+                        <p class="mt-2 max-w-2xl text-slate-500">
                             Review applications, verify requirements, assign students, and
                             keep applicants informed.
                         </p>
                     </div>
                 </section>
-                <!-- <div class="mb-6 flex flex-wrap items-center gap-2 rounded-2xl border border-slate-200 bg-white p-3 dark:border-slate-700 dark:bg-slate-900">
-                    <button type="button" data-export-enrollments class="inline-flex items-center gap-2 rounded-xl border border-slate-200 px-4 py-3 text-sm font-semibold dark:border-slate-700">
-                        <i data-lucide="download" class="h-4 w-4"></i>
-                        Export CSV
-                    </button>
-                    <button type="button" data-new-enrollment class="inline-flex items-center gap-2 rounded-xl bg-green-600 px-4 py-3 text-sm font-semibold text-white hover:bg-green-700">
-                        <i data-lucide="plus" class="h-4 w-4"></i>
-                        New record
-                    </button> -->
                 </div>
                 <div class="grid gap-4 sm:grid-cols-2 xl:grid-cols-5">
                     <div class="card p-5">
-                        <p class="text-xs text-slate-500">All applications</p>
+                        <p class="text-xs text-slate-500 dark:text-slate-400">All applications</p>
                         <b id="totalCount" class="mt-2 block text-2xl"></b>
                     </div>
                     <div class="card p-5">
-                        <p class="text-xs text-blue-600">Submitted</p>
+                        <p class="text-xs text-blue-600 dark:text-blue-400">Submitted</p>
                         <b id="submittedCount" class="mt-2 block text-2xl"></b>
                     </div>
                     <div class="card p-5">
-                        <p class="text-xs text-amber-600">Under review</p>
+                        <p class="text-xs text-amber-600 dark:text-amber-400">Under review</p>
                         <b id="reviewCount" class="mt-2 block text-2xl"></b>
                     </div>
                     <div class="card p-5">
-                        <p class="text-xs text-green-600">Enrolled</p>
+                        <p class="text-xs text-green-600 dark:text-green-400">Enrolled</p>
                         <b id="enrolledCount" class="mt-2 block text-2xl"></b>
                     </div>
                     <div class="card p-5">
-                        <p class="text-xs text-rose-600">Needs correction</p>
+                        <p class="text-xs text-rose-600 dark:text-rose-400">Needs correction</p>
                         <b id="correctionCount" class="mt-2 block text-2xl"></b>
                     </div>
                 </div>
                 <section class="card mt-6 p-4">
                     <label class="sr-only" for="q">Search enrollment records</label>
-                        <input id="q" class="input w-full rounded-xl border px-3 py-3" placeholder="Search by student name, ID, program, or record ID" />
+                        <input id="q" class="input w-full rounded border px-3 py-3" placeholder="Search by student name, ID, program, or record ID" />
                         <div class="mt-3 grid gap-3 sm:grid-cols-2 xl:grid-cols-[auto_auto_auto_auto_auto_auto] xl:items-center">
-                        <select id="statusFilter" class="input rounded-xl border px-3 py-3">
+                        <select id="statusFilter" class="input rounded border px-3 py-3">
                             <option value="">All statuses</option>
                             <option>Draft</option>
                             <option>Submitted</option>
@@ -75,32 +66,32 @@
                             <option>Needs Correction</option>
                             <option>Enrolled</option>
                         </select>
-                        <select id="programFilter" class="input rounded-xl border px-3 py-3">
+                        <select id="programFilter" class="input rounded border px-3 py-3">
                             <option value="">All programs</option>
                         </select>
-                        <select id="yearFilter" class="input rounded-xl border px-3 py-3">
+                        <select id="yearFilter" class="input rounded border px-3 py-3">
                             <option value="">All school years</option>
                         </select>
-                        <select id="sortBy" class="input rounded-xl border px-3 py-3">
+                        <select id="sortBy" class="input rounded border px-3 py-3">
                             <option value="updated">Sort: Recent</option>
                             <option value="student">Sort: Student</option>
                             <option value="status">Sort: Status</option>
                             <option value="schoolYear">Sort: School year</option>
                         </select>
-                        <button type="button" data-new-enrollment class="inline-flex items-center justify-center gap-2 rounded-xl bg-green-600 px-4 py-3 text-sm font-semibold text-white hover:bg-green-700">
+                        <button type="button" data-new-enrollment class="inline-flex items-center justify-center gap-2 rounded bg-green-500 px-4 py-3 text-sm font-semibold text-white hover:bg-green-700">
                             <i data-lucide="plus" class="h-4 w-4"></i>
                             New record
                         </button>
-                        <button type="button" data-export-enrollments class="inline-flex items-center justify-center gap-2 rounded-xl bg-red-600 border border-slate-200 px-4 py-3 text-sm font-semibold dark:border-slate-700">
+                        <button type="button" data-export-enrollments class="inline-flex items-center justify-center gap-2 rounded bg-red-500 text-white border border-slate-200 px-4 py-3 text-sm font-semibold dark:border-slate-700">
                             <i data-lucide="download" class="h-4 w-4"></i>
                             Export CSV
                         </button>
                     
                     </div>
-                    <div class="mt-3 flex flex-wrap items-center gap-3 text-xs text-slate-500">
+                    <div class="mt-3 flex flex-wrap items-center gap-3 text-xs text-slate-500 dark:text-slate-400">
                         <span id="resultCount"></span>
-                        <span id="selectionCount" class="font-semibold text-green-700"></span>
-                        <button type="button" data-bulk-action class="ml-auto hidden rounded-lg bg-slate-900 px-3 py-2 text-xs font-semibold text-white 
+                        <span id="selectionCount" class="font-semibold text-green-700 dark:text-green-300"></span>
+                        <button type="button" data-bulk-action class="ml-auto hidden rounded bg-slate-900 px-3 py-2 text-xs font-semibold text-white 
                             dark:bg-slate-100 dark:text-slate-900">
                             Process selected
                         </button>
@@ -127,14 +118,14 @@
                     <div id="emptyState" class="hidden p-10 text-center">
                         <i data-lucide="clipboard-list" class="mx-auto h-8 w-8 text-slate-300"></i>
                         <h3 class="mt-3 font-semibold">No enrollment records found</h3>
-                        <p class="mt-1 text-sm text-slate-500">
+                        <p class="mt-1 text-sm text-slate-500 dark:text-slate-400">
                             Try a different filter or create a new record.
                         </p>
                     </div>
                 </section>
                 <section class="card mt-6 p-6">
                     <div class="flex items-start gap-3">
-                        <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-slate-100 text-slate-600 dark:bg-slate-800 
+                        <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded bg-slate-100 text-slate-600 dark:bg-slate-800 
                             dark:text-slate-300">
                             <i data-lucide="history" class="h-5 w-5"></i>
                         </span>
@@ -146,7 +137,7 @@
                         </div>
                     </div>
                     <div id="auditRows" class="mt-5 space-y-3"></div>
-                    <p id="auditEmpty" class="hidden mt-5 text-sm text-slate-500">
+                    <p id="auditEmpty" class="hidden mt-5 text-sm text-slate-500 dark:text-slate-400">
                         No enrollment review actions have been recorded.
                     </p>
                 </section>
@@ -158,13 +149,13 @@
         <section class="card max-h-[90vh] overflow-y-auto p-6 dark:text-white">
             <div class="flex items-start justify-between gap-4">
                 <div>
-                    <p class="text-sm font-semibold text-green-600">
+                    <p class="text-sm font-semibold text-green-600 dark:text-green-400">
                         Enrollment review workspace
                     </p>
                     <h3 id="reviewTitle" class="mt-1 text-xl font-bold"></h3>
                     <p id="reviewSubtitle" class="mt-1 text-xs text-slate-400"></p>
                 </div>
-                <button type="button" data-close-review class="rounded-lg p-2 text-slate-400 hover:bg-slate-100">
+                <button type="button" data-close-review class="rounded p-2 text-slate-400 hover:bg-slate-100">
                     <i data-lucide="x" class="h-5 w-5"></i>
                 </button>
             </div>
@@ -182,7 +173,7 @@
                     <input id="reviewId" type="hidden" />
                     <label class="text-sm font-semibold">
                         Decision
-                        <select id="reviewStatus" class="input mt-1.5 w-full rounded-xl border px-3 py-2.5">
+                        <select id="reviewStatus" class="input mt-1.5 w-full rounded border px-3 py-2.5">
                             <option>Draft</option>
                             <option>Submitted</option>
                             <option>Under Review</option>
@@ -192,26 +183,26 @@
                             <option>Enrolled</option>
                         </select></label><label class="mt-4 block text-sm font-semibold">Review notes<textarea
                             id="reviewNotes" rows="5" maxlength="500"
-                            class="input mt-1.5 w-full rounded-xl border px-3 py-2.5"
+                            class="input mt-1.5 w-full rounded border px-3 py-2.5"
                             placeholder="Add context for the applicant or the next reviewer..."></textarea></label><label
                         id="rejectionReasonField" class="mt-4 hidden text-sm font-semibold">Reason for rejection /
                         correction<textarea id="rejectionReason" rows="3" maxlength="300"
-                            class="input mt-1.5 w-full rounded-xl border px-3 py-2.5"></textarea></label><label
+                            class="input mt-1.5 w-full rounded border px-3 py-2.5"></textarea></label><label
                         class="mt-4 block text-sm font-semibold">Assign adviser<select id="assignedTeacher"
-                            class="input mt-1.5 w-full rounded-xl border px-3 py-2.5">
+                            class="input mt-1.5 w-full rounded border px-3 py-2.5">
                             <option value="">No adviser assigned</option>
                         </select></label><label class="mt-4 block text-sm font-semibold">Section / class<input
-                            id="assignedSection" class="input mt-1.5 w-full rounded-xl border px-3 py-2.5"
+                            id="assignedSection" class="input mt-1.5 w-full rounded border px-3 py-2.5"
                             placeholder="e.g. ICT-1A" /></label>
                     <div class="mt-5 flex flex-wrap gap-3">
                         <button type="submit"
-                            class="rounded-xl bg-green-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-green-700">
+                            class="rounded bg-green-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-green-700">
                             Save review decision</button><button type="button" data-close-review
-                            class="rounded-xl border border-slate-200 px-4 py-2.5 text-sm font-semibold dark:border-slate-700">
+                            class="rounded border border-slate-200 px-4 py-2.5 text-sm font-semibold dark:border-slate-700">
                             Cancel
                         </button>
                     </div>
-                    <p id="reviewFeedback" class="mt-3 text-xs text-slate-500"></p>
+                    <p id="reviewFeedback" class="mt-3 text-xs text-slate-500 dark:text-slate-400"></p>
                 </form>
             </div>
         </section>
@@ -221,31 +212,31 @@
         <form id="createForm" class="card max-h-[90vh] overflow-y-auto p-6 dark:text-white">
             <div class="flex items-start justify-between">
                 <div>
-                    <p class="text-sm font-semibold text-green-600">
+                    <p class="text-sm font-semibold text-green-600 dark:text-green-400">
                         New enrollment record
                     </p>
                     <h3 class="mt-1 text-xl font-bold">Create enrollment</h3>
                 </div>
-                <button type="button" data-close-create class="rounded-lg p-2 text-slate-400">
+                <button type="button" data-close-create class="rounded p-2 text-slate-400">
                     <i data-lucide="x" class="h-5 w-5"></i>
                 </button>
             </div>
             <div class="mt-6 grid gap-4 sm:grid-cols-2">
                 <label class="text-sm font-semibold sm:col-span-2">Student<select id="createStudent" required
-                        class="input mt-1.5 w-full rounded-xl border px-3 py-2.5">
+                        class="input mt-1.5 w-full rounded border px-3 py-2.5">
                         <option value="">Choose a student</option>
                     </select></label><label class="text-sm font-semibold">Program type<input id="createProgram" required
-                        class="input mt-1.5 w-full rounded-xl border px-3 py-2.5" /></label><label
+                        class="input mt-1.5 w-full rounded border px-3 py-2.5" /></label><label
                     class="text-sm font-semibold">Grade level<input id="createGrade"
-                        class="input mt-1.5 w-full rounded-xl border px-3 py-2.5" /></label><label
+                        class="input mt-1.5 w-full rounded border px-3 py-2.5" /></label><label
                     class="text-sm font-semibold">Strand<input id="createStrand"
-                        class="input mt-1.5 w-full rounded-xl border px-3 py-2.5" /></label><label
+                        class="input mt-1.5 w-full rounded border px-3 py-2.5" /></label><label
                     class="text-sm font-semibold">Track<input id="createTrack"
-                        class="input mt-1.5 w-full rounded-xl border px-3 py-2.5" /></label><label
+                        class="input mt-1.5 w-full rounded border px-3 py-2.5" /></label><label
                     class="text-sm font-semibold">School year<input id="createYear" required value="2026-2027"
-                        class="input mt-1.5 w-full rounded-xl border px-3 py-2.5" /></label><label
+                        class="input mt-1.5 w-full rounded border px-3 py-2.5" /></label><label
                     class="text-sm font-semibold">Initial status<select id="createStatus"
-                        class="input mt-1.5 w-full rounded-xl border px-3 py-2.5">
+                        class="input mt-1.5 w-full rounded border px-3 py-2.5">
                         <option>Draft</option>
                         <option>Submitted</option>
                         <option>Under Review</option>
@@ -253,13 +244,13 @@
             </div>
             <div class="mt-6 flex justify-end gap-3">
                 <button type="button" data-close-create
-                    class="rounded-xl border border-slate-200 px-4 py-2.5 text-sm font-semibold dark:border-slate-700">
+                    class="rounded border border-slate-200 px-4 py-2.5 text-sm font-semibold dark:border-slate-700">
                     Cancel</button><button type="submit"
-                    class="rounded-xl bg-green-600 px-5 py-2.5 text-sm font-semibold text-white">
+                    class="rounded bg-green-600 px-5 py-2.5 text-sm font-semibold text-white">
                     Create record
                 </button>
             </div>
-            <p id="createFeedback" class="mt-3 text-right text-xs text-slate-500"></p>
+            <p id="createFeedback" class="mt-3 text-right text-xs text-slate-500 dark:text-slate-400"></p>
         </form>
     </dialog>
     <template id="enrollmentRowTemplate">
@@ -274,7 +265,7 @@
                             class="absolute inset-0 h-9 w-9 rounded-full object-cover"
                             alt="Student profile photo" onerror="this.onerror=null;this.src='{{ asset('images/16432.png') }}'" />
                         <span data-student-initials
-                            class="hidden h-9 w-9 items-center justify-center rounded-full bg-green-50 text-xs font-bold text-green-700"></span>
+                            class="hidden h-9 w-9 items-center justify-center rounded-full bg-green-50 text-xs font-bold text-green-700 dark:text-green-300 dark:bg-emerald-950/40"></span>
                     </span>
                     <div>
                         <b data-student-name class="block"></b><small data-student-id
@@ -287,10 +278,10 @@
             <td class="p-4"><span data-record-status></span></td>
             <td class="p-4">
                 <div class="flex justify-end gap-2">
-                    <button type="button" data-action="review" class="rounded-lg p-2 text-green-700 hover:bg-green-50"
+                    <button type="button" data-action="review" class="rounded p-2 text-green-700 hover:bg-green-50 dark:text-green-300"
                         title="Open review">
                         <i data-lucide="file-search" class="h-4 w-4"></i></button><select data-inline-status
-                        class="input rounded-lg border px-2 py-1.5 text-xs">
+                        class="input rounded border px-2 py-1.5 text-xs">
                         <option>Draft</option>
                         <option>Submitted</option>
                         <option>Under Review</option>
@@ -299,7 +290,7 @@
                         <option>Needs Correction</option>
                         <option>Enrolled</option>
                     </select><button type="button" data-action="save"
-                        class="rounded-lg p-2 text-blue-600 hover:bg-blue-50" title="Save status">
+                        class="rounded p-2 text-blue-600 hover:bg-blue-50 dark:text-blue-400" title="Save status">
                         <i data-lucide="save" class="h-4 w-4"></i>
                     </button>
                 </div>
@@ -307,7 +298,7 @@
         </tr>
     </template>
     <template id="auditRowTemplate">
-        <div class="rounded-xl bg-slate-50 p-3 dark:bg-slate-800">
+        <div class="rounded bg-slate-50 p-3 dark:bg-slate-800">
             <div class="flex flex-wrap items-center justify-between gap-2">
                 <b data-audit-title class="text-sm"></b><time data-audit-date class="text-[11px] text-slate-400"></time>
             </div>

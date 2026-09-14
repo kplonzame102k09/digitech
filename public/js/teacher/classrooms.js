@@ -116,5 +116,11 @@
     }
   });
 
+  // Live updates: reload the classroom list when idle (dialog-safe).
+  document.addEventListener("digitech:tick", () => {
+    if (!window.DG_SYNC?.idle()) return;
+    load();
+  });
+
   load();
 })();

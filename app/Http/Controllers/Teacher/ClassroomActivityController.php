@@ -6,6 +6,8 @@ use App\Http\Controllers\Controller;
 use App\Models\AuditLog;
 use App\Models\Classroom;
 use App\Models\ClassroomActivity;
+use App\Models\Notification;
+use App\Models\SystemSetting;
 use App\Models\User;
 use App\Policies\ClassroomWorkPolicy;
 use Illuminate\Http\JsonResponse;
@@ -83,6 +85,19 @@ class ClassroomActivityController extends Controller
             'notes' => "Activity {$activity->title} created",
         ]);
 
+        if ((bool) (SystemSetting::getInstance()->notifyStudents ?? true)) {
+            $rosterIds = $classroom->students()->pluck('users.user_id')->all();
+            foreach ($rosterIds as $studentUserId) {
+                Notification::alert(
+                    (string) $studentUserId,
+                    'New activity posted',
+                    "\"{$activity->title}\" was posted in {$classroom->name}.",
+                    'activity',
+                    (string) $activity->id,
+                );
+            }
+        }
+
         return response()->json(['ok' => true, 'activity' => [
             'id' => $activity->id,
             'title' => $activity->title,
@@ -101,6 +116,14 @@ class ClassroomActivityController extends Controller
             ->where('classroom_id', $classroom->id)
             ->firstOrFail();
         $activity->delete();
+
+        AuditLog::record([
+            'entity' => AuditLog::ENTITY_ACTIVITY,
+            'recordId' => (string) $activityId,
+            'action' => 'activity.deleted',
+            'notes' => "Activity {$activity->title} deleted.",
+            'actorId' => $request->user()->user_id,
+        ]);
 
         return response()->json(['ok' => true]);
     }

@@ -278,6 +278,18 @@
       }
     });
     save("grades", grades);
+    // Students are only told when grades become visible to them.
+    const publishedIds = [...new Set(
+      modalGrades.filter((g) => g.published).map((g) => g.studentId).filter(Boolean),
+    )];
+    if (publishedIds.length) {
+      APP.notifyUsers(
+        publishedIds,
+        "Grades published",
+        `Your ${modalSemester} grades were published.`,
+        "grade",
+      );
+    }
     $("#gradesModal")?.close();
     APP.toast("Grades saved");
     render();
@@ -332,6 +344,13 @@
     $("[data-save-grades]")?.addEventListener("click", saveGrades);
     $("[data-export-grades]")?.addEventListener("click", exportGrades);
     $$("[data-close-grades]").forEach((button) => button.addEventListener("click", () => $("#gradesModal")?.close()));
+    // Live updates: refresh when other users change grade data.
+    document.addEventListener("digitech:sync", () => {
+      if (!window.DG_SYNC?.idle()) return;
+      users = get("users");
+      grades = get("grades");
+      render();
+    });
     render();
   }
   window.ADMIN_GRADES = { init };

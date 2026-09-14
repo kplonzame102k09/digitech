@@ -82,6 +82,7 @@
           tab.classList.toggle("text-slate-900", active);
           tab.classList.toggle("dark:text-white", active);
           tab.classList.toggle("text-slate-500", !active);
+          tab.classList.toggle("dark:text-slate-400", !active);
           tab.setAttribute("aria-selected", active ? "true" : "false");
         });
         document.querySelectorAll("[data-detail-panel]").forEach((panel) => {
@@ -117,7 +118,7 @@
   function renderRoster(students) {
     const body = $("rosterRows");
     if (!students.length) {
-      body.innerHTML = `<tr><td colspan="4" class="p-6 text-center text-slate-500">No students yet — share the code or link.</td></tr>`;
+      body.innerHTML = `<tr><td colspan="4" class="p-6 text-center text-slate-500 dark:text-slate-400">No students yet — share the code or link.</td></tr>`;
       return;
     }
     body.innerHTML = students.map((s) => {
@@ -127,9 +128,9 @@
           <img src="${esc(photoOf(s.photo))}" alt="${esc(name)}" loading="lazy" class="h-9 w-9 rounded-full object-cover" onerror="this.onerror=null;this.src='${fallbackAvatar}'" />
           <b>${esc(name)}</b>
         </div></td>
-        <td class="p-4 font-mono text-xs text-slate-500">${esc(s.id)}</td>
-        <td class="p-4 text-xs text-slate-500">${esc(s.joinedAt ? String(s.joinedAt).slice(0, 10) : "—")}</td>
-        <td class="p-4 text-right"><button type="button" data-remove="${esc(s.id)}" class="rounded-lg px-3 py-1.5 text-xs font-semibold text-rose-600 hover:bg-rose-50">Remove</button></td>
+        <td class="p-4 font-mono text-xs text-slate-500 dark:text-slate-400">${esc(s.id)}</td>
+        <td class="p-4 text-xs text-slate-500 dark:text-slate-400">${esc(s.joinedAt ? String(s.joinedAt).slice(0, 10) : "—")}</td>
+        <td class="p-4 text-right"><button type="button" data-remove="${esc(s.id)}" class="rounded px-3 py-1.5 text-xs font-semibold text-rose-600 hover:bg-rose-50 dark:text-rose-400">Remove</button></td>
       </tr>`;
     }).join("");
     body.querySelectorAll("[data-remove]").forEach((btn) =>
@@ -171,11 +172,11 @@
               </div>
               <p class="mt-0.5 text-xs text-slate-400">${a.dueDate ? `Due ${esc(a.dueDate)}` : "No due date"} · ${Number(a.submissionsCount || 0)} submissions</p>
             </div>
-            <button type="button" data-del-activity="${esc(a.id)}" class="rounded-lg p-2 text-rose-500 hover:bg-rose-50" title="Delete activity"><i data-lucide="trash-2" class="h-4 w-4"></i></button>
+            <button type="button" data-del-activity="${esc(a.id)}" class="rounded p-2 text-rose-500 hover:bg-rose-50" title="Delete activity"><i data-lucide="trash-2" class="h-4 w-4"></i></button>
           </div>
           ${a.description ? `<p class="mt-2 text-sm text-slate-600 dark:text-slate-300">${esc(a.description)}</p>` : ""}
         </div>`).join("")
-      : `<div class="card p-8 text-center text-sm text-slate-500 md:col-span-2">No activities yet. Add the first one above.</div>`;
+      : `<div class="card p-8 text-center text-sm text-slate-500 md:col-span-2 dark:text-slate-400">No activities yet. Add the first one above.</div>`;
     list.querySelectorAll("[data-del-activity]").forEach((btn) =>
       btn.addEventListener("click", async () => {
         if (!confirm("Delete this activity and all its submissions?")) return;
@@ -205,7 +206,7 @@
     const body = $("submissionRows");
     const rows = submissions.filter((s) => filter === "all" || s.status === filter);
     if (!rows.length) {
-      body.innerHTML = `<tr><td colspan="7" class="p-8 text-center text-slate-500">No submissions yet.</td></tr>`;
+      body.innerHTML = `<tr><td colspan="7" class="p-8 text-center text-slate-500 dark:text-slate-400">No submissions yet.</td></tr>`;
       return;
     }
     body.innerHTML = rows.map((s) => `
@@ -215,11 +216,11 @@
           <div><b class="block">${esc(s.studentName)}</b><small class="font-mono text-[11px] text-slate-400">${esc(s.studentId)}</small></div>
         </div></td>
         <td class="p-4"><div>${esc(s.activityTitle || "—")}</div><span class="mt-0.5 inline-block rounded-full bg-violet-50 px-2 py-0.5 text-[11px] font-bold text-violet-700 dark:bg-violet-950/40 dark:text-violet-300">${esc(s.activityTerm || "Prelim")}</span></td>
-        <td class="p-4 text-xs text-slate-500">${esc(fileNameOf(s.fileUrl))}</td>
-        <td class="p-4 text-xs text-slate-500">${esc(s.submittedAt ? String(s.submittedAt).slice(0, 10) : "—")}</td>
-        <td class="p-4"><span class="inline-flex rounded-full px-2.5 py-1 text-xs font-semibold ${s.status === "Graded" ? "bg-emerald-50 text-emerald-700" : s.status === "Returned" ? "bg-amber-50 text-amber-700" : "bg-blue-50 text-blue-700"}">${esc(s.status)}</span></td>
+        <td class="p-4 text-xs text-slate-500 dark:text-slate-400">${esc(fileNameOf(s.fileUrl))}</td>
+        <td class="p-4 text-xs text-slate-500 dark:text-slate-400">${esc(s.submittedAt ? String(s.submittedAt).slice(0, 10) : "—")}</td>
+        <td class="p-4"><span class="inline-flex rounded-full px-2.5 py-1 text-xs font-semibold ${s.status === "Graded" ? "bg-emerald-50 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-300" : s.status === "Returned" ? "bg-amber-50 text-amber-700 dark:bg-amber-950/40 dark:text-amber-300" : "bg-blue-50 text-blue-700 dark:bg-blue-950/40 dark:text-blue-300"}">${esc(s.status)}</span></td>
         <td class="p-4 font-bold">${s.score !== null && s.score !== undefined ? esc(s.score) : "—"}</td>
-        <td class="p-4 text-right"><button type="button" data-view-sub="${esc(s.id)}" class="inline-flex items-center gap-1.5 rounded-xl bg-slate-900 px-3 py-2 text-xs font-semibold text-white hover:bg-emerald-600 dark:bg-slate-100 dark:text-slate-900"><i data-lucide="eye" class="h-3.5 w-3.5"></i>View</button></td>
+        <td class="p-4 text-right"><button type="button" data-view-sub="${esc(s.id)}" class="inline-flex items-center gap-1.5 rounded bg-slate-900 px-3 py-2 text-xs font-semibold text-white hover:bg-emerald-600 dark:bg-slate-100 dark:text-slate-900"><i data-lucide="eye" class="h-3.5 w-3.5"></i>View</button></td>
       </tr>`).join("");
     body.querySelectorAll("[data-view-sub]").forEach((btn) =>
       btn.addEventListener("click", () => openSubmission(btn.dataset.viewSub)),
@@ -248,9 +249,9 @@
       } else if (/\.pdf(\?|$)/i.test(url)) {
         preview.innerHTML = `<iframe src="${esc(url)}" class="h-96 w-full" title="Submission preview"></iframe>`;
       } else if (url) {
-        preview.innerHTML = `<p class="p-6 text-center text-sm text-slate-500">Preview unavailable for this file type — use Download.</p>`;
+        preview.innerHTML = `<p class="p-6 text-center text-sm text-slate-500 dark:text-slate-400">Preview unavailable for this file type — use Download.</p>`;
       } else {
-        preview.innerHTML = `<p class="p-6 text-center text-sm text-slate-500">No file attached.</p>`;
+        preview.innerHTML = `<p class="p-6 text-center text-sm text-slate-500 dark:text-slate-400">No file attached.</p>`;
       }
       const dl = $("subDownload");
       dl.href = url || "#";
@@ -273,7 +274,7 @@
       const data = await api(`/teacher/api/classrooms/${encodeURIComponent(classroomId)}/gradebook?${params}`);
       const body = $("gradebookRows");
       if (!data.rows.length) {
-        body.innerHTML = `<tr><td colspan="10" class="p-8 text-center text-slate-500">No roster students.</td></tr>`;
+        body.innerHTML = `<tr><td colspan="10" class="p-8 text-center text-slate-500 dark:text-slate-400">No roster students.</td></tr>`;
         return;
       }
       const avgCell = (v, n) => v !== null && v !== undefined
@@ -286,14 +287,14 @@
           <td class="p-3 text-sm text-violet-700 dark:text-violet-300">${avgCell(r.prelimAvg, r.termCounts?.Prelim)}</td>
           <td class="p-3 text-sm text-violet-700 dark:text-violet-300">${avgCell(r.midtermAvg, r.termCounts?.Midterm)}</td>
           <td class="p-3 text-sm text-violet-700 dark:text-violet-300">${avgCell(r.finalsAvg, r.termCounts?.Finals)}</td>
-          <td class="p-3"><input data-g="prelim" type="number" min="0" max="100" step="0.01" value="${r.grade?.prelim ?? ""}" class="input w-24 rounded-lg border px-2 py-1.5" /></td>
-          <td class="p-3"><input data-g="midterm" type="number" min="0" max="100" step="0.01" value="${r.grade?.midterm ?? ""}" class="input w-24 rounded-lg border px-2 py-1.5" /></td>
-          <td class="p-3"><input data-g="finals" type="number" min="0" max="100" step="0.01" value="${r.grade?.finals ?? ""}" class="input w-24 rounded-lg border px-2 py-1.5" /></td>
+          <td class="p-3"><input data-g="prelim" type="number" min="0" max="100" step="0.01" value="${r.grade?.prelim ?? ""}" class="input w-24 rounded border px-2 py-1.5" /></td>
+          <td class="p-3"><input data-g="midterm" type="number" min="0" max="100" step="0.01" value="${r.grade?.midterm ?? ""}" class="input w-24 rounded border px-2 py-1.5" /></td>
+          <td class="p-3"><input data-g="finals" type="number" min="0" max="100" step="0.01" value="${r.grade?.finals ?? ""}" class="input w-24 rounded border px-2 py-1.5" /></td>
           <td class="p-3 font-bold" data-g-final>${r.grade?.finalGrade ?? r.computedFinal ?? "—"}</td>
-          <td class="p-3 font-bold text-blue-600" data-g-gwa>${r.grade && r.grade.finalGrade !== null && r.grade.finalGrade !== undefined ? gwaOf(r.grade.finalGrade) : (r.computedGwa ?? "—")}</td>
+          <td class="p-3 font-bold text-blue-600 dark:text-blue-400" data-g-gwa>${r.grade && r.grade.finalGrade !== null && r.grade.finalGrade !== undefined ? gwaOf(r.grade.finalGrade) : (r.computedGwa ?? "—")}</td>
           <td class="p-3 text-right"><div class="flex justify-end gap-1.5">
-            <button type="button" data-apply-grade="${esc(r.studentId)}" title="Fill prelim/midterm/finals from activity averages" class="rounded-xl border px-3 py-2 text-xs font-semibold">Apply avg</button>
-            <button type="button" data-save-grade="${esc(r.studentId)}" class="rounded-xl bg-blue-600 px-3 py-2 text-xs font-semibold text-white hover:bg-blue-700">Save</button>
+            <button type="button" data-apply-grade="${esc(r.studentId)}" title="Fill prelim/midterm/finals from activity averages" class="rounded border px-3 py-2 text-xs font-semibold">Apply avg</button>
+            <button type="button" data-save-grade="${esc(r.studentId)}" class="rounded bg-blue-600 px-3 py-2 text-xs font-semibold text-white hover:bg-blue-700">Save</button>
           </div></td>
         </tr>`;
       }).join("");
@@ -484,11 +485,14 @@
         isTeacher: true,
         listEl: document.getElementById("videoMeetings-teacher"),
         errorEl: document.getElementById("videoError-teacher"),
+        historyEl: document.getElementById("videoHistory-teacher"),
         overlayEl: section.querySelector("[data-video-overlay]"),
         gridEl: section.querySelector("[data-video-grid]"),
         statusEl: section.querySelector("[data-video-status]"),
         joinInstantBtn: section.querySelector("[data-video-join-instant]"),
         scheduleForm: section.querySelector("[data-video-schedule]"),
+        notifyIds: () => (classroom?.students || []).map((s) => s.id),
+        classroomName: () => classroom?.name || "",
       });
     }
   } catch (error) {
@@ -498,4 +502,14 @@
 
   wireTabs();
   loadClassroom();
+  // Live updates: refresh roster/activities/submissions when idle and not in
+  // a call. Gradebook is skipped on purpose (it holds inline grade inputs).
+  document.addEventListener("digitech:tick", () => {
+    if (!window.DG_SYNC?.idle()) return;
+    const section = document.querySelector("[data-video-section]");
+    if (section && !section.querySelector("[data-video-overlay]")?.classList.contains("hidden")) return;
+    loadClassroom();
+    loadActivities();
+    loadSubmissions();
+  });
 })();

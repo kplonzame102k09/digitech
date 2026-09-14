@@ -85,6 +85,14 @@ class ClassroomMeetingController extends Controller
         $meeting->status = ClassroomMeeting::LIVE;
         $meeting->save();
 
+        AuditLog::record([
+            'entity' => AuditLog::ENTITY_MEETING,
+            'recordId' => (string) $meeting->id,
+            'action' => 'meeting.started',
+            'notes' => "Meeting {$meeting->title} started.",
+            'actorId' => $request->user()->user_id,
+        ]);
+
         return response()->json(['ok' => true, 'meeting' => $this->serialize($meeting)]);
     }
 
@@ -95,6 +103,14 @@ class ClassroomMeetingController extends Controller
         $meeting->status = ClassroomMeeting::ENDED;
         $meeting->save();
 
+        AuditLog::record([
+            'entity' => AuditLog::ENTITY_MEETING,
+            'recordId' => (string) $meeting->id,
+            'action' => 'meeting.ended',
+            'notes' => "Meeting {$meeting->title} ended.",
+            'actorId' => $request->user()->user_id,
+        ]);
+
         return response()->json(['ok' => true, 'meeting' => $this->serialize($meeting)]);
     }
 
@@ -104,6 +120,14 @@ class ClassroomMeetingController extends Controller
         $meeting = $this->scopedMeeting($classroom, $meetingId);
         $meeting->status = ClassroomMeeting::CANCELLED;
         $meeting->save();
+
+        AuditLog::record([
+            'entity' => AuditLog::ENTITY_MEETING,
+            'recordId' => (string) $meeting->id,
+            'action' => 'meeting.cancelled',
+            'notes' => "Meeting {$meeting->title} cancelled.",
+            'actorId' => $request->user()->user_id,
+        ]);
 
         return response()->json(['ok' => true, 'meeting' => $this->serialize($meeting)]);
     }

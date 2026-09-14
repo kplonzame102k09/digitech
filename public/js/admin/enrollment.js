@@ -325,7 +325,7 @@
     details?.replaceChildren();
     detailGrid(record).forEach(([label, value]) => {
       const box = document.createElement("div");
-      box.className = "rounded-xl bg-slate-50 p-3 dark:bg-slate-800";
+      box.className = "rounded bg-slate-50 p-3 dark:bg-slate-800";
       const key = document.createElement("p");
       key.className = "text-xs text-slate-400";
       key.textContent = label;
@@ -353,7 +353,7 @@
     if (!linked.length) {
       const empty = document.createElement("p");
       empty.className =
-        "rounded-xl bg-slate-50 p-3 text-sm text-slate-500 dark:bg-slate-800";
+        "rounded bg-slate-50 p-3 text-sm text-slate-500 dark:bg-slate-800";
       empty.textContent =
         "No linked document or requirement records have been submitted.";
       checks?.append(empty);
@@ -361,7 +361,7 @@
       linked.forEach((item) => {
         const row = document.createElement("div");
         row.className =
-          "flex items-center justify-between gap-3 rounded-xl bg-slate-50 p-3 dark:bg-slate-800";
+          "flex items-center justify-between gap-3 rounded bg-slate-50 p-3 dark:bg-slate-800";
         const label = document.createElement("div");
         const name = document.createElement("b");
         name.className = "block text-sm";
@@ -407,11 +407,14 @@
 
   function addAudit(record, from, to, notes, reason) {
     const logs = get("auditLogs");
+    // Dotted actions match the server-side decision log so the activity feed
+    // collapses both rows into one instead of listing the review twice.
+    const slug = String(to || "").toLowerCase().replace(/\s+/g, "-");
     logs.push({
       id: DG.generateId("AUD"),
       entity: "enrollment",
       recordId: record.id,
-      action: "Enrollment decision",
+      action: to === "Not created" ? "enrollment.created" : `enrollment.${slug || "updated"}`,
       from,
       to,
       notes: notes || "",
@@ -741,6 +744,13 @@
     $$("[data-close-review]").forEach((button) =>
       button.addEventListener("click", () => $("#reviewDialog")?.close()),
     );
+    // Live updates: refresh when other users change enrollment data.
+    document.addEventListener("digitech:sync", () => {
+      if (!window.DG_SYNC?.idle()) return;
+      users = get("users");
+      enrollments = get("enrollments");
+      render();
+    });
     render();
   }
   window.ADMIN_ENROLLMENT = { init };

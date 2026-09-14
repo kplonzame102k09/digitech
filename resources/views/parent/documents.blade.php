@@ -20,11 +20,11 @@
         <main class="p-4 sm:p-6 lg:p-8">
             <div class="mx-auto max-w-7xl">
                 <section class="mb-7">
-                    <p class="text-sm font-semibold text-amber-600">
+                    <p class="text-sm font-semibold text-amber-600 dark:text-amber-400">
                         Registrar services
                     </p>
                     <h2 class="mt-1 text-3xl font-bold tracking-tight">Documents</h2>
-                    <p class="mt-2 text-white">
+                    <p class="mt-2 text-slate-500">
                         Track document requests and outstanding requirements for your
                         children.
                     </p>
@@ -56,7 +56,7 @@
                 <div id="documentsEmpty"
                     class="hidden rounded-2xl border border-dashed border-slate-300 px-6 py-12 text-center dark:border-slate-700">
                     <h3 class="mt-4 font-semibold">No document activity</h3>
-                    <p class="mx-auto mt-1 max-w-md text-sm text-slate-500 dark:text-slate-400">
+                    <p class="mx-auto mt-1 max-w-md text-sm text-slate-500">
                         Document requests and requirements for your children will appear
                         here.
                     </p>
@@ -69,9 +69,9 @@
         <tr class="border-t border-slate-200 dark:border-slate-800">
             <td data-document-name class="p-4 font-semibold"></td>
             <td data-document-student class="p-4"></td>
-            <td data-document-source class="p-4 text-slate-500 dark:text-slate-400"></td>
+            <td data-document-source class="p-4 text-slate-500"></td>
             <td class="p-4"><span data-document-status></span></td>
-            <td data-document-date class="whitespace-nowrap p-4 text-slate-500 dark:text-slate-400"></td>
+            <td data-document-date class="whitespace-nowrap p-4 text-slate-500"></td>
         </tr>
     </template>
     @include('partials.portal-scripts', ['portalPage' => 'parent/parent.js'])

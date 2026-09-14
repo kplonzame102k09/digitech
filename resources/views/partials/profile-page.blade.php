@@ -1,5 +1,5 @@
 {{-- Unified profile page shell. Expects: $role ('admin'|'teacher'|'student'|'parent'|'guest'),
-    $heroClass, $heroTitle, $heroIntro, $eyebrowClass, $saveButtonClass, $accentTextClass,
+    $heroTitle, $heroIntro, $eyebrowClass, $saveButtonClass, $accentTextClass,
     $accentBtnIconClass, $accentCardIconClass, and an optional $headerTitle / $headerSubtitle.
     Per-role editable fields live in partials/profile-fields-{$role}. --}}
 <!doctype html>
@@ -26,23 +26,23 @@
         @include($role.'.components.header', ['title' => $headerTitle ?? null, 'subtitle' => $headerSubtitle ?? null])
         <main class="p-4 sm:p-6 lg:p-8">
             <div class="mx-auto max-w-5xl">
-                <section class="{{ $heroClass }} mb-7 overflow-hidden rounded-3xl p-6 text-white shadow-xl sm:p-8">
+                <section class="mb-7 overflow-hidden p-6 sm:p-8">
                     <p class="text-xs font-bold uppercase tracking-[0.18em] {{ $eyebrowClass }}">Account settings</p>
                     <h2 class="mt-2 text-3xl font-extrabold tracking-tight">{{ $heroTitle }}</h2>
-                    <p class="mt-2 max-w-2xl text-white">{{ $heroIntro }}</p>
+                    <p class="mt-2 max-w-2xl text-slate-500">{{ $heroIntro }}</p>
                 </section>
 
                 <div class="mb-6 flex gap-1 rounded-2xl border border-slate-200 bg-white p-1.5 dark:border-slate-800 dark:bg-slate-900 sm:max-w-md">
                     <button type="button" data-profile-tab="details" aria-selected="true"
-                        class="flex flex-1 items-center justify-center gap-2 rounded-xl border-b-2 border-slate-900 px-3 py-2.5 text-sm font-semibold text-slate-900 dark:border-white dark:text-white">
+                        class="flex flex-1 items-center justify-center gap-2 rounded border-b-2 border-slate-900 px-3 py-2.5 text-sm font-semibold text-slate-900 dark:border-white dark:text-white">
                         <i data-lucide="user-round" class="h-4 w-4"></i>Profile details
                     </button>
                     <button type="button" data-profile-tab="security" aria-selected="false"
-                        class="flex flex-1 items-center justify-center gap-2 rounded-xl border-b-2 border-transparent px-3 py-2.5 text-sm text-slate-500">
+                        class="flex flex-1 items-center justify-center gap-2 rounded border-b-2 border-transparent px-3 py-2.5 text-sm text-slate-500 dark:text-slate-400">
                         <i data-lucide="shield" class="h-4 w-4"></i>Security
                     </button>
                     <button type="button" data-profile-tab="activity" aria-selected="false"
-                        class="flex flex-1 items-center justify-center gap-2 rounded-xl border-b-2 border-transparent px-3 py-2.5 text-sm text-slate-500">
+                        class="flex flex-1 items-center justify-center gap-2 rounded border-b-2 border-transparent px-3 py-2.5 text-sm text-slate-500 dark:text-slate-400">
                         <i data-lucide="activity" class="h-4 w-4"></i>Activity
                     </button>
                 </div>
@@ -64,7 +64,7 @@
                                     <input id="profilePhotoInput" type="file" accept="image/jpeg,image/png,image/webp"
                                         class="sr-only" />
                                 </div>
-                                <p class="mt-3 text-xs text-slate-400 dark:text-slate-500">JPG, PNG, or WebP up to 2 MB</p>
+                                <p class="mt-3 text-xs text-slate-400 dark:text-slate-500 dark:text-slate-400">JPG, PNG, or WebP up to 2 MB</p>
                                 <h3 id="profileName" class="mt-5 text-xl font-extrabold"></h3>
                                 <p id="profileRole" class="mt-1 text-sm {{ $accentTextClass }}"></p>
                                 <div class="mt-3 flex flex-wrap items-center justify-center gap-2">
@@ -77,11 +77,11 @@
                                     </span>
                                 </div>
                                 <div class="mt-5 grid w-full gap-2 sm:max-w-xs">
-                                    <div class="flex items-center gap-2 rounded-xl bg-slate-50 px-3 py-2 text-sm dark:bg-slate-800">
+                                    <div class="flex items-center gap-2 rounded bg-slate-50 px-3 py-2 text-sm dark:bg-slate-800">
                                         <i data-lucide="mail" class="h-4 w-4 shrink-0 text-slate-400"></i>
                                         <span id="profileEmailQuick" class="truncate text-slate-600 dark:text-slate-300">—</span>
                                     </div>
-                                    <div class="flex items-center gap-2 rounded-xl bg-slate-50 px-3 py-2 text-sm dark:bg-slate-800">
+                                    <div class="flex items-center gap-2 rounded bg-slate-50 px-3 py-2 text-sm dark:bg-slate-800">
                                         <i data-lucide="phone" class="h-4 w-4 shrink-0 text-slate-400"></i>
                                         <span id="profilePhoneQuick" class="truncate text-slate-600 dark:text-slate-300">—</span>
                                     </div>
@@ -97,12 +97,12 @@
                         <form id="profileForm" class="card p-6 sm:p-7">
                             <div class="flex items-start gap-3 border-b border-slate-200 pb-5 dark:border-slate-700">
                                 <span
-                                    class="flex h-10 w-10 items-center justify-center rounded-xl {{ $accentCardIconClass }}">
+                                    class="flex h-10 w-10 items-center justify-center rounded {{ $accentCardIconClass }}">
                                     <i data-lucide="contact"></i>
                                 </span>
                                 <div>
                                     <h3 class="font-extrabold">Profile information</h3>
-                                    <p class="mt-1 text-sm text-slate-500">Update the information the school may use to
+                                    <p class="mt-1 text-sm text-slate-500 dark:text-slate-400">Update the information the school may use to
                                         reach you.</p>
                                 </div>
                             </div>
@@ -114,7 +114,7 @@
                                 <p class="text-xs text-slate-400"><i data-lucide="info"
                                         class="mr-1 inline h-3.5 w-3.5"></i>Changes are saved to your portal profile.</p>
                                 <button type="submit" data-profile-save
-                                    class="inline-flex items-center gap-2 rounded-xl {{ $saveButtonClass }} px-5 py-3 text-sm font-semibold text-white shadow-sm transition"><i
+                                    class="inline-flex items-center gap-2 rounded {{ $saveButtonClass }} px-5 py-3 text-sm font-semibold text-white shadow-sm transition"><i
                                         data-lucide="save" class="h-4 w-4"></i>Save changes</button>
                             </div>
                         </form>
@@ -126,12 +126,12 @@
                         <section class="card sticky top-6 p-6 sm:p-7">
                             <div class="flex items-start gap-3 border-b border-slate-200 pb-5 dark:border-slate-700">
                                 <span
-                                    class="flex h-10 w-10 items-center justify-center rounded-xl bg-purple-50 text-purple-600 dark:bg-purple-950/50 dark:text-purple-300">
+                                    class="flex h-10 w-10 items-center justify-center rounded bg-purple-50 text-purple-600 dark:bg-purple-950/50 dark:text-purple-300">
                                     <i data-lucide="key-round"></i>
                                 </span>
                                 <div>
                                     <h3 class="font-extrabold">Account security</h3>
-                                    <p class="mt-1 text-sm text-slate-500">Keep your account safe with a strong,
+                                    <p class="mt-1 text-sm text-slate-500 dark:text-slate-400">Keep your account safe with a strong,
                                         unique password.</p>
                                 </div>
                             </div>
@@ -151,28 +151,28 @@
                         <form id="passwordForm" class="card p-6 sm:p-7">
                             <div class="flex items-start gap-3 border-b border-slate-200 pb-5 dark:border-slate-700">
                                 <span
-                                    class="flex h-10 w-10 items-center justify-center rounded-xl bg-purple-50 text-purple-600 dark:bg-purple-950/50 dark:text-purple-300">
+                                    class="flex h-10 w-10 items-center justify-center rounded bg-purple-50 text-purple-600 dark:bg-purple-950/50 dark:text-purple-300">
                                     <i data-lucide="lock"></i>
                                 </span>
                                 <div>
                                     <h3 class="font-extrabold">Change password</h3>
-                                    <p class="mt-1 text-sm text-slate-500">Enter your current password first.</p>
+                                    <p class="mt-1 text-sm text-slate-500 dark:text-slate-400">Enter your current password first.</p>
                                 </div>
                             </div>
                             <div id="passwordError" role="alert"
-                                class="mb-5 hidden rounded-xl bg-rose-50 px-4 py-3 text-sm font-medium text-rose-700 dark:bg-rose-950/30 dark:text-rose-300"></div>
+                                class="mb-5 hidden rounded bg-rose-50 px-4 py-3 text-sm font-medium text-rose-700 dark:bg-rose-950/30 dark:text-rose-300"></div>
                             <div class="mt-6 grid gap-5">
                                 <label class="text-sm font-semibold">Current password
                                     <input id="currentPassword" type="password" autocomplete="current-password"
-                                        class="input mt-1.5 w-full rounded-xl border px-3 py-3" placeholder="Your current password" />
+                                        class="input mt-1.5 w-full rounded border px-3 py-3" placeholder="Your current password" />
                                 </label>
                                 <label class="text-sm font-semibold">New password
                                     <input id="newPassword" type="password" autocomplete="new-password"
-                                        class="input mt-1.5 w-full rounded-xl border px-3 py-3" placeholder="At least 12 characters" />
+                                        class="input mt-1.5 w-full rounded border px-3 py-3" placeholder="At least 12 characters" />
                                 </label>
                                 <label class="text-sm font-semibold">Confirm new password
                                     <input id="newPasswordConfirm" type="password" autocomplete="new-password"
-                                        class="input mt-1.5 w-full rounded-xl border px-3 py-3" placeholder="Repeat the new password" />
+                                        class="input mt-1.5 w-full rounded border px-3 py-3" placeholder="Repeat the new password" />
                                 </label>
                             </div>
                             <div
@@ -180,7 +180,7 @@
                                 <p class="text-xs text-slate-400"><i data-lucide="info"
                                         class="mr-1 inline h-3.5 w-3.5"></i>Password changes are also recorded in your activity log.</p>
                                 <button id="changePasswordBtn" type="submit"
-                                    class="inline-flex items-center gap-2 rounded-xl bg-purple-600 px-5 py-3 text-sm font-semibold text-white shadow-sm transition hover:bg-purple-700"><i
+                                    class="inline-flex items-center gap-2 rounded bg-purple-600 px-5 py-3 text-sm font-semibold text-white shadow-sm transition hover:bg-purple-700"><i
                                         data-lucide="shield-check" class="h-4 w-4"></i>Update password</button>
                             </div>
                         </form>
@@ -191,12 +191,12 @@
                     <div class="card p-6 sm:p-7">
                         <div class="flex items-start gap-3 border-b border-slate-200 pb-5 dark:border-slate-700">
                             <span
-                                class="flex h-10 w-10 items-center justify-center rounded-xl bg-blue-50 text-blue-600 dark:bg-blue-950/50 dark:text-blue-300">
+                                class="flex h-10 w-10 items-center justify-center rounded bg-blue-50 text-blue-600 dark:bg-blue-950/50 dark:text-blue-300">
                                 <i data-lucide="activity"></i>
                             </span>
                             <div>
                                 <h3 class="font-extrabold">Recent activity</h3>
-                                <p class="mt-1 text-sm text-slate-500">Sign-ins, password changes, and profile edits on
+                                <p class="mt-1 text-sm text-slate-500 dark:text-slate-400">Sign-ins, password changes, and profile edits on
                                     your account.</p>
                             </div>
                         </div>

@@ -19,10 +19,10 @@
         @include('parent.components.header')
         <main class="p-4 sm:p-6 lg:p-8">
             <div class="mx-auto max-w-7xl">
-                <section class="mb-7 student-hero mb-7 p-6 sm:p-8">
-                    <p class="text-sm font-semibold text-blue-600">Student wellbeing</p>
+                <section class="mb-7 mb-7 p-6 sm:p-8">
+                    <p class="text-sm font-semibold text-blue-600 dark:text-blue-400">Student wellbeing</p>
                     <h2 class="mt-1 text-3xl font-bold tracking-tight">Attendance</h2>
-                    <p class="mt-2 text-white">
+                    <p class="mt-2 text-slate-500">
                         Monitor attendance records for your connected children.
                     </p>
                 </section>
@@ -31,7 +31,7 @@
                     <div class="card p-5">
                         <p class="text-sm text-slate-500">Present</p>
                         <p id="presentCount" class="mt-1 text-2xl font-bold">0</p>
-                        <p class="mt-1 text-xs text-slate-400">Recorded attendance</p>
+                        <p class="mt-1 text-xs text-slate-500">Recorded attendance</p>
                     </div>
                     <div class="card p-5">
                         <p class="text-sm text-slate-500">Late</p>
@@ -53,7 +53,7 @@
                     </div>
                     <div class="overflow-x-auto">
                         <table class="w-full text-left text-sm">
-                            <thead class="bg-slate-50 text-[11px] font-semibold uppercase tracking-wider text-slate-500 dark:bg-slate-800 dark:text-slate-400">
+                            <thead class="bg-slate-50 text-[11px] font-semibold uppercase tracking-wider text-slate-500 dark:bg-slate-800">
                                 <tr>
                                     <th class="px-5 py-3.5">Date</th>
                                     <th class="px-5 py-3.5">Student</th>
@@ -68,7 +68,7 @@
                 </section>
                 <div id="attendanceEmpty" class="mt-6 hidden rounded-2xl border border-dashed border-slate-300 px-6 py-12 text-center dark:border-slate-700">
                     <h3 class="mt-4 font-semibold">No attendance records yet</h3>
-                    <p class="mx-auto mt-1 max-w-md text-sm text-slate-500 dark:text-slate-400">
+                    <p class="mx-auto mt-1 max-w-md text-sm text-slate-500">
                         Attendance records will appear here when they are shared by the
                         school.
                     </p>

@@ -47,6 +47,20 @@ class AuditLog extends Model
 
     const ENTITY_ATTENDANCE = 'attendance';
 
+    const ENTITY_REQUIREMENT = 'requirement';
+
+    const ENTITY_ANNOUNCEMENT = 'announcement';
+
+    const ENTITY_MEETING = 'meeting';
+
+    const ENTITY_SUBMISSION = 'submission';
+
+    const ENTITY_PARENT_LINK = 'parentLink';
+
+    const ENTITY_ACTIVITY = 'activity';
+
+    const ENTITY_CLASSROOM = 'classroom';
+
     public function actor()
     {
         return $this->belongsTo(User::class, 'actorId', 'user_id');

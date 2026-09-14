@@ -20,7 +20,7 @@
         <main class="p-4 sm:p-6 lg:p-8">
             <div class="mx-auto max-w-3xl">
                 <section class="mb-6">
-                    <p class="text-xs font-bold uppercase tracking-[0.2em] text-emerald-700">College
+                    <p class="text-xs font-bold uppercase tracking-[0.2em] text-emerald-700 dark:text-emerald-300">College
                         communication</p>
                     <h2 class="mt-1 text-2xl font-extrabold tracking-tight">Announcements</h2>
                     <p class="mt-1 text-sm text-slate-500">Stay up to date with college and class notices.
@@ -29,7 +29,7 @@
                 <section>
                     <div class="mb-3 flex items-center gap-2 px-1">
                         <i data-lucide="newspaper" class="h-4 w-4 text-slate-400"></i>
-                        <h3 class="text-sm font-bold text-slate-500">Latest updates</h3>
+                        <h3 class="text-sm font-bold text-slate-500 dark:text-slate-400">Latest updates</h3>
                     </div>
                     <div id="rows" class="space-y-4"></div>
                 </section>

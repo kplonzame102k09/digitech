@@ -18,7 +18,7 @@ class ClassroomMeetingController extends Controller
     ) {}
 
     /**
-     * Upcoming + live sessions only (no cancelled/ended).
+     * All sessions: upcoming + live stay joinable, ended/cancelled feed history.
      */
     public function index(Request $request, string $classroomId): JsonResponse
     {
@@ -28,7 +28,7 @@ class ClassroomMeetingController extends Controller
 
         $meetings = ClassroomMeeting::query()
             ->where('classroom_id', $classroom->id)
-            ->whereIn('status', [ClassroomMeeting::SCHEDULED, ClassroomMeeting::LIVE])
+            ->whereIn('status', [ClassroomMeeting::SCHEDULED, ClassroomMeeting::LIVE, ClassroomMeeting::ENDED, ClassroomMeeting::CANCELLED])
             ->orderBy('starts_at')
             ->orderByDesc('created_at')
             ->get();

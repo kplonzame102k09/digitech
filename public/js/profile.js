@@ -231,12 +231,45 @@
   }
 
   const activityStyle = {
-    login: { icon: "log-in", label: "Signed in", cls: "text-blue-600 bg-blue-50" },
-    logout: { icon: "log-out", label: "Signed out", cls: "text-slate-600 bg-slate-100" },
-    "password.changed": { icon: "key-round", label: "Password changed", cls: "text-purple-600 bg-purple-50" },
-    "profile.updated": { icon: "user-round-check", label: "Profile updated", cls: "text-emerald-600 bg-emerald-50" },
+    login: { icon: "log-in", label: "Signed in", cls: "text-blue-600 bg-blue-50 dark:bg-blue-950/40 dark:text-blue-300" },
+    logout: { icon: "log-out", label: "Signed out", cls: "text-slate-600 bg-slate-100 dark:bg-slate-800 dark:text-slate-300" },
+    "password.changed": { icon: "key-round", label: "Password changed", cls: "text-purple-600 bg-purple-50 dark:bg-purple-950/40 dark:text-purple-300" },
+    "profile.updated": { icon: "user-round-check", label: "Profile updated", cls: "text-emerald-600 bg-emerald-50 dark:bg-emerald-950/40 dark:text-emerald-300" },
+    "enrollment.submitted": { icon: "file-text", label: "Enrollment submitted", cls: "text-blue-600 bg-blue-50 dark:bg-blue-950/40 dark:text-blue-300" },
+    "requirement.submitted": { icon: "clipboard-check", label: "Requirement submitted", cls: "text-amber-600 bg-amber-50 dark:bg-amber-950/40 dark:text-amber-300" },
+    "requirement.approved": { icon: "check-check", label: "Requirement approved", cls: "text-emerald-600 bg-emerald-50 dark:bg-emerald-950/40 dark:text-emerald-300" },
+    "requirement.rejected": { icon: "x-circle", label: "Requirement rejected", cls: "text-rose-600 bg-rose-50 dark:bg-rose-950/40 dark:text-rose-300" },
+    "document.submitted": { icon: "file-up", label: "Document requested", cls: "text-blue-600 bg-blue-50 dark:bg-blue-950/40 dark:text-blue-300" },
+    "announcement.published": { icon: "megaphone", label: "Announcement published", cls: "text-violet-600 bg-violet-50 dark:bg-violet-950/40 dark:text-violet-300" },
+    "grade.published": { icon: "award", label: "Grade published", cls: "text-emerald-600 bg-emerald-50 dark:bg-emerald-950/40 dark:text-emerald-300" },
+    "grade.updated": { icon: "pen-line", label: "Grade updated", cls: "text-emerald-600 bg-emerald-50 dark:bg-emerald-950/40 dark:text-emerald-300" },
+    "submission.submitted": { icon: "upload", label: "Activity submitted", cls: "text-blue-600 bg-blue-50 dark:bg-blue-950/40 dark:text-blue-300" },
+    "submission.graded": { icon: "star", label: "Submission graded", cls: "text-amber-600 bg-amber-50 dark:bg-amber-950/40 dark:text-amber-300" },
+    "submission.returned": { icon: "undo-2", label: "Submission returned", cls: "text-slate-600 bg-slate-100 dark:bg-slate-800 dark:text-slate-300" },
+    "submission.scored": { icon: "star", label: "Submission scored", cls: "text-amber-600 bg-amber-50 dark:bg-amber-950/40 dark:text-amber-300" },
+    "activity.created": { icon: "plus-circle", label: "Activity posted", cls: "text-violet-600 bg-violet-50 dark:bg-violet-950/40 dark:text-violet-300" },
+    "activity.deleted": { icon: "trash-2", label: "Activity deleted", cls: "text-rose-600 bg-rose-50 dark:bg-rose-950/40 dark:text-rose-300" },
+    "meeting.scheduled": { icon: "calendar-plus", label: "Session scheduled", cls: "text-violet-600 bg-violet-50 dark:bg-violet-950/40 dark:text-violet-300" },
+    "meeting.started": { icon: "play", label: "Session started", cls: "text-emerald-600 bg-emerald-50 dark:bg-emerald-950/40 dark:text-emerald-300" },
+    "meeting.ended": { icon: "square", label: "Session ended", cls: "text-slate-600 bg-slate-100 dark:bg-slate-800 dark:text-slate-300" },
+    "meeting.cancelled": { icon: "x-circle", label: "Session cancelled", cls: "text-rose-600 bg-rose-50 dark:bg-rose-950/40 dark:text-rose-300" },
+    "classroom.joined": { icon: "door-open", label: "Joined classroom", cls: "text-emerald-600 bg-emerald-50 dark:bg-emerald-950/40 dark:text-emerald-300" },
+    "classroom.created": { icon: "plus-circle", label: "Classroom created", cls: "text-emerald-600 bg-emerald-50 dark:bg-emerald-950/40 dark:text-emerald-300" },
+    "classroom.archived": { icon: "archive", label: "Classroom archived", cls: "text-slate-600 bg-slate-100 dark:bg-slate-800 dark:text-slate-300" },
+    "classroom.reopened": { icon: "archive-restore", label: "Classroom reopened", cls: "text-emerald-600 bg-emerald-50 dark:bg-emerald-950/40 dark:text-emerald-300" },
+    "classroom.student_removed": { icon: "user-minus", label: "Student removed", cls: "text-rose-600 bg-rose-50 dark:bg-rose-950/40 dark:text-rose-300" },
+    "user.created": { icon: "user-plus", label: "Account created", cls: "text-emerald-600 bg-emerald-50 dark:bg-emerald-950/40 dark:text-emerald-300" },
+    "user.deleted": { icon: "user-minus", label: "Account deleted", cls: "text-rose-600 bg-rose-50 dark:bg-rose-950/40 dark:text-rose-300" },
+    "users.managed": { icon: "users-round", label: "Accounts managed", cls: "text-slate-600 bg-slate-100 dark:bg-slate-800 dark:text-slate-300" },
+    "parentLink.submitted": { icon: "link", label: "Link requested", cls: "text-blue-600 bg-blue-50 dark:bg-blue-950/40 dark:text-blue-300" },
+    "parentLink.approved": { icon: "link-2", label: "Link approved", cls: "text-emerald-600 bg-emerald-50 dark:bg-emerald-950/40 dark:text-emerald-300" },
+    "Grade created": { icon: "pen-line", label: "Grade created", cls: "text-emerald-600 bg-emerald-50 dark:bg-emerald-950/40 dark:text-emerald-300" },
+    "Grades saved": { icon: "save", label: "Grades saved", cls: "text-emerald-600 bg-emerald-50 dark:bg-emerald-950/40 dark:text-emerald-300" },
+    "Assessment updated": { icon: "clipboard-check", label: "Assessment updated", cls: "text-violet-600 bg-violet-50 dark:bg-violet-950/40 dark:text-violet-300" },
+    "Bulk assessment update": { icon: "layers", label: "Bulk assessment update", cls: "text-violet-600 bg-violet-50 dark:bg-violet-950/40 dark:text-violet-300" },
+    "Competency record created": { icon: "award", label: "Competency assigned", cls: "text-violet-600 bg-violet-50 dark:bg-violet-950/40 dark:text-violet-300" },
   };
-  const defaultActivity = { icon: "activity", label: "Account activity", cls: "text-slate-600 bg-slate-100" };
+  const defaultActivity = { icon: "activity", label: "Account activity", cls: "text-slate-600 bg-slate-100 dark:bg-slate-800 dark:text-slate-300" };
 
   async function renderActivity() {
     const list = $("#activityList");
@@ -273,7 +306,7 @@
       const row = document.createElement("div");
       row.className = "flex items-start gap-4 rounded-2xl border border-slate-200 p-4 dark:border-slate-800";
       row.innerHTML = `
-        <span class="mt-0.5 flex h-10 w-10 shrink-0 items-center justify-center rounded-xl ${style.cls}">
+        <span class="mt-0.5 flex h-10 w-10 shrink-0 items-center justify-center rounded ${style.cls}">
           <i data-lucide="${style.icon}" class="h-4 w-4"></i>
         </span>
         <div class="min-w-0 flex-1">
@@ -282,7 +315,7 @@
         </div>
         <div class="shrink-0 text-right">
           <p class="text-xs font-medium text-slate-500 dark:text-slate-400">${escHtml(date)}</p>
-          ${time ? `<p class="mt-0.5 text-[11px] text-slate-400">${escHtml(time)}</p>` : ""}
+          ${time ? `<p class="mt-0.5 text-[11px] text-slate-400 dark:text-slate-500">${escHtml(time)}</p>` : ""}
         </div>`;
       list.append(row);
     });
@@ -314,6 +347,7 @@
           tab.classList.toggle("dark:text-white", active);
           tab.classList.toggle("dark:border-white", active);
           tab.classList.toggle("text-slate-500", !active);
+          tab.classList.toggle("dark:text-slate-400", !active);
           tab.classList.toggle("border-transparent", !active);
           tab.setAttribute("aria-selected", active ? "true" : "false");
         });
@@ -359,4 +393,10 @@ $("#profileForm")?.addEventListener("submit", saveDetails);
     }
   }
   boot();
+  // Live updates: refresh the identity header only — never repopulate the
+  // form, so half-typed profile edits are never wiped by someone else's change.
+  document.addEventListener("digitech:sync", () => {
+    if (!window.DG_SYNC?.idle()) return;
+    renderIdentity(freshUser());
+  });
 })();

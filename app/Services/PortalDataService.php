@@ -65,7 +65,7 @@ class PortalDataService
         'competencies' => ['id', 'studentId', 'competency', 'qualification', 'status', 'assessmentDate', 'assessor', 'evidence', 'remarks', 'createdBy', 'updatedBy'],
         'notifications' => ['id', 'userId', 'title', 'message', 'read', 'source', 'recordId'],
         'announcements' => ['id', 'title', 'message', 'category', 'audience', 'authorId', 'createdBy', 'image'],
-        'attendance' => ['id', 'studentId', 'date', 'status', 'subject', 'recordedBy', 'remarks'],
+        'attendance' => ['id', 'studentId', 'date', 'status', 'subject', 'classroomId', 'session', 'recordedBy', 'remarks'],
         'auditLogs' => ['id', 'entity', 'recordId', 'action', 'from', 'to', 'notes', 'reason', 'actorId', 'createdAt'],
         'requirements' => ['id', 'studentId', 'name', 'type', 'status', 'dueDate', 'submittedAt', 'notes', 'fileUrl'],
         'parentLinkRequests' => ['id', 'parentId', 'studentId', 'status', 'reviewedAt', 'reviewedBy'],
@@ -461,6 +461,8 @@ class PortalDataService
             // account from the active administrator role.
             $this->assertNotAdminSelfModification($users, $actor);
 
+            $beforeIds = User::query()->pluck('user_id')->all();
+
             $upserted = $this->upsertUsers($users);
 
             // Admin accounts are never deleted through the portal sync.
@@ -500,6 +502,7 @@ class PortalDataService
             // Demoting or deactivating admins must never leave the portal
             // without an active administrator; this runs after the upsert so a
             // violation rolls back the entire transaction.
+            $this->auditUserManagement($actor, array_diff($upserted, $beforeIds), $deleteIds ?? []);
             $activeAdmins = User::query()->where('role', 'admin')->where('status', 'active')->count();
             if ($activeAdmins < 1) {
                 abort(422, 'You cannot deactivate or demote the last active admin account.');
@@ -1086,6 +1089,10 @@ class PortalDataService
         if ($key === 'notifications') {
             $this->dedupeNotifications($model);
         }
+
+        if ($key === 'auditLogs') {
+            $this->dedupeAuditLogs($model);
+        }
     }
 
     /**
@@ -1103,6 +1110,35 @@ class PortalDataService
 
         if ($keep !== []) {
             $model::query()->whereNotIn('id', $keep)->delete();
+        }
+    }
+
+    /**
+     * Collapse duplicate audit rows (client + server both log the same review)
+     * so activity feeds never list one event twice. Keeps the newest row for
+     * each record+action+actor.
+     */
+    protected function dedupeAuditLogs(string $model): void
+    {
+        $groups = $model::query()
+            ->select('recordId', 'action', 'actorId')
+            ->groupBy('recordId', 'action', 'actorId')
+            ->havingRaw('COUNT(*) > 1')
+            ->get();
+
+        foreach ($groups as $group) {
+            $ids = $model::query()
+                ->where('recordId', $group->recordId)
+                ->where('action', $group->action)
+                ->where('actorId', $group->actorId)
+                ->orderByDesc('createdAt')
+                ->orderByDesc('id')
+                ->pluck('id')
+                ->all();
+            array_shift($ids); // keep the newest row
+            if ($ids !== []) {
+                $model::query()->whereIn('id', $ids)->delete();
+            }
         }
     }
 
@@ -1374,6 +1410,11 @@ class PortalDataService
                 // only the states the UI emits are accepted.
                 if (isset($data['status']) && ! in_array($data['status'], ['Present', 'Late', 'Absent', 'Excused'], true)) {
                     $data['status'] = 'Present';
+                }
+                // Session slot 1..20 (defaults to 1 for legacy/single marks).
+                $data['session'] = max(1, min(20, (int) ($data['session'] ?? 1)));
+                if (array_key_exists('classroomId', $data) && $data['classroomId'] !== null) {
+                    $data['classroomId'] = trim((string) $data['classroomId']) ?: null;
                 }
                 break;
 
@@ -1783,6 +1824,8 @@ class PortalDataService
         $this->recordAdminDecision($key, $data, $actor, $before);
 
         $this->alertAdmins($key, $data, $actor, $existing, $previousStatus);
+
+        $this->recordActorActivity($key, $data, $actor, $existing, $previousStatus);
     }
 
     /**
@@ -1851,6 +1894,144 @@ class PortalDataService
     }
 
     /**
+     * Persist an activity row for the acting user's own feed. Covers the
+     * actor-side events nothing else logs (a student's own submission, an
+     * admin's requirement review); events the client already audits
+     * (teacher grades/competencies, admin enrollment/document reviews) are
+     * deliberately left out so feeds never double-list. Fires only on real
+     * transitions and collapses re-pushes onto the same row.
+     */
+    protected function recordActorActivity(string $key, array $data, ?User $actor, $existing, ?string $previousStatus = null): void
+    {
+        if ($actor === null) {
+            return;
+        }
+
+        $status = (string) ($data['status'] ?? '');
+        $recordId = (string) ($data['id'] ?? '');
+        $isNew = $existing === null;
+
+        if ($recordId === '') {
+            return;
+        }
+
+        $entity = null;
+        $action = null;
+        $notes = null;
+
+        if ($key === 'enrollments' && $actor->isStudent()) {
+            if ($status === 'Submitted' && ($isNew || $previousStatus !== 'Submitted')) {
+                $entity = AuditLog::ENTITY_ENROLLMENT;
+                $action = 'enrollment.submitted';
+                $notes = 'Enrollment '.$recordId.' submitted for review.';
+            }
+        } elseif ($key === 'requirements' && $actor->isStudent()) {
+            if ($status === 'Submitted' && ! $isNew && $previousStatus !== 'Submitted') {
+                $entity = AuditLog::ENTITY_REQUIREMENT;
+                $action = 'requirement.submitted';
+                $notes = ($data['name'] ?? 'A requirement').' submitted for review.';
+            }
+        } elseif ($key === 'requirements' && $actor->isAdmin()) {
+            if (in_array($status, ['Approved', 'Rejected'], true) && $previousStatus !== $status) {
+                $entity = AuditLog::ENTITY_REQUIREMENT;
+                $action = 'requirement.'.strtolower($status);
+                $notes = ($data['name'] ?? 'A requirement').' was '.strtolower($status).'.';
+            }
+        } elseif ($key === 'documentRequests' && ($actor->isStudent() || $actor->isGuest())) {
+            if ($isNew) {
+                $entity = AuditLog::ENTITY_DOCUMENT;
+                $action = 'document.submitted';
+                $notes = 'Requested '.($data['documentType'] ?? 'a document').'.';
+            }
+        } elseif ($key === 'parentLinkRequests' && $actor->isParent()) {
+            if ($isNew) {
+                $entity = AuditLog::ENTITY_PARENT_LINK;
+                $action = 'parentLink.submitted';
+                $notes = 'Requested a link to student '.($data['studentId'] ?? '').'.';
+            }
+        } elseif ($key === 'announcements' && ($actor->isTeacher() || $actor->isAdmin())) {
+            if ($isNew) {
+                $entity = AuditLog::ENTITY_ANNOUNCEMENT;
+                $action = 'announcement.published';
+                $notes = 'Published '.($data['title'] ?? 'an announcement').'.';
+            }
+        }
+
+        if ($entity === null || $action === null) {
+            return;
+        }
+
+        $alreadyRecorded = AuditLog::query()
+            ->where('recordId', $recordId)
+            ->where('action', $action)
+            ->where('actorId', $actor->user_id)
+            ->exists();
+
+        if (! $alreadyRecorded) {
+            AuditLog::record([
+                'entity' => $entity,
+                'recordId' => $recordId,
+                'action' => $action,
+                'notes' => (string) $notes,
+                'actorId' => $actor->user_id,
+            ]);
+        }
+    }
+
+    /**
+     * Activity rows for admin user management. Per-account rows for small
+     * changes, one summary row for bulk edits so imports never flood the feed.
+     *
+     * @param  array<int, string>  $createdIds
+     * @param  array<int, string>  $deletedIds
+     */
+    protected function auditUserManagement(?User $actor, array $createdIds, array $deletedIds): void
+    {
+        if ($actor === null) {
+            return;
+        }
+
+        $createdIds = array_values(array_unique(array_map('strval', $createdIds)));
+        $deletedIds = array_values(array_unique(array_map('strval', $deletedIds)));
+
+        if ($createdIds === [] && $deletedIds === []) {
+            return;
+        }
+
+        $write = function (string $recordId, string $action, string $notes) use ($actor): void {
+            $alreadyRecorded = AuditLog::query()
+                ->where('recordId', $recordId)
+                ->where('action', $action)
+                ->where('actorId', $actor->user_id)
+                ->exists();
+
+            if (! $alreadyRecorded) {
+                AuditLog::record([
+                    'entity' => AuditLog::ENTITY_USER,
+                    'recordId' => $recordId,
+                    'action' => $action,
+                    'notes' => $notes,
+                    'actorId' => $actor->user_id,
+                ]);
+            }
+        };
+
+        if (count($createdIds) + count($deletedIds) > 10) {
+            $write($actor->user_id, 'users.managed', 'Managed '.count($createdIds).' created and '.count($deletedIds).' deleted accounts.');
+
+            return;
+        }
+
+        foreach ($createdIds as $userId) {
+            $write($userId, 'user.created', 'Created account '.$userId.'.');
+        }
+
+        foreach ($deletedIds as $userId) {
+            $write($userId, 'user.deleted', 'Deleted account '.$userId.'.');
+        }
+    }
+
+    /**
      * Mint registrar/admin alerts for the submission flows that originate on
      * the client. Recipients are resolved server-side because the client-side
      * users mirror no longer lists admins (privacy scoping), which is why the
@@ -1882,6 +2063,28 @@ class PortalDataService
                 $this->createAdminAlert(
                     'Requirement submitted',
                     $this->displayName((string) $data['studentId']).' submitted '.($data['name'] ?? null ?: 'a requirement').' for review.',
+                    'requirement',
+                    (string) $data['id'],
+                );
+            }
+        } elseif ($key === 'requirements' && $actor->isAdmin()) {
+            // Assignment + review decisions must reach the learner even when
+            // the admin's own browser never pushes its client-side notice.
+            $studentId = (string) ($data['studentId'] ?? '');
+            $reqName = ($data['name'] ?? null) ?: 'A requirement';
+            if ($isNew && $studentId !== '') {
+                $this->alertStudentAndParents(
+                    $studentId,
+                    'New Requirement Assigned',
+                    "{$reqName} has been assigned to you.",
+                    'requirement',
+                    (string) $data['id'],
+                );
+            } elseif (in_array($status, ['Approved', 'Rejected'], true) && $previousStatus !== $status && $studentId !== '') {
+                $this->alertStudentAndParents(
+                    $studentId,
+                    "Requirement {$status}",
+                    "{$reqName} was ".strtolower($status).'.',
                     'requirement',
                     (string) $data['id'],
                 );
@@ -1920,6 +2123,53 @@ class PortalDataService
             if ($isNew && ! (bool) ($data['published'] ?? false) && ! empty($data['studentId'])) {
                 $this->pendingGradeAlerts[(string) $data['studentId']] = ($this->pendingGradeAlerts[(string) $data['studentId']] ?? 0) + 1;
             }
+        }
+    }
+
+    /**
+     * Alert a student and their linked parents. Uses the exact copy the
+     * client pages send so both rows collapse onto one notification instead
+     * of stacking when both layers fire for the same event.
+     */
+    protected function alertStudentAndParents(string $studentId, string $title, string $message, string $source, ?string $recordId = null): void
+    {
+        if ($studentId === '') {
+            return;
+        }
+
+        if ((bool) (SystemSetting::getInstance()->notifyStudents ?? true) !== false) {
+            Notification::alert($studentId, $title, $message, $source, $recordId);
+        }
+
+        if ((bool) (SystemSetting::getInstance()->notifyParents ?? true) === false) {
+            return;
+        }
+
+        $parentIds = DB::table('parent_student')
+            ->join('users as linked', 'linked.id', '=', 'parent_student.student_id')
+            ->join('users as parentUser', 'parentUser.id', '=', 'parent_student.parent_id')
+            ->where('linked.user_id', $studentId)
+            ->where('parentUser.role', 'parent')
+            ->where('parentUser.status', 'active')
+            ->pluck('parentUser.user_id')
+            ->all();
+
+        $columnLinked = User::query()
+            ->where('role', 'parent')
+            ->where('status', 'active')
+            ->get(['user_id', 'childId', 'childIds'])
+            ->filter(fn (User $parent): bool => count(array_intersect(
+                collect([$parent->childId])
+                    ->concat($parent->childIds ?? [])
+                    ->filter(fn (mixed $id): bool => is_string($id) && $id !== '')
+                    ->all(),
+                [$studentId],
+            )) > 0)
+            ->pluck('user_id')
+            ->all();
+
+        foreach (array_unique(array_merge($parentIds, $columnLinked)) as $parentId) {
+            Notification::alert((string) $parentId, $title, $message, $source, $recordId);
         }
     }
 
@@ -1999,6 +2249,11 @@ class PortalDataService
         $existing = $model::query()->find($data['id']);
 
         if ($existing) {
+            // Non-admins may only touch rows they authored; anything else in
+            // the payload is ignored so ids can never hijack another user's rows.
+            if (! $actor?->isAdmin() && (string) $existing->actorId !== (string) ($actor?->user_id ?? '')) {
+                return;
+            }
             $existing->fill(collect($data)->except('createdAt')->all());
             $existing->actorId = $actor?->user_id ?? $existing->actorId;
             $existing->save();
@@ -2033,7 +2288,7 @@ class PortalDataService
 
         return match ($actor->role) {
             'admin' => true,
-            'teacher' => in_array($key, ['announcements', 'attendance', 'competencies', 'grades', 'notifications', 'users'], true),
+            'teacher' => in_array($key, ['announcements', 'attendance', 'auditLogs', 'competencies', 'grades', 'notifications', 'users'], true),
             'student' => in_array($key, ['documentRequests', 'enrollments', 'notifications', 'requirements', 'users'], true),
             'parent' => in_array($key, ['notifications', 'parentLinkRequests', 'users'], true),
             'guest' => in_array($key, ['documentRequests', 'notifications', 'users'], true),
@@ -2091,6 +2346,8 @@ class PortalDataService
                 'date' => $this->dateToString($row->date),
                 'status' => $row->status,
                 'subject' => $row->subject,
+                'classroomId' => $row->classroomId,
+                'session' => $row->session !== null ? (int) $row->session : 1,
                 'recordedBy' => $row->recordedBy,
                 'remarks' => $row->remarks,
                 'createdAt' => $this->dateToIso($row->created_at),

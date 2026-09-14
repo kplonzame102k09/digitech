@@ -67,11 +67,14 @@
   }
   function addAudit(request, from, to, notes, reason) {
     const logs = get("auditLogs");
+    // Dotted actions match the server-side decision log so the activity feed
+    // collapses both rows into one instead of listing the review twice.
+    const slug = String(to || "").toLowerCase().replace(/\s+/g, "-");
     logs.push({
       id: DG.generateId("AUD"),
       entity: "document",
       recordId: request.id,
-      action: "Document decision",
+      action: to === "Not created" ? "document.created" : `document.${slug || "updated"}`,
       from,
       to,
       notes: notes || "",
@@ -274,7 +277,7 @@
     details?.replaceChildren();
     detailGrid(request).forEach(([label, value]) => {
       const box = document.createElement("div");
-      box.className = "rounded-xl bg-slate-50 p-3 dark:bg-slate-800";
+      box.className = "rounded bg-slate-50 p-3 dark:bg-slate-800";
       const key = document.createElement("p");
       key.className = "text-xs text-slate-400";
       key.textContent = label;
@@ -523,6 +526,13 @@
     $$("[data-close-review]").forEach((button) =>
       button.addEventListener("click", () => $("#reviewDialog")?.close()),
     );
+    // Live updates: refresh when other users change document data.
+    document.addEventListener("digitech:sync", () => {
+      if (!window.DG_SYNC?.idle()) return;
+      users = get("users");
+      requests = get("documentRequests");
+      render();
+    });
     render();
   }
   window.ADMIN_DOCUMENTS = { init };

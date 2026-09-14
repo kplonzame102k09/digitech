@@ -1,7 +1,7 @@
 @include('partials.profile-page', [
     'role' => 'parent',
-    'heroClass' => 'student-hero',
-    'eyebrowClass' => 'text-emerald-600',
+    
+    'eyebrowClass' => 'text-green-600',
     'heroTitle' => 'Your parent profile',
     'heroIntro' => 'Keep your contact information current for school communication and student support.',
     'saveButtonClass' => 'bg-emerald-600 hover:bg-emerald-700',

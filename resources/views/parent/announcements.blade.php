@@ -20,7 +20,7 @@
         <main class="p-4 sm:p-6 lg:p-8">
             <div class="mx-auto max-w-3xl">
                 <section class="mb-6">
-                    <p class="text-xs font-bold uppercase tracking-[0.2em] text-green-700">College news</p>
+                    <p class="text-xs font-bold uppercase tracking-[0.2em] text-green-700 dark:text-green-300">College news</p>
                     <h2 class="mt-1 text-2xl font-extrabold tracking-tight">Announcements</h2>
                     <p class="mt-1 text-sm text-slate-500">Important updates and notices relevant to your family.</p>
                 </section>

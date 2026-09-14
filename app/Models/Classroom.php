@@ -21,10 +21,15 @@ class Classroom extends Model
         'teacherId',
         'name',
         'subject',
+        'sessionsPerDay',
         'description',
         'inviteCode',
         'inviteToken',
         'status',
+    ];
+
+    protected $casts = [
+        'sessionsPerDay' => 'integer',
     ];
 
     protected $keyType = 'string';

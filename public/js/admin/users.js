@@ -171,13 +171,9 @@
         });
       }
       setText("[data-row-user-name]", fullName(user), row);
-      setText(
-        "[data-user-username]",
-        user.username ? `@${user.username}` : user.email || "No username",
-        row,
-      );
       setText("[data-row-user-id]", user.id, row);
       setText("[data-user-email]", user.email || "—", row);
+      setText("[data-user-email-column]", user.email || "—", row);
       setStatusBadge($("[data-user-role]", row), roleLabel(user.role), "role");
       const statusElement = $("[data-user-status]", row);
       setStatusBadge(statusElement, statusLabel(user));
@@ -240,7 +236,7 @@
     
     // Previous button
     const prevButton = document.createElement("button");
-    prevButton.className = "ml-2 rounded-lg border border-slate-200 px-3 py-1.5 text-xs font-medium text-slate-600 hover:bg-slate-50 disabled:opacity-50 disabled:cursor-not-allowed dark:border-slate-700 dark:text-slate-400 dark:hover:bg-slate-800";
+    prevButton.className = "ml-2 rounded border border-slate-200 px-3 py-1.5 text-xs font-medium text-slate-600 hover:bg-slate-50 disabled:opacity-50 disabled:cursor-not-allowed dark:border-slate-700 dark:text-slate-400 dark:hover:bg-slate-800";
     prevButton.disabled = currentPage === 1;
     prevButton.innerHTML = '<i data-lucide="chevron-left" class="h-3 w-3"></i>';
     prevButton.addEventListener("click", () => {
@@ -262,7 +258,7 @@
     
     for (let i = startPage; i <= endPage; i++) {
       const pageButton = document.createElement("button");
-      pageButton.className = `mx-1 rounded-lg px-3 py-1.5 text-xs font-medium ${
+      pageButton.className = `mx-1 rounded px-3 py-1.5 text-xs font-medium ${
         i === currentPage 
           ? "bg-green-600 text-white" 
           : "border border-slate-200 text-slate-600 hover:bg-slate-50 dark:border-slate-700 dark:text-slate-400 dark:hover:bg-slate-800"
@@ -277,7 +273,7 @@
     
     // Next button
     const nextButton = document.createElement("button");
-    nextButton.className = "ml-2 rounded-lg border border-slate-200 px-3 py-1.5 text-xs font-medium text-slate-600 hover:bg-slate-50 disabled:opacity-50 disabled:cursor-not-allowed dark:border-slate-700 dark:text-slate-400 dark:hover:bg-slate-800";
+    nextButton.className = "ml-2 rounded border border-slate-200 px-3 py-1.5 text-xs font-medium text-slate-600 hover:bg-slate-50 disabled:opacity-50 disabled:cursor-not-allowed dark:border-slate-700 dark:text-slate-400 dark:hover:bg-slate-800";
     nextButton.disabled = currentPage === totalPages;
     nextButton.innerHTML = '<i data-lucide="chevron-right" class="h-3 w-3"></i>';
     nextButton.addEventListener("click", () => {
@@ -521,6 +517,18 @@
     }
     save(usersKey, users);
     $("#userDialog")?.close();
+    // Tell the account holder (never with secrets — credentials travel offline).
+    if (user.id !== currentUser.id) {
+      APP.notifyUsers(
+        [user.id],
+        editingId ? "Account updated" : "Account created",
+        editingId
+          ? "Your portal account details were updated by an administrator."
+          : "Your portal account was created. Use your email to sign in.",
+        "portal",
+        user.id,
+      );
+    }
     APP.toast(editingId ? "User updated" : "User created");
     currentPage = 1;
     render();
@@ -548,7 +556,7 @@
     ];
     details.forEach(([label, value]) => {
       const wrapper = document.createElement("div");
-      wrapper.className = "rounded-xl bg-slate-50 p-3 dark:bg-slate-800";
+      wrapper.className = "rounded bg-slate-50 p-3 dark:bg-slate-800";
       const key = document.createElement("p");
       key.className = "text-xs text-slate-400";
       key.textContent = label;
@@ -1143,6 +1151,12 @@ function importUsers() {
     $$("[data-close-detail]").forEach((button) =>
       button.addEventListener("click", () => $("#detailDialog")?.close()),
     );
+    // Live updates: refresh the directory when other users change data.
+    document.addEventListener("digitech:sync", () => {
+      if (!window.DG_SYNC?.idle()) return;
+      users = get(usersKey);
+      render();
+    });
     lucide.createIcons();
     render();
   }

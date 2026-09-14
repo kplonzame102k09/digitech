@@ -19,12 +19,12 @@
         @include('admin.components.header')
         <main class="p-4 sm:p-6 lg:p-8">
             <div class="mx-auto max-w-7xl">
-                <section class="mb-7 student-hero mb-7 p-6 sm:p-8">
-                    <p class="text-xs font-bold uppercase tracking-[0.18em] text-blue-600">Enrollment operations</p>
+                <section class="mb-2 p-6 sm:p-8">
+                    <p class="text-xs font-bold uppercase tracking-[0.18em] text-blue-600 dark:text-blue-400">Enrollment operations</p>
                     <div class="mt-2 flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
                         <div>
                             <h2 class="text-3xl font-extrabold tracking-tight">Requirements management</h2>
-                            <p class="mt-2 max-w-2xl text-white">Assign checklists and review student submissions.</p>
+                            <p class="mt-2 max-w-2xl text-slate-500">Assign checklists and review student submissions.</p>
                         </div>
                         <span class="teacher-page-chip">
                             <i data-lucide="shield-check" class="h-4 w-4"></i>
@@ -32,29 +32,29 @@
                         </span>
                     </div>
                 </section>
-                <section class="teacher-toolbar card mb-6 p-5 sm:p-6">
+                <section class="mb-6 p-5 sm:p-6">
                     <div class="mb-5">
-                        <p class="text-xs font-bold uppercase tracking-[0.16em] text-amber-600">Enrollment operations</p>
+                        <p class="text-xs font-bold uppercase tracking-[0.16em] text-amber-600 dark:text-amber-400">Enrollment operations</p>
                         <h3 class="mt-1 text-xl font-extrabold">Assign a requirement</h3>
-                        <p class="mt-1 text-sm text-slate-500">Create a clear checklist item and route it to a learner.</p>
+                        <p class="mt-1 text-sm text-slate-500 dark:text-slate-400">Create a clear checklist item and route it to a learner.</p>
                     </div>
                     <form id="requirementForm" class="grid gap-4 md:grid-cols-3">
                         <label class="text-sm font-semibold">
                             Requirement name
-                            <input id="name" class="input mt-1.5 w-full rounded-xl border px-3 py-3" placeholder="e.g. Birth Certificate" required>
+                            <input id="name" class="input mt-1.5 w-full rounded border px-3 py-3" placeholder="e.g. Birth Certificate" required>
                         </label>
                         <label class="text-sm font-semibold">
                             Student
-                            <select id="student" class="input mt-1.5 w-full rounded-xl border px-3 py-3" required>
+                            <select id="student" class="input mt-1.5 w-full rounded border px-3 py-3" required>
                                 <option value="">Select a student</option>
                             </select>
                         </label>
                         <label class="text-sm font-semibold">
                             Due date
-                            <input id="dueDate" type="date" class="input mt-1.5 w-full rounded-xl border px-3 py-3">
+                            <input id="dueDate" type="date" class="input mt-1.5 w-full rounded border px-3 py-3">
                         </label>
                         <div class="flex justify-end md:col-span-3">
-                            <button class="rounded-xl bg-emerald-600 px-5 py-3 text-sm font-semibold text-white">
+                            <button class="rounded bg-emerald-600 px-5 py-3 text-sm font-semibold text-white">
                                 Assign requirement
                             </button>
                         </div>
@@ -86,12 +86,12 @@
     </div>
     <div id="modalRoot"></div>
     <template id="auditRowTemplate">
-        <div class="rounded-xl bg-slate-50 p-3 dark:bg-slate-800">
+        <div class="rounded bg-slate-50 p-3 dark:bg-slate-800">
             <div class="flex justify-between gap-2">
                 <b data-audit-title class="text-sm"></b>
                 <time data-audit-date class="text-[11px] text-slate-400"></time>
             </div>
-            <p data-audit-meta class="mt-1 text-xs text-slate-500"></p>
+            <p data-audit-meta class="mt-1 text-xs text-slate-500 dark:text-slate-400"></p>
             <p data-audit-notes class="mt-1 text-xs"></p>
         </div>
     </template>

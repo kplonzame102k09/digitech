@@ -19,9 +19,9 @@
         @include('teacher.components.header')
         <main class="p-4 sm:p-6 lg:p-8">
             <div class="mx-auto max-w-7xl">
-                <section class="teacher-hero mb-7 overflow-hidden rounded-3xl p-6 text-white shadow-xl sm:p-8">
+                <section class="mb-7 overflow-hidden rounded-3xl p-6 sm:p-8">
                     <div class="relative z-10">
-                        <div class="mb-4 flex items-center gap-2 text-xs font-bold uppercase tracking-[0.2em] text-emerald-100">
+                        <div class="mb-4 flex items-center gap-2 text-xs font-bold uppercase tracking-[0.2em] text-emerald-600">
                             <span class="h-2 w-2 rounded-full bg-emerald-300"></span>
                             Faculty workspace
                         </div>
@@ -29,18 +29,20 @@
                             Welcome back, 
                             <span id="name"></span>.
                         </h2>
-                        <p class="mt-3 max-w-xl text-sm leading-6 text-white">
+                        <p class="mt-3 max-w-xl text-sm leading-6 text-slate-500">
                             Stay on top of your assigned learners, review records that need attention, and keep assessments moving forward.
                         </p>
                     </div>
-                    <div class="teacher-hero-glow"></div>
                 </section>
-                <div class="mb-6 flex flex-wrap items-center gap-2 rounded-2xl border border-slate-200 bg-white p-3 dark:border-slate-700 dark:bg-slate-900">
-                    <a href="{{ route('teacher.students') }}" class="inline-flex items-center gap-2 rounded-xl border border-slate-200 px-4 py-3 text-sm font-semibold dark:border-slate-700">
+                <div class="mb-6 flex flex-wrap items-center justify-end gap-2">
+                    <a href="{{ route('teacher.students') }}"
+                    class="inline-flex items-center gap-2 rounded border border-slate-200 px-4 py-3 text-sm font-semibold dark:border-slate-700">
                         <i data-lucide="users-round" class="h-4 w-4"></i>
                         View roster
                     </a>
-                    <a href="{{ route('teacher.competencies') }}" class="inline-flex items-center gap-2 rounded-xl bg-emerald-600 px-4 py-3 text-sm font-semibold text-white hover:bg-emerald-700">
+
+                    <a href="{{ route('teacher.competencies') }}"
+                    class="inline-flex items-center gap-2 rounded bg-emerald-600 px-4 py-3 text-sm font-semibold text-white hover:bg-emerald-700">
                         <i data-lucide="clipboard-pen-line" class="h-4 w-4"></i>
                         Assessments
                     </a>
@@ -50,13 +52,13 @@
                     <div class="card p-5 sm:p-6">
                         <div class="flex items-start justify-between gap-4">
                             <div>
-                                <p class="text-xs font-bold uppercase tracking-[0.16em] text-emerald-600">Your roster
+                                <p class="text-xs font-bold uppercase tracking-[0.16em] text-emerald-600 dark:text-emerald-400">Your roster
                                 </p>
                                 <h3 class="mt-1 text-xl font-extrabold">Assigned students</h3>
                                 <p class="mt-1 text-sm text-white">Learners connected to your teaching assignments.
                                 </p>
                             </div>
-                            <a href="{{ route('teacher.students') }}" class="inline-flex items-center gap-1 text-sm font-bold text-emerald-700">
+                            <a href="{{ route('teacher.students') }}" class="inline-flex items-center gap-1 text-sm font-bold text-emerald-700 dark:text-emerald-300">
                                 View all
                                 <i data-lucide="arrow-up-right" class="h-4 w-4"></i>
                             </a>
@@ -65,9 +67,9 @@
                     </div>
                     <div class="card p-5 sm:p-6">
                         <div>
-                            <p class="text-xs font-bold uppercase tracking-[0.16em] text-violet-600">Action center</p>
+                            <p class="text-xs font-bold uppercase tracking-[0.16em] text-violet-600 dark:text-violet-400">Action center</p>
                             <h3 class="mt-1 text-xl font-extrabold">Review queue</h3>
-                            <p class="mt-1 text-sm text-slate-500">Items that may need your attention today.</p>
+                            <p class="mt-1 text-sm text-slate-500 dark:text-slate-400">Items that may need your attention today.</p>
                         </div>
                         <div id="dashboardQueue" class="mt-5 space-y-2"></div>
                     </div>

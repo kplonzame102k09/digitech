@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Student;
 
 use App\Http\Controllers\Controller;
+use App\Models\AuditLog;
 use App\Models\Classroom;
 use App\Models\ClassroomActivity;
 use App\Models\ClassroomSubmission;
@@ -101,6 +102,14 @@ class ClassroomWorkController extends Controller
                 'submittedAt' => now(),
             ]);
         }
+
+        AuditLog::record([
+            'entity' => AuditLog::ENTITY_SUBMISSION,
+            'recordId' => (string) $submission->id,
+            'action' => 'submission.submitted',
+            'notes' => "Submitted {$activity->title} in {$classroom->name}.",
+            'actorId' => $user->user_id,
+        ]);
 
         return response()->json(['ok' => true, 'submission' => [
             'id' => $submission->id,

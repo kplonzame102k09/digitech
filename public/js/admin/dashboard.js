@@ -326,9 +326,7 @@
     });
   }
 
-  function init() {
-    const admin = AUTH.requireRole("admin");
-    if (!admin) return;
+  function refresh() {
     const users = DG.getData("users", []);
     const enrollments = DG.getData("enrollments", []);
     const documents = DG.getData("documentRequests", []);
@@ -336,19 +334,6 @@
     const competencies = DG.getData("competencies", []);
     const notifications = DG.getData("notifications", []);
     const attendance = DG.getData("attendance", []);
-    DG.loadProfileElements();
-    APP.applyTheme();
-    APP.updateNotif();
-    lucide.createIcons();
-    $("#open")?.addEventListener("click", () =>
-      $("#side")?.classList.toggle("-translate-x-full"),
-    );
-    $$("[data-theme-toggle]").forEach((button) =>
-      button.addEventListener("click", () => APP.toggleTheme()),
-    );
-    $$("[data-logout]").forEach((button) =>
-      button.addEventListener("click", () => AUTH.logout()),
-    );
     const pendingEnrollments = enrollments.filter((record) =>
       ["Submitted", "Under Review", "Draft"].includes(record.status),
     );
@@ -385,6 +370,33 @@
     renderRecent(enrollments, users);
     renderAttendance(attendance);
     renderAnnouncements(DG.getData("announcements", []));
+    lucide.createIcons();
+  }
+
+  function init() {
+    const admin = AUTH.requireRole("admin");
+    if (!admin) return;
+    const users = DG.getData("users", []);
+    const enrollments = DG.getData("enrollments", []);
+    const documents = DG.getData("documentRequests", []);
+    const grades = DG.getData("grades", []);
+    const competencies = DG.getData("competencies", []);
+    const notifications = DG.getData("notifications", []);
+    const attendance = DG.getData("attendance", []);
+    DG.loadProfileElements();
+    APP.applyTheme();
+    APP.updateNotif();
+    lucide.createIcons();
+    $("#open")?.addEventListener("click", () =>
+      $("#side")?.classList.toggle("-translate-x-full"),
+    );
+    $$("[data-theme-toggle]").forEach((button) =>
+      button.addEventListener("click", () => APP.toggleTheme()),
+    );
+    $$("[data-logout]").forEach((button) =>
+      button.addEventListener("click", () => AUTH.logout()),
+    );
+    refresh();
     broadcast(parent, users);
     $("[data-focus-broadcast]")?.addEventListener("click", () =>
       $("#broadcastSection")?.scrollIntoView({
@@ -392,6 +404,12 @@
         block: "start",
       }),
     );
+    // Live updates: refresh stats and queues when other users change data.
+    // The broadcast composer is never touched, so a half-typed message survives.
+    document.addEventListener("digitech:sync", () => {
+      if (!window.DG_SYNC?.idle()) return;
+      refresh();
+    });
     lucide.createIcons();
   }
 

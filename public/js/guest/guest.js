@@ -25,12 +25,12 @@
     const warn = ["Pending", "Submitted", "Under Review", "Processing", "Draft", "Late", "In Progress"].includes(status);
     const bad = ["Rejected", "Absent", "Failed", "Not Yet Competent"].includes(status);
     const cls = ok
-      ? "bg-emerald-50 text-emerald-700"
+      ? "bg-emerald-50 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-300"
       : warn
-        ? "bg-amber-50 text-amber-700"
+        ? "bg-amber-50 text-amber-700 dark:bg-amber-950/40 dark:text-amber-300"
         : bad
-          ? "bg-rose-50 text-rose-700"
-          : "bg-slate-100 text-slate-600";
+          ? "bg-rose-50 text-rose-700 dark:bg-rose-950/40 dark:text-rose-300"
+          : "bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-300";
     return `<span class="inline-flex rounded-full px-2.5 py-1 text-[11px] font-semibold ${cls}">${esc(status || "—")}</span>`;
   };
 
@@ -76,7 +76,7 @@
                 </tr>`,
             )
             .join("")
-        : `<tr><td colspan="4" class="p-8 text-center text-slate-500">No document requests yet.</td></tr>`;
+        : `<tr><td colspan="4" class="p-8 text-center text-slate-500 dark:text-slate-400">No document requests yet.</td></tr>`;
     }
 
     $("#docForm")?.addEventListener("submit", async (event) => {
@@ -192,4 +192,10 @@
     if (page() === "profile") renderProfile();
     lucide.createIcons();
   })();
+  // Live updates: re-render the current guest page when data changes elsewhere.
+  document.addEventListener("digitech:sync", () => {
+    if (!window.DG_SYNC?.idle()) return;
+    if (page() === "documents") renderDocuments();
+    if (page() === "profile") renderProfile();
+  });
 })();

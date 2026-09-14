@@ -54,7 +54,7 @@
   function setTab(tab) {
     $$("[data-tab]").forEach((button) => {
       const active = button.dataset.tab === tab;
-      button.className = `programs-tab rounded-xl px-4 py-2.5 text-sm font-semibold ${
+      button.className = `programs-tab rounded px-4 py-2.5 text-sm font-semibold ${
         active
           ? "bg-slate-900 text-white dark:bg-slate-100 dark:text-slate-900"
           : "text-slate-600 hover:bg-slate-100 dark:text-slate-300 dark:hover:bg-slate-800"
@@ -103,7 +103,7 @@
       const nameInput = document.createElement("input");
       nameInput.value = row.name;
       nameInput.placeholder = "Strand or track name";
-      nameInput.className = "input w-full rounded-xl border px-3 py-2";
+      nameInput.className = "input w-full rounded border px-3 py-2";
       nameInput.addEventListener("input", () => {
         row.name = nameInput.value;
       });
@@ -112,7 +112,7 @@
       const catTd = document.createElement("td");
       catTd.className = "p-3 align-top";
       const catSelect = document.createElement("select");
-      catSelect.className = "input w-full rounded-xl border px-3 py-2";
+      catSelect.className = "input w-full rounded border px-3 py-2";
       PROGRAM_CATEGORIES.forEach((category) => {
         const option = document.createElement("option");
         option.value = category;
@@ -130,7 +130,7 @@
       const descInput = document.createElement("input");
       descInput.value = row.description;
       descInput.placeholder = "Short description";
-      descInput.className = "input w-full rounded-xl border px-3 py-2";
+      descInput.className = "input w-full rounded border px-3 py-2";
       descInput.addEventListener("input", () => {
         row.description = descInput.value;
       });
@@ -142,7 +142,7 @@
       remove.type = "button";
       remove.title = "Remove entry";
       remove.className =
-        "rounded-lg p-2 text-slate-400 hover:text-rose-600 dark:hover:text-rose-400";
+        "rounded p-2 text-slate-400 hover:text-rose-600 dark:hover:text-rose-400";
       remove.innerHTML = '<i data-lucide="trash-2" class="h-4 w-4"></i>';
       remove.addEventListener("click", () => {
         settings.programs.splice(index, 1);
@@ -175,7 +175,7 @@
       const nameInput = document.createElement("input");
       nameInput.value = row.name;
       nameInput.placeholder = "Qualification name";
-      nameInput.className = "input w-full rounded-xl border px-3 py-2";
+      nameInput.className = "input w-full rounded border px-3 py-2";
       nameInput.addEventListener("input", () => {
         row.name = nameInput.value;
       });
@@ -186,7 +186,7 @@
       const levelsInput = document.createElement("input");
       levelsInput.value = (row.levels || []).join(", ");
       levelsInput.placeholder = "e.g. NC I, NC II";
-      levelsInput.className = "input w-full rounded-xl border px-3 py-2";
+      levelsInput.className = "input w-full rounded border px-3 py-2";
       levelsInput.addEventListener("input", () => {
         row.levels = parseLevels(levelsInput.value);
       });
@@ -197,7 +197,7 @@
       const descInput = document.createElement("input");
       descInput.value = row.description;
       descInput.placeholder = "Short description";
-      descInput.className = "input w-full rounded-xl border px-3 py-2";
+      descInput.className = "input w-full rounded border px-3 py-2";
       descInput.addEventListener("input", () => {
         row.description = descInput.value;
       });
@@ -209,7 +209,7 @@
       remove.type = "button";
       remove.title = "Remove qualification";
       remove.className =
-        "rounded-lg p-2 text-slate-400 hover:text-rose-600 dark:hover:text-rose-400";
+        "rounded p-2 text-slate-400 hover:text-rose-600 dark:hover:text-rose-400";
       remove.innerHTML = '<i data-lucide="trash-2" class="h-4 w-4"></i>';
       remove.addEventListener("click", () => {
         settings.tvetQualifications.splice(index, 1);
@@ -391,6 +391,16 @@
     renderPrograms();
     renderQualifications();
     renderStats();
+    // Live updates: refresh the catalogue when it changes elsewhere.
+    document.addEventListener("digitech:sync", () => {
+      if (!window.DG_SYNC?.idle()) return;
+      settings = get("settings", {});
+      normalizePrograms();
+      normalizeQualifications();
+      renderPrograms();
+      renderQualifications();
+      renderStats();
+    });
     lucide.createIcons();
   }
 

@@ -324,7 +324,7 @@
       ["Current status", record.status || "Not Started"],
     ].forEach(([label, value]) => {
       const box = document.createElement("div");
-      box.className = "rounded-xl bg-slate-50 p-3 dark:bg-slate-800";
+      box.className = "rounded bg-slate-50 p-3 dark:bg-slate-800";
       const key = document.createElement("p");
       key.className = "text-xs text-slate-400";
       key.textContent = label;
@@ -507,6 +507,13 @@
     $$("[data-close-competency]").forEach((button) =>
       button.addEventListener("click", () => $("#competencyDialog")?.close()),
     );
+    // Live updates: refresh when other users change competency data.
+    document.addEventListener("digitech:sync", () => {
+      if (!window.DG_SYNC?.idle()) return;
+      users = get("users");
+      competencies = get("competencies");
+      render();
+    });
     render();
   }
   window.ADMIN_COMPETENCIES = { init };

@@ -19,13 +19,13 @@
         @include('student.components.header')
         <main class="p-4 sm:p-6 lg:p-8">
             <div class="mx-auto max-w-7xl">
-                <section class="student-hero mb-7 p-6 sm:p-8">
+                <section class="mb-7 p-6 sm:p-8">
                     <div class="relative z-10 flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
                         <div>
                             <p class="text-xs font-bold uppercase tracking-[0.2em] text-emerald-100">Enrollment
                                 checklist</p>
                             <h2 class="mt-2 text-3xl font-extrabold sm:text-4xl">Complete your requirements</h2>
-                            <p class="mt-3 max-w-2xl text-sm leading-6 text-white">
+                            <p class="mt-3 max-w-2xl text-sm leading-6 text-slate-500">
                                 Track each required item and mark it submitted when ready for registrar review.
                             </p>
                         </div>
@@ -39,26 +39,26 @@
                     <div class="portal-stat card p-5"><span
                             class="portal-stat-icon bg-blue-50 text-blue-600 dark:bg-blue-950/50 dark:text-blue-300"><i
                                 data-lucide="list-checks"></i></span>
-                        <p class="mt-4 text-sm text-slate-500">Total requirements</p>
+                        <p class="mt-4 text-sm text-slate-500 dark:text-slate-400">Total requirements</p>
                         <p id="reqTotal" class="mt-1 text-3xl font-extrabold">0</p>
                     </div>
                     <div class="portal-stat card p-5"><span
                             class="portal-stat-icon bg-amber-50 text-amber-600 dark:bg-amber-950/50 dark:text-amber-300"><i
                                 data-lucide="clock-3"></i></span>
-                        <p class="mt-4 text-sm text-slate-500">Pending upload</p>
-                        <p id="reqPending" class="mt-1 text-3xl font-extrabold text-amber-600">0</p>
+                        <p class="mt-4 text-sm text-slate-500 dark:text-slate-400">Pending upload</p>
+                        <p id="reqPending" class="mt-1 text-3xl font-extrabold text-amber-600 dark:text-amber-400">0</p>
                     </div>
                     <div class="portal-stat card p-5"><span
                             class="portal-stat-icon bg-emerald-50 text-emerald-600 dark:bg-emerald-950/50 dark:text-emerald-300"><i
                                 data-lucide="check-check"></i></span>
-                        <p class="mt-4 text-sm text-slate-500">Submitted</p>
-                        <p id="reqSubmitted" class="mt-1 text-3xl font-extrabold text-emerald-600">0</p>
+                        <p class="mt-4 text-sm text-slate-500 dark:text-slate-400">Submitted</p>
+                        <p id="reqSubmitted" class="mt-1 text-3xl font-extrabold text-emerald-600 dark:text-emerald-400">0</p>
                     </div>
                 </section>
                 <section class="card overflow-hidden">
                     <div class="border-b border-slate-200 px-5 py-4 dark:border-slate-800">
                         <div class="flex items-center gap-3"><span
-                                class="flex h-10 w-10 items-center justify-center rounded-xl bg-amber-50 text-amber-600 dark:bg-amber-950/50 dark:text-amber-300"><i
+                                class="flex h-10 w-10 items-center justify-center rounded bg-amber-50 text-amber-600 dark:bg-amber-950/50 dark:text-amber-300"><i
                                     data-lucide="folder-check"></i></span>
                             <div>
                                 <h3 class="font-extrabold">Required documents</h3>

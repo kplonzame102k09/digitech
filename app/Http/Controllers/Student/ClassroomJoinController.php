@@ -6,6 +6,8 @@ use App\Http\Controllers\Controller;
 use App\Models\AuditLog;
 use App\Models\Classroom;
 use App\Models\Enrollment;
+use App\Models\Notification;
+use App\Models\SystemSetting;
 use App\Models\User;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -137,6 +139,17 @@ class ClassroomJoinController extends Controller
                 'actorId' => $user->user_id,
                 'notes' => "Student {$user->user_id} joined {$classroom->name}",
             ]);
+
+            if ((bool) (SystemSetting::getInstance()->notifyTeachers ?? true)) {
+                $studentName = trim($user->firstName.' '.$user->lastName) ?: $user->user_id;
+                Notification::alert(
+                    (string) $classroom->teacherId,
+                    'New student joined',
+                    "{$studentName} joined {$classroom->name}.",
+                    'enrollment',
+                    (string) $classroom->id,
+                );
+            }
         }
 
         return response()->json([

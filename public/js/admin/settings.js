@@ -217,7 +217,7 @@
     };
     Object.entries(labels).forEach(([key, label]) => {
       const box = document.createElement("div");
-      box.className = "rounded-xl bg-slate-50 p-3 dark:bg-slate-800";
+      box.className = "rounded bg-slate-50 p-3 dark:bg-slate-800";
       const name = document.createElement("p");
       name.className = "text-xs text-slate-400";
       name.textContent = label;
@@ -317,6 +317,14 @@
     $("[data-export-backup]")?.addEventListener("click", exportBackup);
     $("#backupFile")?.addEventListener("change", importBackup);
     $("#resetSelectedBtn")?.addEventListener("click", resetSelected);
+    // Live updates: refresh read-only panels only — never hydrate(), so a
+    // half-filled settings form is never wiped by someone else's change.
+    document.addEventListener("digitech:sync", () => {
+      if (!window.DG_SYNC?.idle()) return;
+      settings = get("settings", {});
+      renderHealth();
+      renderAudit();
+    });
     renderHealth();
     renderAudit();
     lucide.createIcons();

@@ -23,8 +23,8 @@
     get("competencies", []).filter((r) => r.teacherId === teacher.id || r.assessorId === teacher.id || r.assessor === userName(teacher)).forEach((r) => ids.add(r.studentId));
     return students().filter((s) => ids.has(s.id));
   };
-  const notify = (userIds, title, message, source = "portal") =>
-    APP.notifyUsers(userIds || [], title, message, source);
+  const notify = (userIds, title, message, source = "portal", recordId) =>
+    APP.notifyUsers(userIds || [], title, message, source, recordId);
   const parentIdsFor = (studentIds) => users().filter((u) => u.role === "parent" && [u.childId, ...(u.childIds || []), ...(u.children || [])].some((v) => studentIds.includes(typeof v === "object" ? v.id || v.studentId : v))).map((u) => u.id);
   const download = (name, text, type = "text/plain") => {
     const a = document.createElement("a"); a.href = URL.createObjectURL(new Blob([text], { type })); a.download = name; a.click(); setTimeout(() => URL.revokeObjectURL(a.href), 500);

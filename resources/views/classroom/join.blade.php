@@ -17,16 +17,16 @@
 <body class="flex min-h-screen items-center justify-center bg-slate-50 p-4 text-slate-800 dark:bg-slate-950 dark:text-slate-100">
     <div class="card w-full max-w-md p-6 text-center sm:p-8">
         <img src="{{ asset('images/16432.png') }}" alt="Digitech College" class="mx-auto h-14 w-14 rounded-2xl object-cover" />
-        <p class="mt-4 text-xs font-bold uppercase tracking-[0.18em] text-emerald-600">Classroom invite</p>
+        <p class="mt-4 text-xs font-bold uppercase tracking-[0.18em] text-emerald-600 dark:text-emerald-400">Classroom invite</p>
         <h2 id="joinName" class="mt-2 text-2xl font-extrabold">Loading…</h2>
-        <p id="joinMeta" class="mt-1 text-sm text-slate-500"></p>
+        <p id="joinMeta" class="mt-1 text-sm text-slate-500 dark:text-slate-400"></p>
         <p id="joinDesc" class="mt-3 text-sm text-slate-600 dark:text-slate-300"></p>
         <div id="joinError" role="alert"
-            class="mt-4 hidden rounded-xl bg-rose-50 px-4 py-3 text-sm font-medium text-rose-700 dark:bg-rose-950/30 dark:text-rose-300"></div>
+            class="mt-4 hidden rounded bg-rose-50 px-4 py-3 text-sm font-medium text-rose-700 dark:bg-rose-950/30 dark:text-rose-300"></div>
         <button id="joinBtn" type="button"
-            class="mt-6 hidden w-full rounded-xl bg-emerald-600 px-5 py-3 text-sm font-semibold text-white hover:bg-emerald-700">Join
+            class="mt-6 hidden w-full rounded bg-emerald-600 px-5 py-3 text-sm font-semibold text-white hover:bg-emerald-700">Join
             classroom</button>
-        <a href="/login" class="mt-4 inline-block text-sm font-semibold text-slate-500">Back to login</a>
+        <a href="/login" class="mt-4 inline-block text-sm font-semibold text-slate-500 dark:text-slate-400">Back to login</a>
     </div>
     <script>
         (function () {

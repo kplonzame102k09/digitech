@@ -50,6 +50,7 @@
           tab.classList.toggle("text-slate-900", active);
           tab.classList.toggle("dark:text-white", active);
           tab.classList.toggle("text-slate-500", !active);
+          tab.classList.toggle("dark:text-slate-400", !active);
           tab.setAttribute("aria-selected", active ? "true" : "false");
         });
         document.querySelectorAll("[data-detail-panel]").forEach((panel) => {
@@ -76,7 +77,7 @@
   function renderClassmates(classmates) {
     const grid = $("classmateGrid");
     if (!classmates.length) {
-      grid.innerHTML = `<div class="card p-8 text-center text-sm text-slate-500 md:col-span-2">No classmates yet.</div>`;
+      grid.innerHTML = `<div class="card p-8 text-center text-sm text-slate-500 md:col-span-2 dark:text-slate-400">No classmates yet.</div>`;
       return;
     }
     grid.innerHTML = classmates.map((s) => {
@@ -112,7 +113,7 @@
       items: activities.filter((a) => (a.term || "Prelim") === term),
     })).filter((g) => g.items.length);
     if (!groups.length) {
-      wrap.innerHTML = `<div class="card p-8 text-center text-sm text-slate-500">No activities yet.</div>`;
+      wrap.innerHTML = `<div class="card p-8 text-center text-sm text-slate-500 dark:text-slate-400">No activities yet.</div>`;
       return;
     }
     wrap.innerHTML = groups.map((g) => `
@@ -120,14 +121,14 @@
         <p class="text-xs font-bold uppercase tracking-wider text-slate-400">${g.term}</p>
         <div class="mt-3 space-y-3">${g.items.map((a) => {
           const sub = a.submission;
-          return `<div class="rounded-xl bg-slate-50 p-4 dark:bg-slate-800">
+          return `<div class="rounded bg-slate-50 p-4 dark:bg-slate-800">
             <b class="block">${esc(a.title)}</b>
-            ${a.description ? `<p class="mt-0.5 text-xs text-slate-500">${esc(a.description)}</p>` : ""}
+            ${a.description ? `<p class="mt-0.5 text-xs text-slate-500 dark:text-slate-400">${esc(a.description)}</p>` : ""}
             <p class="mt-1 text-[11px] text-slate-400">${a.dueDate ? `Due ${esc(a.dueDate)} · ` : ""}${sub ? `${esc(sub.status)}${sub.score !== null && sub.score !== undefined ? ` · score ${esc(sub.score)}` : ""}` : "Not submitted"}</p>
             <div class="mt-2 flex flex-col gap-2 sm:flex-row">
               <input type="file" data-file-for="${esc(a.id)}" accept=".pdf,image/jpeg,image/png,image/webp" class="text-xs" />
-              <input type="text" data-notes-for="${esc(a.id)}" maxlength="2000" placeholder="Notes (optional)" class="input flex-1 rounded-lg border px-2 py-1.5 text-xs" />
-              <button type="button" data-submit-activity="${esc(a.id)}" class="rounded-lg bg-emerald-600 px-3 py-1.5 text-xs font-semibold text-white">${sub ? "Re-submit" : "Submit"}</button>
+              <input type="text" data-notes-for="${esc(a.id)}" maxlength="2000" placeholder="Notes (optional)" class="input flex-1 rounded border px-2 py-1.5 text-xs" />
+              <button type="button" data-submit-activity="${esc(a.id)}" class="rounded bg-emerald-600 px-3 py-1.5 text-xs font-semibold text-white">${sub ? "Re-submit" : "Submit"}</button>
             </div>
           </div>`;
         }).join("")}</div>
@@ -142,7 +143,7 @@
     const body = $("scoreRows");
     const scored = activities.filter((a) => a.submission);
     if (!scored.length) {
-      body.innerHTML = `<tr><td colspan="5" class="p-8 text-center text-slate-500">No submissions yet — your scores will appear here.</td></tr>`;
+      body.innerHTML = `<tr><td colspan="5" class="p-8 text-center text-slate-500 dark:text-slate-400">No submissions yet — your scores will appear here.</td></tr>`;
       return;
     }
     body.innerHTML = scored.map((a) => {
@@ -150,9 +151,9 @@
       return `<tr class="border-t border-slate-100 dark:border-slate-800">
         <td class="p-4 font-semibold">${esc(a.title)}</td>
         <td class="p-4"><span class="rounded-full bg-violet-50 px-2 py-0.5 text-[11px] font-bold text-violet-700 dark:bg-violet-950/40 dark:text-violet-300">${esc(a.term || "Prelim")}</span></td>
-        <td class="p-4"><span class="inline-flex rounded-full px-2.5 py-1 text-xs font-semibold ${sub.status === "Graded" ? "bg-emerald-50 text-emerald-700" : sub.status === "Returned" ? "bg-amber-50 text-amber-700" : "bg-blue-50 text-blue-700"}">${esc(sub.status)}</span></td>
+        <td class="p-4"><span class="inline-flex rounded-full px-2.5 py-1 text-xs font-semibold ${sub.status === "Graded" ? "bg-emerald-50 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-300" : sub.status === "Returned" ? "bg-amber-50 text-amber-700 dark:bg-amber-950/40 dark:text-amber-300" : "bg-blue-50 text-blue-700 dark:bg-blue-950/40 dark:text-blue-300"}">${esc(sub.status)}</span></td>
         <td class="p-4 font-bold">${sub.score !== null && sub.score !== undefined ? esc(sub.score) : "—"}</td>
-        <td class="p-4 text-xs text-slate-500">${esc(sub.submittedAt ? String(sub.submittedAt).slice(0, 10) : "—")}</td>
+        <td class="p-4 text-xs text-slate-500 dark:text-slate-400">${esc(sub.submittedAt ? String(sub.submittedAt).slice(0, 10) : "—")}</td>
       </tr>`;
     }).join("");
   }
@@ -211,6 +212,7 @@
         isTeacher: false,
         listEl: document.getElementById("videoMeetings-student"),
         errorEl: document.getElementById("videoError-student"),
+        historyEl: document.getElementById("videoHistory-student"),
         overlayEl: section.querySelector("[data-video-overlay]"),
         gridEl: section.querySelector("[data-video-grid]"),
         statusEl: section.querySelector("[data-video-status]"),
@@ -222,4 +224,13 @@
   wireTabs();
   loadDetail();
   loadActivities();
+  // Live updates: refresh detail/activities/scores when idle and not in a
+  // call (loadActivities also refreshes scores).
+  document.addEventListener("digitech:tick", () => {
+    if (!window.DG_SYNC?.idle()) return;
+    const section = document.querySelector("[data-video-section]");
+    if (section && !section.querySelector("[data-video-overlay]")?.classList.contains("hidden")) return;
+    loadDetail();
+    loadActivities();
+  });
 })();

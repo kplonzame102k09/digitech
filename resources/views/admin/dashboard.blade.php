@@ -19,38 +19,38 @@
         @include('admin.components.header')
             <main class="p-4 sm:p-6 lg:p-8">
                 <div class="mx-auto max-w-7xl">
-                    <section class="student-hero mb-7 p-6 sm:p-8">
-                        <p class="text-sm font-semibold text-purple-600">Administration</p>
+                    <section class="mb-2 p-6 sm:p-8">
+                        <p class="text-sm font-semibold text-purple-600 dark:text-purple-400">Administration</p>
                         <h2 class="mt-1 text-3xl font-bold tracking-tight">
                             System Overview
                         </h2>
-                        <p class="mt-2 max-w-2xl text-white dark:text-slate-100">
+                        <p class="mt-2 max-w-2xl text-slate-500">
                             Monitor operations, resolve pending work, and communicate with the
                             college community.
                         </p>
                     </section>
                     <div class="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
                         <div class="card p-5">
-                            <i data-lucide="graduation-cap" class="text-green-600"></i>
-                            <p class="mt-4 text-sm text-slate-500">Total Students</p>
+                            <i data-lucide="graduation-cap" class="text-green-600 dark:text-green-400"></i>
+                            <p class="mt-4 text-sm text-slate-500 dark:text-slate-400">Total Students</p>
                             <b id="students" class="text-2xl"></b>
                         </div>
                         <div class="card p-5">
-                            <i data-lucide="presentation" class="text-blue-600"></i>
-                            <p class="mt-4 text-sm text-slate-500">Total Teachers</p>
+                            <i data-lucide="presentation" class="text-blue-600 dark:text-blue-400"></i>
+                            <p class="mt-4 text-sm text-slate-500 dark:text-slate-400">Total Teachers</p>
                             <b id="teachers" class="text-2xl"></b>
                         </div>
                         <div class="card p-5">
-                            <i data-lucide="clipboard-list" class="text-amber-600"></i>
-                            <p class="mt-4 text-sm text-slate-500">Pending Enrollments</p>
+                            <i data-lucide="clipboard-list" class="text-amber-600 dark:text-amber-400"></i>
+                            <p class="mt-4 text-sm text-slate-500 dark:text-slate-400">Pending Enrollments</p>
                             <b id="enrollments" class="text-2xl"></b>
-                            <a href="{{ route('admin.enrollment') }}" class="mt-2 inline-flex text-xs font-semibold text-green-700">Review queue →</a>
+                            <a href="{{ route('admin.enrollment') }}" class="mt-2 inline-flex text-xs font-semibold text-green-700 dark:text-green-300">Review queue →</a>
                         </div>
                         <div class="card p-5">
-                            <i data-lucide="file-text" class="text-purple-600"></i>
-                            <p class="mt-4 text-sm text-slate-500">Pending Documents</p>
+                            <i data-lucide="file-text" class="text-purple-600 dark:text-purple-400"></i>
+                            <p class="mt-4 text-sm text-slate-500 dark:text-slate-400">Pending Documents</p>
                             <b id="docs" class="text-2xl"></b>
-                            <a href="{{ route('admin.documents') }}" class="mt-2 inline-flex text-xs font-semibold text-green-700">Review queue →</a>
+                            <a href="{{ route('admin.documents') }}" class="mt-2 inline-flex text-xs font-semibold text-green-700 dark:text-green-300">Review queue →</a>
                         </div>
                     </div>
                     <section class="mt-6">
@@ -64,35 +64,35 @@
                         </div>
                         <div class="grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
                             <a href="{{ route('admin.users') }}" class="card flex items-center gap-3 p-4">
-                                <i data-lucide="user-plus" class="h-5 w-5 text-blue-600"></i>
+                                <i data-lucide="user-plus" class="h-5 w-5 text-blue-600 dark:text-blue-400"></i>
                                 <span>
                                     <b class="block text-sm">Manage users</b>
                                     <small class="text-xs text-slate-400">Create or review accounts</small>
                                 </span>
                             </a>
                             <a href="{{ route('admin.enrollment') }}" class="card flex items-center gap-3 p-4">
-                                <i data-lucide="clipboard-check" class="h-5 w-5 text-amber-600"></i>
+                                <i data-lucide="clipboard-check" class="h-5 w-5 text-amber-600 dark:text-amber-400"></i>
                                 <span>
                                     <b class="block text-sm">Review enrollment</b>
                                     <small class="text-xs text-slate-400">Process pending records</small>
                                 </span>
                             </a>
                             <a href="{{ route('admin.documents') }}" class="card flex items-center gap-3 p-4">
-                                <i data-lucide="file-check-2" class="h-5 w-5 text-purple-600"></i>
+                                <i data-lucide="file-check-2" class="h-5 w-5 text-purple-600 dark:text-purple-400"></i>
                                 <span>
                                     <b class="block text-sm"> Process documents</b>
                                     <small class="text-xs text-slate-400">Update request status</small>
                                 </span>
                             </a>
                             <a href="{{ route('admin.grades') }}" class="card flex items-center gap-3 p-4">
-                                <i data-lucide="chart-no-axes-combined" class="h-5 w-5 text-green-600"></i>
+                                <i data-lucide="chart-no-axes-combined" class="h-5 w-5 text-green-600 dark:text-green-400"></i>
                                 <span>
                                     <b class="block text-sm">Review grades</b>
                                     <small class="text-xs text-slate-400">Monitor academic records</small>
                                 </span>
                             </a>
                             <button type="button" data-focus-broadcast class="card flex items-center gap-3 p-4 text-left">
-                                <i data-lucide="send" class="h-5 w-5 text-rose-600"></i>
+                                <i data-lucide="send" class="h-5 w-5 text-rose-600 dark:text-rose-400"></i>
                                 <span>
                                     <b class="block text-sm">Broadcast notice</b>
                                     <small class="text-xs text-slate-400">Message the community</small>
@@ -109,10 +109,10 @@
                                         Records waiting for administrator action.
                                     </p>
                                 </div>
-                                <a href="{{ route('admin.enrollment') }}" class="text-sm font-semibold text-green-700">View all</a>
+                                <a href="{{ route('admin.enrollment') }}" class="text-sm font-semibold text-green-700 dark:text-green-300">View all</a>
                             </div>
                             <div id="enrollmentQueue" class="divide-y divide-slate-100 dark:divide-slate-800"></div>
-                            <p id="enrollmentQueueEmpty" class="hidden p-6 text-sm text-slate-500">
+                            <p id="enrollmentQueueEmpty" class="hidden p-6 text-sm text-slate-500 dark:text-slate-400">
                                 No pending enrollment records.
                             </p>
                         </section>
@@ -124,10 +124,10 @@
                                         Requests that need review or processing.
                                     </p>
                                 </div>
-                                <a href="{{ route('admin.documents') }}" class="text-sm font-semibold text-green-700">View all</a>
+                                <a href="{{ route('admin.documents') }}" class="text-sm font-semibold text-green-700 dark:text-green-300">View all</a>
                             </div>
                             <div id="documentQueue" class="divide-y divide-slate-100 dark:divide-slate-800"></div>
-                            <p id="documentQueueEmpty" class="hidden p-6 text-sm text-slate-500">
+                            <p id="documentQueueEmpty" class="hidden p-6 text-sm text-slate-500 dark:text-slate-400">
                                 No pending document requests.
                             </p>
                         </section>
@@ -147,21 +147,21 @@
                                 </span>
                             </div>
                             <div class="mt-5 grid grid-cols-3 gap-3">
-                                <div class="rounded-xl bg-green-50 p-3 dark:bg-green-950/50">
+                                <div class="rounded bg-green-50 p-3 dark:bg-green-950/50">
                                     <p class="text-xs text-green-700 dark:text-green-300"> Present </p>
                                     <b id="attendancePresent" class="mt-1 block text-xl"></b>
                                 </div>
-                                <div class="rounded-xl bg-amber-50 p-3 dark:bg-amber-950/50">
+                                <div class="rounded bg-amber-50 p-3 dark:bg-amber-950/50">
                                     <p class="text-xs text-amber-700 dark:text-amber-300">Late</p>
                                     <b id="attendanceLate" class="mt-1 block text-xl"></b>
                                 </div>
-                                <div class="rounded-xl bg-rose-50 p-3 dark:bg-rose-950/50">
+                                <div class="rounded bg-rose-50 p-3 dark:bg-rose-950/50">
                                     <p class="text-xs text-rose-700 dark:text-rose-300">Absent</p>
                                     <b id="attendanceAbsent" class="mt-1 block text-xl"></b>
                                 </div>
                             </div>
                             <div id="attendanceBars" class="mt-6 flex h-36 items-end gap-2 border-b border-slate-200 pb-1 dark:border-slate-800"></div>
-                            <p id="attendanceEmpty" class="hidden mt-5 text-sm text-slate-500">
+                            <p id="attendanceEmpty" class="hidden mt-5 text-sm text-slate-500 dark:text-slate-400">
                                 No attendance records have been entered yet.
                             </p>
                         </section>
@@ -182,7 +182,7 @@
                     </div>
                     <section id="broadcastSection" class="card mt-6 p-6">
                         <div class="flex items-start gap-3">
-                            <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-rose-50 text-rose-600 dark:bg-rose-950">
+                            <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded bg-rose-50 text-rose-600 dark:bg-rose-950 dark:text-rose-400">
                                 <i data-lucide="send" class="h-5 w-5"></i>
                             </span>
                             <div>
@@ -196,12 +196,12 @@
                         <form id="announcementForm" class="mt-6 grid gap-4 md:grid-cols-2">
                             <label class="text-sm font-semibold">
                                 Title
-                                <input id="announcementTitle" required maxlength="100" class="input mt-1.5 w-full rounded-xl border px-3 py-2.5"
+                                <input id="announcementTitle" required maxlength="100" class="input mt-1.5 w-full rounded border px-3 py-2.5"
                                     placeholder="e.g. Campus maintenance notice" />
                             </label>
                             <label class="text-sm font-semibold">
                                 Category
-                                <select id="announcementCategory" class="input mt-1.5 w-full rounded-xl border px-3 py-2.5">
+                                <select id="announcementCategory" class="input mt-1.5 w-full rounded border px-3 py-2.5">
                                     <option>General</option>
                                     <option>Academic</option>
                                     <option>Enrollment</option>
@@ -211,7 +211,7 @@
                             </label>
                             <label class="text-sm font-semibold">
                                 Audience
-                                <select id="announcementAudience" class="input mt-1.5 w-full rounded-xl border px-3 py-2.5">
+                                <select id="announcementAudience" class="input mt-1.5 w-full rounded border px-3 py-2.5">
                                     <option value="all">Everyone</option>
                                     <option value="student">Students</option>
                                     <option value="parent">Parents</option>
@@ -220,13 +220,13 @@
                             </label>
                             <label class="text-sm font-semibold md:col-span-2">
                                 Message
-                                <textarea id="announcementMessage" required maxlength="500" rows="4" class="input mt-1.5 w-full rounded-xl border px-3 py-2.5" placeholder="Write a clear, concise announcement..."></textarea>
+                                <textarea id="announcementMessage" required maxlength="500" rows="4" class="input mt-1.5 w-full rounded border px-3 py-2.5" placeholder="Write a clear, concise announcement..."></textarea>
                             </label>
                             <div class="flex flex-wrap items-center gap-3 md:col-span-2">
-                                <button type="submit" class="rounded-xl bg-rose-600 px-5 py-2.5 text-sm font-semibold text-white hover:bg-rose-700">
+                                <button type="submit" class="rounded bg-rose-600 px-5 py-2.5 text-sm font-semibold text-white hover:bg-rose-700">
                                     Publish announcement
                                 </button>
-                                <span id="announcementFeedback" class="text-xs text-slate-500"></span>
+                                <span id="announcementFeedback" class="text-xs text-slate-500 dark:text-slate-400"></span>
                             </div>
                         </form>
                     </section>
@@ -239,10 +239,10 @@
                                         Latest status changes across enrollment records.
                                     </p>
                                 </div>
-                                <a href="{{ route('admin.enrollment') }}" class="text-sm font-semibold text-green-700">Open records</a>
+                                <a href="{{ route('admin.enrollment') }}" class="text-sm font-semibold text-green-700 dark:text-green-300">Open records</a>
                             </div>
                             <div id="recent" class="mt-5 space-y-3"></div>
-                            <p id="recentEmpty" class="hidden mt-5 text-sm text-slate-500">
+                            <p id="recentEmpty" class="hidden mt-5 text-sm text-slate-500 dark:text-slate-400">
                                 No enrollment activity yet.
                             </p>
                         </section>
@@ -254,7 +254,7 @@
                                 </p>
                             </div>
                             <div id="recentAnnouncements" class="mt-5 space-y-3"></div>
-                            <p id="announcementsEmpty" class="hidden mt-5 text-sm text-slate-500">
+                            <p id="announcementsEmpty" class="hidden mt-5 text-sm text-slate-500 dark:text-slate-400">
                                 No announcements published yet.
                             </p>
                         </section>
@@ -271,24 +271,24 @@
                 </div>
                 <div class="flex shrink-0 items-center gap-3">
                     <span data-queue-status></span>
-                    <a data-queue-link class="text-xs font-semibold text-green-700">Review</a>
+                    <a data-queue-link class="text-xs font-semibold text-green-700 dark:text-green-300">Review</a>
                 </div>
             </div>
         </template>
         <template id="statRowTemplate">
             <div class="flex items-center justify-between text-sm">
-                <span data-stat-label class="text-slate-500"></span>
+                <span data-stat-label class="text-slate-500 dark:text-slate-400"></span>
                 <b data-stat-value></b>
             </div>
         </template>
         <template id="recentRowTemplate">
-            <div class="flex items-center justify-between rounded-xl bg-slate-50 p-3 dark:bg-slate-800">
+            <div class="flex items-center justify-between rounded bg-slate-50 p-3 dark:bg-slate-800">
                 <span data-recent-student class="text-sm font-semibold"></span>
                 <span data-recent-status></span>
             </div>
         </template>
         <template id="announcementRowTemplate">
-            <div class="rounded-xl bg-slate-50 p-3 dark:bg-slate-800">
+            <div class="rounded bg-slate-50 p-3 dark:bg-slate-800">
                 <div class="flex items-center justify-between gap-3">
                     <b data-announcement-title class="text-sm"></b>
                     <time data-announcement-date class="text-[11px] text-slate-400"></time>

@@ -41,12 +41,14 @@ class ClassroomController extends Controller
             // Subject is fixed per classroom: required at create, immutable after.
             'subject' => ['required', 'string', 'min:3', 'max:120'],
             'description' => ['nullable', 'string', 'max:2000'],
+            'sessionsPerDay' => ['nullable', 'integer', 'min:1', 'max:20'],
         ]);
 
         $classroom = Classroom::create([
             'teacherId' => $user->user_id,
             'name' => trim($validated['name']),
             'subject' => trim($validated['subject']),
+            'sessionsPerDay' => (int) ($validated['sessionsPerDay'] ?? 1),
             'description' => isset($validated['description']) ? trim($validated['description']) : null,
         ]);
 
@@ -96,6 +98,7 @@ class ClassroomController extends Controller
         $validated = $request->validate([
             'name' => ['sometimes', 'string', 'min:3', 'max:50', 'regex:/^[A-Za-z0-9][A-Za-z0-9 .,\'\/\-]{0,49}$/'],
             'description' => ['nullable', 'string', 'max:2000'],
+            'sessionsPerDay' => ['sometimes', 'integer', 'min:1', 'max:20'],
         ]);
 
         if (array_key_exists('name', $validated)) {
@@ -103,6 +106,9 @@ class ClassroomController extends Controller
         }
         if (array_key_exists('description', $validated)) {
             $classroom->description = $validated['description'] !== null ? trim($validated['description']) : null;
+        }
+        if (array_key_exists('sessionsPerDay', $validated)) {
+            $classroom->sessionsPerDay = (int) $validated['sessionsPerDay'];
         }
         $classroom->save();
 
@@ -147,6 +153,14 @@ class ClassroomController extends Controller
         $classroom->status = $classroom->isActive() ? Classroom::ARCHIVED : Classroom::ACTIVE;
         $classroom->save();
 
+        AuditLog::record([
+            'entity' => AuditLog::ENTITY_CLASSROOM,
+            'recordId' => (string) $classroom->id,
+            'action' => $classroom->isActive() ? 'classroom.reopened' : 'classroom.archived',
+            'notes' => "Classroom {$classroom->name} ".($classroom->isActive() ? 'reopened' : 'archived').'.',
+            'actorId' => $request->user()->user_id,
+        ]);
+
         return response()->json(['ok' => true, 'classroom' => $this->serialize($classroom)]);
     }
 
@@ -158,6 +172,14 @@ class ClassroomController extends Controller
         $student = User::query()->where('user_id', $studentId)->where('role', 'student')->firstOrFail();
         $classroom->students()->detach($student->id);
 
+        AuditLog::record([
+            'entity' => AuditLog::ENTITY_CLASSROOM,
+            'recordId' => (string) $classroom->id,
+            'action' => 'classroom.student_removed',
+            'notes' => "Student {$studentId} removed from {$classroom->name}.",
+            'actorId' => $request->user()->user_id,
+        ]);
+
         return response()->json(['ok' => true]);
     }
 
@@ -168,6 +190,7 @@ class ClassroomController extends Controller
             'teacherId' => $classroom->teacherId,
             'name' => $classroom->name,
             'subject' => $classroom->subject,
+            'sessionsPerDay' => (int) ($classroom->sessionsPerDay ?? 1),
             'description' => $classroom->description,
             'inviteCode' => $classroom->inviteCode,
             'inviteCodeFormatted' => Classroom::formatCode($classroom->inviteCode),

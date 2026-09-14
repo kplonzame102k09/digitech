@@ -19,7 +19,7 @@
     if (!body) return;
     body.innerHTML = rows.length
       ? rows.join("")
-      : `<tr><td colspan="8" class="p-8 text-center text-slate-500">${F.esc(empty)}</td></tr>`;
+      : `<tr><td colspan="8" class="p-8 text-center text-slate-500 dark:text-slate-400">${F.esc(empty)}</td></tr>`;
     lucide.createIcons();
   };
   const round = (num, decimals) => {
@@ -35,7 +35,70 @@
         ? F.students().map((s) => s.id)
         : [U.id];
     let scope = computeScope();
-    
+
+    // --- Per-classroom mode (teacher attendance page only; admin untouched) ---
+    // No backend change: uses existing GET /teacher/api/classrooms + detail.
+    // Classrooms deduped by id; a student may appear in many classrooms.
+    const classroomSection = $("#classroomSection");
+    const classroomGrid = $("#classroomGrid");
+    const classroomEmpty = $("#classroomEmpty");
+    const classroomError = $("#classroomError");
+    const classroomDetail = $("#classroomDetail");
+    const useClassrooms = isTeacher && !!classroomSection && !!classroomGrid && !!classroomDetail;
+    let classrooms = [];
+    let activeClassroom = null; // {id,name,subject,status,studentsCount,...}
+    let classroomRoster = []; // [{id,firstName,lastName,...}] union of members + legacy subject matches
+    const classroomApi = async (url, options = {}) => {
+      const token = document.querySelector('meta[name="csrf-token"]')?.content || "";
+      const response = await fetch(url, {
+        headers: { Accept: "application/json", "Content-Type": "application/json", "X-CSRF-TOKEN": token, "X-Requested-With": "XMLHttpRequest" },
+        credentials: "same-origin",
+        ...options,
+      });
+      const data = await response.json().catch(() => ({}));
+      if (!response.ok || data.ok === false) throw new Error(data.error || `Request failed (${response.status})`);
+      return data;
+    };
+    const dedupeById = (list) => {
+      const seen = new Map();
+      (list || []).forEach((c) => { if (c && c.id && !seen.has(String(c.id))) seen.set(String(c.id), c); });
+      return [...seen.values()];
+    };
+    const rosterDisplayName = (s) => F.userName(s) || s.id;
+    const classroomSearch = () => ($("#classroomStudentSearch")?.value || "").trim().toLowerCase();
+    // --- Daily sessions model: each classroom expects N marks per student per
+    // day (sessionsPerDay, teacher-set). Daily % = present slots ÷ N.
+    // Present-like statuses count as attended (matches analytics logic).
+    const sessionsPerDay = () => Math.max(1, Math.min(20, Number(activeClassroom?.sessionsPerDay) || 1));
+    const sheetDate = () => $("#sheetDate")?.value || new Date().toISOString().slice(0, 10);
+    const isAttended = (status) => status === "Present" || status === "Late" || status === "Excused";
+    const recordSession = (r) => Math.max(1, Number(r.session) || 1);
+    const belongsToClassroom = (r, classroom) => {
+      if (!classroom) return true;
+      if (String(r.classroomId || "") === String(classroom.id)) return true;
+      // Legacy rows predate classroomId: match by fixed subject instead.
+      return !r.classroomId && String(r.subject || "") === String(classroom.subject || "");
+    };
+    const dayRecords = (studentId, date) => {
+      const all = F.get("attendance", []);
+      return all.filter((r) =>
+        String(r.studentId) === String(studentId) &&
+        String(r.date || "") === String(date) &&
+        (!useClassrooms || !activeClassroom || belongsToClassroom(r, activeClassroom)),
+      );
+    };
+    const studentDayPct = (studentId, date) => {
+      const n = sessionsPerDay();
+      const marks = dayRecords(studentId, date);
+      let present = 0;
+      for (let k = 1; k <= n; k++) {
+        // Strict: only an explicit attended mark counts (missing = not present).
+        const rec = marks.find((r) => recordSession(r) === k);
+        if (rec && isAttended(rec.status)) present++;
+      }
+      return Math.round((present / n) * 100);
+    };
+    let sheetMarks = {}; // studentId -> [bool per session], rebuilt per renderSheet
     let attendanceChart = null;
     const setText = (id, value) => {
       const el = document.getElementById(id);
@@ -217,7 +280,7 @@
               : rate >= 60
                 ? "text-amber-600"
                 : "text-rose-600";
-            return `<div class="rounded-xl border border-slate-200 bg-slate-50 p-4 dark:border-slate-700 dark:bg-slate-800">
+            return `<div class="rounded border border-slate-200 bg-slate-50 p-4 dark:border-slate-700 dark:bg-slate-800">
               <div class="flex items-center gap-3 mb-3">
                 <span class="relative flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-violet-100 dark:bg-violet-950">
                   <span class="text-sm font-bold text-violet-700 dark:text-violet-300">${F.esc(initials)}</span>
@@ -229,24 +292,24 @@
                 </div>
               </div>
               <div class="grid grid-cols-2 gap-3 text-center">
-                <div class="rounded-lg bg-white p-2 dark:bg-slate-900">
+                <div class="rounded bg-white p-2 dark:bg-slate-900">
                   <p class="text-[10px] uppercase tracking-wider text-slate-400">Total Records</p>
                   <p class="text-lg font-bold text-slate-700 dark:text-slate-200">${total}</p>
                 </div>
-                <div class="rounded-lg bg-white p-2 dark:bg-slate-900">
+                <div class="rounded bg-white p-2 dark:bg-slate-900">
                   <p class="text-[10px] uppercase tracking-wider text-slate-400">Attendance Rate</p>
                   <p class="text-lg font-bold ${rateColor}">${rate}%</p>
                 </div>
               </div>
               <div class="mt-3 grid grid-cols-4 gap-2 text-center">
-                <div><p class="text-[10px] text-slate-400">Present</p><p class="text-sm font-semibold text-emerald-600">${stat.present ?? 0}</p></div>
-                <div><p class="text-[10px] text-slate-400">Absent</p><p class="text-sm font-semibold text-rose-600">${stat.absent ?? 0}</p></div>
-                <div><p class="text-[10px] text-slate-400">Late</p><p class="text-sm font-semibold text-amber-600">${stat.late ?? 0}</p></div>
-                <div><p class="text-[10px] text-slate-400">Excused</p><p class="text-sm font-semibold text-blue-600">${stat.excused ?? 0}</p></div>
+                <div><p class="text-[10px] text-slate-400">Present</p><p class="text-sm font-semibold text-emerald-600 dark:text-emerald-400">${stat.present ?? 0}</p></div>
+                <div><p class="text-[10px] text-slate-400">Absent</p><p class="text-sm font-semibold text-rose-600 dark:text-rose-400">${stat.absent ?? 0}</p></div>
+                <div><p class="text-[10px] text-slate-400">Late</p><p class="text-sm font-semibold text-amber-600 dark:text-amber-400">${stat.late ?? 0}</p></div>
+                <div><p class="text-[10px] text-slate-400">Excused</p><p class="text-sm font-semibold text-blue-600 dark:text-blue-400">${stat.excused ?? 0}</p></div>
               </div>
             </div>`;
           }).join("")
-        : `<div class="col-span-full text-center p-8 text-slate-500">No teacher attendance data available</div>`;
+        : `<div class="col-span-full text-center p-8 text-slate-500 dark:text-slate-400">No teacher attendance data available</div>`;
       lucide.createIcons();
     };
 
@@ -331,7 +394,7 @@
                 ? "text-amber-600" 
                 : "text-rose-600";
             
-            return `<div class="rounded-xl border border-slate-200 bg-slate-50 p-4 dark:border-slate-700 dark:bg-slate-800">
+            return `<div class="rounded border border-slate-200 bg-slate-50 p-4 dark:border-slate-700 dark:bg-slate-800">
               <div class="flex items-center gap-3 mb-3">
                 <span class="relative flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-violet-100 dark:bg-violet-950">
                   <span class="text-sm font-bold text-violet-700 dark:text-violet-300">${F.esc(initials)}</span>
@@ -343,11 +406,11 @@
                 </div>
               </div>
               <div class="grid grid-cols-2 gap-3 text-center">
-                <div class="rounded-lg bg-white p-2 dark:bg-slate-900">
+                <div class="rounded bg-white p-2 dark:bg-slate-900">
                   <p class="text-[10px] uppercase tracking-wider text-slate-400">Total Records</p>
                   <p class="text-lg font-bold text-slate-700 dark:text-slate-200">${stat.totalRecords}</p>
                 </div>
-                <div class="rounded-lg bg-white p-2 dark:bg-slate-900">
+                <div class="rounded bg-white p-2 dark:bg-slate-900">
                   <p class="text-[10px] uppercase tracking-wider text-slate-400">Attendance Rate</p>
                   <p class="text-lg font-bold ${rateColor}">${stat.attendanceRate}%</p>
                 </div>
@@ -355,24 +418,24 @@
               <div class="mt-3 grid grid-cols-4 gap-2 text-center">
                 <div>
                   <p class="text-[10px] text-slate-400">Present</p>
-                  <p class="text-sm font-semibold text-emerald-600">${stat.present}</p>
+                  <p class="text-sm font-semibold text-emerald-600 dark:text-emerald-400">${stat.present}</p>
                 </div>
                 <div>
                   <p class="text-[10px] text-slate-400">Absent</p>
-                  <p class="text-sm font-semibold text-rose-600">${stat.absent}</p>
+                  <p class="text-sm font-semibold text-rose-600 dark:text-rose-400">${stat.absent}</p>
                 </div>
                 <div>
                   <p class="text-[10px] text-slate-400">Late</p>
-                  <p class="text-sm font-semibold text-amber-600">${stat.late}</p>
+                  <p class="text-sm font-semibold text-amber-600 dark:text-amber-400">${stat.late}</p>
                 </div>
                 <div>
                   <p class="text-[10px] text-slate-400">Excused</p>
-                  <p class="text-sm font-semibold text-blue-600">${stat.excused}</p>
+                  <p class="text-sm font-semibold text-blue-600 dark:text-blue-400">${stat.excused}</p>
                 </div>
               </div>
             </div>`;
           }).join("")
-        : `<div class="col-span-full text-center p-8 text-slate-500">No teacher attendance data available</div>`;
+        : `<div class="col-span-full text-center p-8 text-slate-500 dark:text-slate-400">No teacher attendance data available</div>`;
       
       lucide.createIcons();
     };
@@ -392,17 +455,33 @@
     };
 
     const render = () => {
-      scope = computeScope();
+      if (useClassrooms && activeClassroom) {
+        scope = classroomRoster.map((s) => s.id);
+      } else if (!useClassrooms) {
+        scope = computeScope();
+      }
       const liveUsers = F.users();
-      const data = F.get("attendance", []).filter((r) =>
-        scope.includes(r.studentId),
-      );
+      const q = useClassrooms ? classroomSearch() : "";
+      const nameOf = (id) => {
+        const fromRoster = classroomRoster.find((s) => s.id === id);
+        const s = fromRoster || liveUsers.find((u) => u.id === id);
+        return { s, nm: rosterDisplayName(s) || id };
+      };
+      const data = F.get("attendance", []).filter((r) => {
+        if (!scope.includes(r.studentId)) return false;
+        if (useClassrooms && activeClassroom && !belongsToClassroom(r, activeClassroom)) return false;
+        if (q) {
+          const { nm } = nameOf(r.studentId);
+          if (!(`${nm} ${r.studentId}`.toLowerCase().includes(q))) return false;
+        }
+        return true;
+      });
       renderRows(
         data
           .sort((a, b) => String(b.date).localeCompare(String(a.date)))
           .map((r) => {
-            const s = liveUsers.find((u) => u.id === r.studentId);
-            const nm = F.userName(s) || r.studentId;
+            const s = classroomRoster.find((x) => x.id === r.studentId) || liveUsers.find((u) => u.id === r.studentId);
+            const nm = rosterDisplayName(s) || r.studentId;
             const initials = (
               nm === r.studentId
                 ? nm.slice(0, 2)
@@ -439,9 +518,10 @@
               </td>
               <td class="whitespace-nowrap p-4 text-xs font-medium text-slate-600 dark:text-slate-400">${F.esc(when)}</td>
               <td class="p-4 text-slate-700 dark:text-slate-300">${F.esc(r.subject || "—")}</td>
+              <td class="p-4"><span class="inline-flex rounded-full bg-slate-100 px-2.5 py-1 text-xs font-semibold text-slate-600 dark:bg-slate-800 dark:text-slate-300">S${recordSession(r)}</span></td>
               <td class="p-4"><span class="inline-flex rounded-full px-2.5 py-1 text-xs font-semibold ${badge}">${F.esc(r.status || "—")}</span></td>
               <td class="max-w-[16rem] truncate p-4 text-slate-500 dark:text-slate-400" title="${F.esc(r.remarks || "")}">${F.esc(r.remarks || "—")}</td>
-              ${isTeacher || isAdmin ? `<td class="p-4 text-right"><button class="rounded-lg p-2 text-emerald-700 hover:bg-emerald-50 dark:hover:bg-emerald-950/40" data-edit="${F.esc(r.id)}" title="Edit record"><i data-lucide="pencil" class="h-4 w-4"></i></button></td>` : `<td class="p-4"></td>`}
+              ${isTeacher || isAdmin ? `<td class="p-4 text-right"><button class="rounded p-2 text-emerald-700 hover:bg-emerald-50 dark:hover:bg-emerald-950/40 dark:text-emerald-300" data-edit="${F.esc(r.id)}" title="Edit record"><i data-lucide="pencil" class="h-4 w-4"></i></button></td>` : `<td class="p-4"></td>`}
             </tr>`;
           }),
       );
@@ -456,6 +536,7 @@
     };
     const editAttendance = (id) => {
       const all = F.get("attendance", []);
+      const isNew = !id || !all.some((x) => x.id === id);
       const r = all.find((x) => x.id === id) || {
         id: DG.generateId("ATT"),
         studentId: isTeacher ? scope[0] : $("#student")?.value,
@@ -463,7 +544,10 @@
       };
       const student = $("#student");
       if (student) {
-        student.innerHTML = (isTeacher ? F.teacherStudents(U) : F.students())
+        const options = useClassrooms && activeClassroom
+          ? classroomRoster
+          : (isTeacher ? F.teacherStudents(U) : F.students());
+        student.innerHTML = options
           .map(
             (s) => `<option value="${F.esc(s.id)}">${F.esc(F.userName(s))}</option>`,
           )
@@ -472,8 +556,24 @@
       }
       ["recordId", "date", "subject", "remarks"].forEach((k) => {
         const el = $("#" + k);
-        if (el) el.value = k === "recordId" ? r.id : r[k] || "";
+        if (!el) return;
+        if (k === "recordId") el.value = r.id;
+        else if (k === "subject" && useClassrooms && activeClassroom && isNew) el.value = activeClassroom.subject || r[k] || "";
+        else el.value = r[k] || "";
       });
+      const subjectEl = $("#subject");
+      if (subjectEl && useClassrooms && activeClassroom) {
+        // Fixed per classroom: lock for new records; keep readable for edits.
+        subjectEl.value = isNew ? (activeClassroom.subject || subjectEl.value) : (r.subject || activeClassroom.subject || "");
+        subjectEl.readOnly = true;
+      } else if (subjectEl) {
+        subjectEl.readOnly = false;
+      }
+      if (isNew && useClassrooms && activeClassroom) {
+        const dateEl = $("#date");
+        const sheetDateEl = $("#sheetDate");
+        if (dateEl && sheetDateEl?.value) dateEl.value = sheetDateEl.value;
+      }
       $("#status").value = r.status || "Present";
       $("#attendanceDialog")?.classList.remove("hidden");
     };
@@ -484,16 +584,28 @@
     $("#attendanceForm")?.addEventListener("submit", (e) => {
       e.preventDefault();
       const all = F.get("attendance", []);
+      const recordId = $("#recordId").value;
+      const isNewSubmit = !recordId || !all.some((x) => x.id === recordId);
+      let subject = $("#subject").value.trim();
+      if (useClassrooms && activeClassroom && isNewSubmit) {
+        subject = activeClassroom.subject || subject; // fixed per classroom
+      }
       const r = {
-        id: $("#recordId").value || DG.generateId("ATT"),
+        id: recordId || DG.generateId("ATT"),
         studentId: $("#student").value,
         date: $("#date").value,
-        subject: $("#subject").value.trim(),
+        subject,
+        session: 1,
         status: $("#status").value,
         remarks: $("#remarks").value.trim(),
         recordedBy: U.id,
         updatedAt: new Date().toISOString(),
       };
+      if (useClassrooms && activeClassroom) {
+        r.classroomId = activeClassroom.id;
+        const prior = all.find((x) => x.id === r.id);
+        r.session = Math.max(1, Number(prior?.session) || 1);
+      }
       const i = all.findIndex((x) => x.id === r.id);
       i >= 0 ? (all[i] = r) : all.push(r);
       F.save("attendance", all);
@@ -515,14 +627,19 @@
       const data = F.get("attendance", []).filter((r) =>
         scope.includes(r.studentId),
       );
+      const fileName = useClassrooms && activeClassroom
+        ? `attendance-${String(activeClassroom.name || activeClassroom.id).toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "") || "classroom"}.csv`
+        : "attendance.csv";
       F.download(
-        "attendance.csv",
+        fileName,
         F.csv(
-          ["Student ID", "Date", "Subject", "Status", "Remarks"],
+          ["Student ID", "Date", "Subject", "Session", "Classroom", "Status", "Remarks"],
           data.map((r) => [
             r.studentId,
             r.date,
             r.subject,
+            recordSession(r),
+            r.classroomId || "",
             r.status,
             r.remarks,
           ]),
@@ -530,11 +647,323 @@
         "text/csv",
       );
     });
-    render();
+    const pctColor = (pct) => pct >= 100
+      ? "bg-emerald-600 text-white"
+      : pct >= 80
+        ? "bg-emerald-50 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-300"
+        : pct >= 50
+          ? "bg-amber-50 text-amber-700 dark:bg-amber-950/40 dark:text-amber-300"
+          : "bg-rose-50 text-rose-700 dark:bg-rose-950/40 dark:text-rose-300";
+
+    const paintSheetButton = (btn, present) => {
+      btn.textContent = present ? "✓" : "✕";
+      btn.title = `Session ${Number(btn.dataset.k) + 1} — ${present ? "Present" : "Absent"} (click to flip)`;
+      btn.className = `h-9 min-w-9 rounded-lg px-2 text-sm font-extrabold transition ${present
+        ? "bg-emerald-600 text-white hover:bg-emerald-500"
+        : "bg-rose-100 text-rose-700 hover:bg-rose-200 dark:bg-rose-950/50 dark:text-rose-300"}`;
+    };
+
+    const paintSheetPct = (sid) => {
+      const row = document.querySelector(`[data-sheet-row="${CSS.escape(String(sid))}"]`);
+      const badge = row?.querySelector("[data-sheet-pct]");
+      if (!badge) return 0;
+      const state = sheetMarks[sid] || [];
+      const n = sessionsPerDay();
+      const pct = n ? Math.round((state.filter(Boolean).length / n) * 100) : 0;
+      badge.textContent = `${pct}%`;
+      badge.className = `rounded-full px-3 py-1 text-xs font-extrabold ${pctColor(pct)}`;
+      return pct;
+    };
+
+    const paintSheetSummary = () => {
+      const el = $("#sheetSummary");
+      if (!el) return;
+      const ids = Object.keys(sheetMarks);
+      if (!ids.length) {
+        el.textContent = "";
+        return;
+      }
+      const avg = Math.round(ids.reduce((sum, sid) => sum + paintSheetPct(sid), 0) / ids.length);
+      el.textContent = `${sheetDate()} · class ${avg}%`;
+    };
+
+    const renderSheet = () => {
+      const box = $("#sheetRows");
+      if (!box || !useClassrooms || !activeClassroom) return;
+      const n = sessionsPerDay();
+      const date = sheetDate();
+      const q = classroomSearch();
+      const students = classroomRoster.filter((s) => {
+        if (!q) return true;
+        return `${rosterDisplayName(s)} ${s.id}`.toLowerCase().includes(q);
+      });
+      sheetMarks = {};
+      if (!students.length) {
+        box.innerHTML = `<div class="p-8 text-center text-sm text-slate-500 dark:text-slate-400">No students match.</div>`;
+        paintSheetSummary();
+        return;
+      }
+      box.innerHTML = students.map((s) => {
+        const nm = rosterDisplayName(s);
+        const initials = (nm === s.id ? nm.slice(0, 2) : nm.split(/\s+/).map((w) => w[0]).slice(0, 2).join("")).toUpperCase();
+        const marks = dayRecords(s.id, date);
+        const state = [];
+        for (let k = 1; k <= n; k++) {
+          const rec = marks.find((r) => recordSession(r) === k);
+          state.push(!rec || isAttended(rec.status)); // default ✓ for fast marking
+        }
+        sheetMarks[s.id] = state;
+        const pct = Math.round((state.filter(Boolean).length / n) * 100);
+        return `<div class="flex flex-wrap items-center gap-3 p-4" data-sheet-row="${F.esc(s.id)}">
+          <div class="flex min-w-0 flex-1 items-center gap-3">
+            <span class="relative flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-blue-50 text-xs font-bold text-blue-700 dark:bg-blue-950 dark:text-blue-300">${F.esc(initials)}
+              <img src="${F.esc(F.photoUrl(s))}" alt="${F.esc(nm)}" loading="lazy" class="absolute inset-0 h-9 w-9 rounded-full object-cover" onerror="this.onerror=null;this.src='/images/16432.png'" />
+            </span>
+            <div class="min-w-0">
+              <b class="block truncate">${F.esc(nm)}</b>
+              <small class="text-xs text-slate-400">${F.esc(s.id)}</small>
+            </div>
+          </div>
+          <div class="flex flex-wrap items-center gap-1.5">
+            ${state.map((present, idx) => `<button type="button" data-sheet-toggle data-s="${F.esc(s.id)}" data-k="${idx}" class="h-9 min-w-9 rounded-lg px-2 text-sm font-extrabold transition ${present ? "bg-emerald-600 text-white hover:bg-emerald-500" : "bg-rose-100 text-rose-700 hover:bg-rose-200 dark:bg-rose-950/50 dark:text-rose-300"}" title="Session ${idx + 1} — ${present ? "Present" : "Absent"} (click to flip)">${present ? "✓" : "✕"}</button>`).join("")}
+          </div>
+          <span data-sheet-pct class="rounded-full px-3 py-1 text-xs font-extrabold ${pctColor(pct)}">${pct}%</span>
+        </div>`;
+      }).join("");
+      paintSheetSummary();
+    };
+
+    const findSlot = (all, sid, date, k) => all.find((r) =>
+      String(r.studentId) === String(sid) &&
+      String(r.date || "") === String(date) &&
+      String(r.subject || "") === String(activeClassroom.subject || "") &&
+      recordSession(r) === k &&
+      (!r.classroomId || String(r.classroomId) === String(activeClassroom.id)));
+
+    const saveSheet = () => {
+      if (!useClassrooms || !activeClassroom) return;
+      const n = sessionsPerDay();
+      const date = sheetDate();
+      const all = F.get("attendance", []);
+      const touched = [];
+      Object.entries(sheetMarks).forEach(([sid, state]) => {
+        if (!scope.includes(sid)) return;
+        let present = 0;
+        state.slice(0, n).forEach((isPresent, idx) => {
+          const k = idx + 1;
+          if (isPresent) present++;
+          const found = findSlot(all, sid, date, k);
+          const status = isPresent ? "Present" : "Absent";
+          if (found) {
+            Object.assign(found, {
+              status, classroomId: activeClassroom.id, session: k,
+              subject: activeClassroom.subject || found.subject,
+              recordedBy: U.id, updatedAt: new Date().toISOString(),
+            });
+          } else {
+            all.push({
+              id: DG.generateId("ATT"),
+              studentId: sid, date,
+              subject: activeClassroom.subject || "",
+              classroomId: activeClassroom.id, session: k,
+              status, remarks: "",
+              recordedBy: U.id, updatedAt: new Date().toISOString(),
+            });
+          }
+        });
+        touched.push({ sid, pct: Math.round((present / n) * 100) });
+      });
+      F.save("attendance", all);
+      // Best-effort notices (same hardened pattern as the single form).
+      try {
+        touched.forEach(({ sid, pct }) => F.notify(
+          [sid, ...(F.parentIdsFor ? F.parentIdsFor([sid]) : [])],
+          "Attendance updated",
+          `${date}: ${pct}% present`,
+          "attendance",
+        ));
+      } catch (_) { /* notification skipped */ }
+      render();
+      renderSheet();
+      APP.toast(`Day saved — ${touched.length} student${touched.length === 1 ? "" : "s"}`);
+    };
+
+    const setClassroomError = (message) => {
+      if (!classroomError) return;
+      classroomError.textContent = message || "";
+      classroomError.classList.toggle("hidden", !message);
+    };
+    const renderClassroomCards = () => {
+      if (!useClassrooms) return;
+      renderClassroomStatsFallback();
+      if (!classrooms.length) {
+        classroomGrid.innerHTML = "";
+        classroomEmpty?.classList.remove("hidden");
+        return;
+      }
+      classroomEmpty?.classList.add("hidden");
+      classroomGrid.innerHTML = classrooms.map((c) => {
+        const count = Number(c.studentsCount || 0);
+        return `<button type="button" data-classroom="${F.esc(c.id)}" class="rounded-2xl border border-slate-200 p-4 text-left transition hover:border-emerald-300 dark:border-slate-700 dark:hover:border-emerald-700">
+          <div class="flex items-center justify-between gap-2">
+            <b class="truncate">${F.esc(c.name || "Classroom")}</b>
+            <span class="rounded-full px-2.5 py-1 text-[11px] font-semibold ${c.status === "active" ? "bg-emerald-50 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-300" : "bg-slate-100 text-slate-500 dark:bg-slate-800"}">${F.esc(c.status || "active")}</span>
+          </div>
+          <p class="mt-1 truncate text-xs text-slate-400">${F.esc(c.subject || "No subject")} · ${count} student${count === 1 ? "" : "s"} · ${Number(c.sessionsPerDay) || 1} session${(Number(c.sessionsPerDay) || 1) === 1 ? "" : "s"}/day</p>
+          <p class="mt-3 inline-flex items-center gap-1 text-xs font-semibold text-emerald-700 dark:text-emerald-300">Open attendance <span aria-hidden="true">→</span></p>
+        </button>`;
+      }).join("");
+      classroomGrid.querySelectorAll("[data-classroom]").forEach((btn) =>
+        btn.addEventListener("click", () => openClassroom(btn.dataset.classroom)),
+      );
+      if (window.lucide) lucide.createIcons();
+    };
+    const renderClassroomStatsFallback = () => {
+      // Counts are informational only; studentsCount comes from the API.
+    };
+    const showList = () => {
+      activeClassroom = null;
+      classroomRoster = [];
+      scope = [];
+      classroomDetail?.classList.add("hidden");
+      classroomSection?.classList.remove("hidden");
+      $("#attendanceDialog")?.classList.add("hidden");
+      renderClassroomCards();
+      renderRows([]);
+      try {
+        const url = new URL(window.location.href);
+        if (url.searchParams.has("classroom")) {
+          url.searchParams.delete("classroom");
+          window.history.replaceState({}, "", url.pathname + url.search);
+        }
+      } catch (_) { /* ignore */ }
+    };
+    const openClassroom = async (id) => {
+      const found = classrooms.find((c) => String(c.id) === String(id));
+      if (!found) return;
+      setClassroomError("");
+      activeClassroom = found;
+      classroomSection?.classList.add("hidden");
+      classroomDetail?.classList.remove("hidden");
+      const nameEl = $("#detailName");
+      if (nameEl) nameEl.textContent = found.name || "Classroom";
+      const metaEl = $("#detailMeta");
+      if (metaEl) metaEl.textContent = `${found.subject || "No subject"} · ${found.status || "active"}`;
+      try {
+        const data = await classroomApi(`/teacher/api/classrooms/${encodeURIComponent(found.id)}`);
+        const members = (data.classroom?.students || []).map((s) => ({
+          id: s.id, firstName: s.firstName, lastName: s.lastName,
+          email: s.email, photo: s.photo,
+        }));
+        // Union: members + legacy assigned students already having this subject's
+        // records (covers pre-classroom data). Same student may be in many
+        // classrooms — allowed. No classroom is ever duplicated (dedupeById).
+        const memberIds = new Set(members.map((s) => String(s.id)));
+        const legacyMatches = F.teacherStudents(U).filter((s) => {
+          if (memberIds.has(String(s.id))) return false;
+          return F.get("attendance", []).some((r) =>
+            String(r.studentId) === String(s.id) && String(r.subject || "") === String(found.subject || ""));
+        });
+        classroomRoster = [...members, ...legacyMatches].sort((a, b) =>
+          rosterDisplayName(a).localeCompare(rosterDisplayName(b)));
+        const countEl = $("#detailCount");
+        if (countEl) countEl.textContent = `${classroomRoster.length} student${classroomRoster.length === 1 ? "" : "s"}`;
+      } catch (error) {
+        // Non-breaking fallback: legacy assigned students so the form still works.
+        classroomRoster = F.teacherStudents(U);
+        const countEl = $("#detailCount");
+        if (countEl) countEl.textContent = `${classroomRoster.length} student${classroomRoster.length === 1 ? "" : "s"}`;
+        setClassroomError(error.message || "Could not load roster; showing assigned learners.");
+      }
+      scope = classroomRoster.map((s) => s.id);
+      const sessInput = $("#sessionsPerDay");
+      if (sessInput) sessInput.value = Math.max(1, Number(found.sessionsPerDay) || 1);
+      const sheetDateEl = $("#sheetDate");
+      if (sheetDateEl && !sheetDateEl.value) sheetDateEl.value = new Date().toISOString().slice(0, 10);
+      render();
+      renderSheet();
+      try {
+        const url = new URL(window.location.href);
+        url.searchParams.set("classroom", String(found.id));
+        window.history.replaceState({}, "", url.pathname + url.search);
+      } catch (_) { /* ignore */ }
+      if (window.lucide) lucide.createIcons();
+    };
+    const loadClassrooms = async () => {
+      setClassroomError("");
+      try {
+        const data = await classroomApi("/teacher/api/classrooms");
+        classrooms = dedupeById(data.classrooms || []);
+        // Active first, then archived; stable by name.
+        classrooms.sort((a, b) =>
+          (a.status === "active" ? 0 : 1) - (b.status === "active" ? 0 : 1) ||
+          String(a.name || "").localeCompare(String(b.name || "")));
+        renderClassroomCards();
+        const params = new URLSearchParams(window.location.search || "");
+        const deep = params.get("classroom");
+        if (deep && classrooms.some((c) => String(c.id) === String(deep))) {
+          openClassroom(deep);
+        } else {
+          renderRows([]);
+        }
+      } catch (error) {
+        // Non-breaking fallback: hide classroom shell, show legacy flat list.
+        setClassroomError(error.message || "Failed to load classrooms.");
+        if (!classrooms.length) {
+          classroomGrid.innerHTML = "";
+          classroomEmpty?.classList.remove("hidden");
+        }
+        renderRows([]);
+      }
+    };
+    $("#backToClassrooms")?.addEventListener("click", showList);
+    $("#classroomStudentSearch")?.addEventListener("input", () => { render(); renderSheet(); });
+    $("#sheetDate")?.addEventListener("change", () => renderSheet());
+    $("#saveSheet")?.addEventListener("click", saveSheet);
+    $("#sheetRows")?.addEventListener("click", (e) => {
+      const btn = e.target.closest("[data-sheet-toggle]");
+      if (!btn) return;
+      const arr = sheetMarks[btn.dataset.s];
+      const k = Number(btn.dataset.k);
+      if (!arr || !(k >= 0) || k >= arr.length) return;
+      arr[k] = !arr[k];
+      paintSheetButton(btn, arr[k]);
+      paintSheetPct(btn.dataset.s);
+      paintSheetSummary();
+    });
+    $("#saveSessions")?.addEventListener("click", async () => {
+      if (!useClassrooms || !activeClassroom) return;
+      const v = Math.max(1, Math.min(20, Number($("#sessionsPerDay")?.value) || 1));
+      try {
+        const data = await classroomApi(`/teacher/api/classrooms/${encodeURIComponent(activeClassroom.id)}`, {
+          method: "PUT",
+          body: JSON.stringify({ sessionsPerDay: v }),
+        });
+        activeClassroom.sessionsPerDay = data.classroom?.sessionsPerDay ?? v;
+        const c = classrooms.find((x) => String(x.id) === String(activeClassroom.id));
+        if (c) c.sessionsPerDay = activeClassroom.sessionsPerDay;
+        if ($("#sessionsPerDay")) $("#sessionsPerDay").value = activeClassroom.sessionsPerDay;
+        renderSheet();
+        APP.toast("Sessions per day updated");
+      } catch (error) {
+        setClassroomError(error.message || "Could not save sessions per day.");
+      }
+    });
+    if (useClassrooms) {
+      loadClassrooms();
+    } else {
+      render();
+    }
     if (isAdmin) {
       renderOverallAnalytics();
       renderTeacherAnalytics();
     }
+    // Live updates: re-render when other users change attendance or user data.
+    document.addEventListener("digitech:sync", () => {
+      if (!window.DG_SYNC?.idle()) return;
+      render();
+      renderSheet();
+    });
   }
   function announcements() {
     const canCreate = U.role === "admin" || U.role === "teacher";
@@ -550,7 +979,7 @@
       if (!body) return;
       body.innerHTML = cards.length
         ? cards.join("")
-        : `<div class="card p-10 text-center text-sm text-slate-500">${F.esc(empty)}</div>`;
+        : `<div class="card p-10 text-center text-sm text-slate-500 dark:text-slate-400">${F.esc(empty)}</div>`;
       lucide.createIcons();
     };
     const render = () => {
@@ -606,7 +1035,7 @@
               </div>
               <h3 class="mt-3 text-lg font-bold tracking-tight">${F.esc(r.title)}</h3>
               <p class="mt-1 text-sm leading-relaxed text-slate-600 dark:text-slate-300">${F.esc(r.message)}</p>
-              ${r.image ? `<img src="${F.esc(r.image)}" alt="${F.esc(r.title)}" class="mt-3 max-h-80 w-full rounded-xl border border-slate-200 object-cover dark:border-slate-700" onerror="this.style.display='none'" />` : ""}
+              ${r.image ? `<img src="${F.esc(r.image)}" alt="${F.esc(r.title)}" class="mt-3 max-h-80 w-full rounded border border-slate-200 object-cover dark:border-slate-700" onerror="this.style.display='none'" />` : ""}
             </article>`;
         }),
       );
@@ -706,6 +1135,11 @@
     });
     $("#announcementImageRemove")?.addEventListener("click", resetPhotoUI);
     render();
+    // Live updates: re-render when announcements or user data change elsewhere.
+    document.addEventListener("digitech:sync", () => {
+      if (!window.DG_SYNC?.idle()) return;
+      render();
+    });
   }
   function safePreviewUrl(url) {
     const value = String(url || "").trim();
@@ -736,18 +1170,18 @@
     panel.innerHTML = `
       <div class="flex items-start justify-between gap-4">
         <div class="min-w-0">
-          <p class="text-xs font-semibold uppercase tracking-[0.16em] text-blue-600">Requirement submission</p>
+          <p class="text-xs font-semibold uppercase tracking-[0.16em] text-blue-600 dark:text-blue-400">Requirement submission</p>
           <h2 class="mt-1 truncate text-lg font-extrabold">${F.esc(r.name)}</h2>
-          <p class="mt-1 text-xs text-slate-500">${F.esc(student ? F.userName(student) : r.studentId)} · ${F.esc(r.status)}</p>
+          <p class="mt-1 text-xs text-slate-500 dark:text-slate-400">${F.esc(student ? F.userName(student) : r.studentId)} · ${F.esc(r.status)}</p>
         </div>
-        <button type="button" data-preview-close class="shrink-0 rounded-xl p-2 text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800" aria-label="Close"><i data-lucide="x" class="h-5 w-5"></i></button>
+        <button type="button" data-preview-close class="shrink-0 rounded p-2 text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800" aria-label="Close"><i data-lucide="x" class="h-5 w-5"></i></button>
       </div>
-      <div class="mt-4 max-h-[65vh] overflow-auto rounded-xl border border-slate-200 bg-slate-50 dark:border-slate-700 dark:bg-slate-800">
-        ${!hasPreview ? `<div class="flex flex-col items-center gap-2 p-10 text-center"><i data-lucide="file-x" class="h-8 w-8 text-slate-400"></i><p class="text-sm text-slate-500">No file attached or the attached file cannot be previewed.</p></div>` : isImage ? `<img src="${F.esc(url)}" alt="${F.esc(r.name)}" class="mx-auto max-h-[58vh] object-contain">` : isPdf ? `<iframe src="${F.esc(url)}" title="${F.esc(r.name)}" class="h-[58vh] w-full"></iframe>` : `<div class="flex flex-col items-center gap-2 p-10 text-center"><i data-lucide="file-text" class="h-8 w-8 text-slate-400"></i><p class="text-sm text-slate-500">No inline preview for this file type.</p></div>`}
+      <div class="mt-4 max-h-[65vh] overflow-auto rounded border border-slate-200 bg-slate-50 dark:border-slate-700 dark:bg-slate-800">
+        ${!hasPreview ? `<div class="flex flex-col items-center gap-2 p-10 text-center"><i data-lucide="file-x" class="h-8 w-8 text-slate-400"></i><p class="text-sm text-slate-500 dark:text-slate-400">No file attached or the attached file cannot be previewed.</p></div>` : isImage ? `<img src="${F.esc(url)}" alt="${F.esc(r.name)}" class="mx-auto max-h-[58vh] object-contain">` : isPdf ? `<iframe src="${F.esc(url)}" title="${F.esc(r.name)}" class="h-[58vh] w-full"></iframe>` : `<div class="flex flex-col items-center gap-2 p-10 text-center"><i data-lucide="file-text" class="h-8 w-8 text-slate-400"></i><p class="text-sm text-slate-500 dark:text-slate-400">No inline preview for this file type.</p></div>`}
       </div>
       <div class="mt-4 flex justify-end gap-3">
-        ${hasPreview ? `<a href="${F.esc(url)}" target="_blank" rel="noopener" class="rounded-xl border border-slate-200 px-4 py-2 text-sm font-semibold dark:border-slate-700">Open original</a>` : ""}
-        <button type="button" data-preview-close class="rounded-xl bg-blue-600 px-4 py-2 text-sm font-semibold text-white">Close</button>
+        ${hasPreview ? `<a href="${F.esc(url)}" target="_blank" rel="noopener" class="rounded border border-slate-200 px-4 py-2 text-sm font-semibold dark:border-slate-700">Open original</a>` : ""}
+        <button type="button" data-preview-close class="rounded bg-blue-600 px-4 py-2 text-sm font-semibold text-white">Close</button>
       </div>`;
     panel.querySelectorAll("[data-preview-close]").forEach((b) => b.addEventListener("click", close));
     backdrop.append(panel);
@@ -773,13 +1207,13 @@
           const actions = [];
           if (r.fileUrl) {
             actions.push(
-              `<button class="inline-flex items-center gap-1 rounded-lg bg-blue-600 px-2.5 py-1.5 text-[11px] font-semibold text-white hover:bg-blue-700" data-preview="${F.esc(r.id)}"><i data-lucide="eye" class="h-3.5 w-3.5"></i>Preview</button>`,
+              `<button class="inline-flex items-center gap-1 rounded bg-blue-600 px-2.5 py-1.5 text-[11px] font-semibold text-white hover:bg-blue-700" data-preview="${F.esc(r.id)}"><i data-lucide="eye" class="h-3.5 w-3.5"></i>Preview</button>`,
             );
           }
           if (r.status === "Submitted") {
             actions.push(
-              `<button class="inline-flex items-center gap-1 rounded-lg bg-emerald-600 px-2.5 py-1.5 text-[11px] font-semibold text-white hover:bg-emerald-700" data-approve="${F.esc(r.id)}"><i data-lucide="check" class="h-3.5 w-3.5"></i>Approve</button>`,
-              `<button class="inline-flex items-center gap-1 rounded-lg bg-rose-600 px-2.5 py-1.5 text-[11px] font-semibold text-white hover:bg-rose-700" data-reject="${F.esc(r.id)}"><i data-lucide="x" class="h-3.5 w-3.5"></i>Reject</button>`,
+              `<button class="inline-flex items-center gap-1 rounded bg-emerald-600 px-2.5 py-1.5 text-[11px] font-semibold text-white hover:bg-emerald-700" data-approve="${F.esc(r.id)}"><i data-lucide="check" class="h-3.5 w-3.5"></i>Approve</button>`,
+              `<button class="inline-flex items-center gap-1 rounded bg-rose-600 px-2.5 py-1.5 text-[11px] font-semibold text-white hover:bg-rose-700" data-reject="${F.esc(r.id)}"><i data-lucide="x" class="h-3.5 w-3.5"></i>Reject</button>`,
             );
           }
           const actionCell = actions.length ? `<div class="flex flex-wrap items-center gap-2">${actions.join("")}</div>` : "—";
@@ -801,14 +1235,18 @@
               r.reviewedBy = U.id;
               r.reviewedAt = new Date().toISOString();
               F.save("requirements", a);
-              F.notify(
-                [r.studentId, ...F.parentIdsFor([r.studentId])],
-                `Requirement ${r.status}`,
-                `${r.name} was ${r.status.toLowerCase()}.`,
-                "requirement",
-              );
               render();
               APP.toast(`Requirement ${r.status.toLowerCase()}`);
+              // Best-effort: a notify failure must never block the table update.
+              try {
+                F.notify(
+                  [r.studentId, ...(F.parentIdsFor ? F.parentIdsFor([r.studentId]) : [])],
+                  `Requirement ${r.status}`,
+                  `${r.name} was ${r.status.toLowerCase()}.`,
+                  "requirement",
+                  r.id,
+                );
+              } catch (_) { /* notification skipped */ }
             }),
         );
       $("#rows")
@@ -829,9 +1267,10 @@
   const all = F.get("requirements", []);
   const selected = $("#student").value;
   const requirementName = $("#name").value.trim();
+  const newId = DG.generateId("REQ");
 
   all.push({
-    id: DG.generateId("REQ"),
+    id: newId,
     name: requirementName,
     studentId: selected,
     dueDate: $("#dueDate").value,
@@ -842,20 +1281,28 @@
   // Save the assigned requirement
   F.save("requirements", all);
 
-  // Notify the student and their parent(s)
-  F.notify(
-    [selected, ...F.parentIdsFor([selected])],
-    "New Requirement Assigned",
-    `${requirementName} has been assigned to you.`,
-    "requirement"
-  );
-
   e.target.reset();
   render();
   APP.toast("Requirement assigned");
+
+  // Best-effort: a notify failure must never block the table update.
+  try {
+    F.notify(
+      [selected, ...(F.parentIdsFor ? F.parentIdsFor([selected]) : [])],
+      "New Requirement Assigned",
+      `${requirementName} has been assigned to you.`,
+      "requirement",
+      newId
+    );
+  } catch (_) { /* notification skipped */ }
 });
 
 render();
+    // Live updates: re-render when requirements or user data change elsewhere.
+    document.addEventListener("digitech:sync", () => {
+      if (!window.DG_SYNC?.idle()) return;
+      render();
+    });
   }
   shell();
   if (page === "attendance") attendance();

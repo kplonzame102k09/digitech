@@ -19,81 +19,71 @@
         @include('admin.components.header')
         <main class="p-4 sm:p-6 lg:p-8">
             <div class="mx-auto max-w-7xl">
-                <section class="student-hero mb-7 p-6 sm:p-8">
+                <section class="mb-7 p-6 sm:p-8">
                     <div>
-                        <p class="text-sm font-semibold text-purple-600">TVET</p>
+                        <p class="text-sm font-semibold text-purple-600 dark:text-purple-400">TVET</p>
                         <h2 class="mt-1 text-3xl font-bold tracking-tight">
                             Competency Records
                         </h2>
-                        <p class="mt-2 text-white">
+                        <p class="mt-2 text-slate-500">
                             Review assessments, evidence, outcomes, and reassessment needs.
                         </p>
                     </div>
                 </section>
-                <!-- <div class="mb-6 flex flex-wrap items-center gap-2 rounded-2xl border border-slate-200 bg-white p-3 dark:border-slate-700 dark:bg-slate-900">
-                    <button type="button" data-add-competency class="inline-flex items-center justify-center gap-2 rounded-xl bg-green-600 px-4 py-3 text-sm font-semibold text-white hover:bg-green-700">
-                        <i data-lucide="plus" class="h-4 w-4"></i>
-                        Add competency
-                    </button>
-                    <button type="button" data-export-competencies class="inline-flex items-center justify-center gap-2 rounded-xl border border-slate-200 px-4 py-3 text-sm font-semibold dark:border-slate-700">
-                        <i data-lucide="download" class="h-4 w-4"></i>
-                        Export CSV
-                    </button>
-                </div> -->
                 <div class="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
                     <div class="card p-5">
-                        <p class="text-xs text-slate-500">All records</p>
+                        <p class="text-xs text-slate-500 dark:text-slate-400">All records</p>
                         <b id="totalCount" class="mt-2 block text-2xl"></b>
                     </div>
                     <div class="card p-5">
-                        <p class="text-xs text-green-600">Competent</p>
+                        <p class="text-xs text-green-600 dark:text-green-400">Competent</p>
                         <b id="competentCount" class="mt-2 block text-2xl"></b>
                     </div>
                     <div class="card p-5">
-                        <p class="text-xs text-amber-600">In progress</p>
+                        <p class="text-xs text-amber-600 dark:text-amber-400">In progress</p>
                         <b id="progressCount" class="mt-2 block text-2xl"></b>
                     </div>
                     <div class="card p-5">
-                        <p class="text-xs text-rose-600">Needs reassessment</p>
+                        <p class="text-xs text-rose-600 dark:text-rose-400">Needs reassessment</p>
                         <b id="reassessmentCount" class="mt-2 block text-2xl"></b>
                     </div>
                 </div>
                 <section class="card mt-6 p-4">
                     <div>
-                        <input id="q" class="input w-full rounded-xl border px-3 py-3"
+                        <input id="q" class="input w-full rounded border px-3 py-3"
                             placeholder="Search by student, competency, qualification, or ID"
                             aria-label="Search competencies" />
                         <div class="mt-3 grid gap-3 sm:grid-cols-2 xl:grid-cols-[auto_auto_auto_auto_auto] xl:items-center">
                             <select id="statusFilter"
-                            class="input rounded-xl border px-3 py-3">
+                            class="input rounded border px-3 py-3">
                             <option value="">All statuses</option>
                             <option>Not Started</option>
                             <option>In Progress</option>
                             <option>Competent</option>
                             <option>Not Yet Competent</option>
                         </select>
-                        <select id="qualificationFilter" class="input rounded-xl border px-3 py-3">
+                        <select id="qualificationFilter" class="input rounded border px-3 py-3">
                             <option value="">All qualifications</option>
                         </select>
-                        <select id="sortBy" class="input rounded-xl border px-3 py-3">
+                        <select id="sortBy" class="input rounded border px-3 py-3">
                             <option value="student">Sort: Student</option>
                             <option value="status">Sort: Status</option>
                             <option value="date">Sort: Assessment date</option>
                             <option value="qualification">Sort: Qualification</option>
                         </select>
-                    <button type="button" data-add-competency class="inline-flex items-center justify-center gap-2 rounded-xl bg-green-600  py-3 text-sm font-semibold text-white hover:bg-green-700">
+                    <button type="button" data-add-competency class="inline-flex items-center justify-center gap-2 rounded bg-green-600  py-3 text-sm font-semibold text-white hover:bg-green-700">
                         <i data-lucide="plus" class="h-4 w-4"></i>
                         Add competency
                     </button>
-                    <button type="button" data-export-competencies class="inline-flex items-center justify-center gap-2 rounded-xl bg-red-600 border border-slate-200 py-3 text-sm font-semibold dark:border-slate-700">
+                    <button type="button" data-export-competencies class="inline-flex items-center justify-center gap-2 rounded bg-red-500  text-white border border-slate-200 py-3 text-sm font-semibold dark:border-slate-700">
                         <i data-lucide="download" class="h-4 w-4"></i>
                         Export CSV
                     </button>
                     </div>
-                    <div class="mt-3 flex flex-wrap items-center gap-3 text-xs text-slate-500">
+                    <div class="mt-3 flex flex-wrap items-center gap-3 text-xs text-slate-500 dark:text-slate-400">
                         <span id="resultCount"></span>
-                        <span id="selectionCount" class="font-semibold text-green-700"></span>
-                        <button type="button" data-bulk-action class="ml-auto hidden rounded-lg bg-slate-900 px-3 py-2 text-xs font-semibold text-white 
+                        <span id="selectionCount" class="font-semibold text-green-700 dark:text-green-300"></span>
+                        <button type="button" data-bulk-action class="ml-auto hidden rounded bg-slate-900 px-3 py-2 text-xs font-semibold text-white 
                             dark:bg-slate-100 dark:text-slate-900">
                             Process selected
                         </button>
@@ -121,23 +111,23 @@
                     <div id="emptyState" class="hidden p-10 text-center">
                         <i data-lucide="award" class="mx-auto h-8 w-8 text-slate-300"></i>
                         <h3 class="mt-3 font-semibold">No competency records found</h3>
-                        <p class="mt-1 text-sm text-slate-500">Try a different filter.</p>
+                        <p class="mt-1 text-sm text-slate-500 dark:text-slate-400">Try a different filter.</p>
                     </div>
                 </section>
                 <section class="card mt-6 p-6">
                     <div class="flex items-start gap-3">
-                        <span class="flex h-10 w-10 items-center justify-center rounded-xl bg-slate-100 text-slate-600 dark:bg-slate-800">
+                        <span class="flex h-10 w-10 items-center justify-center rounded bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-300">
                             <i data-lucide="history" class="h-5 w-5"></i>
                         </span>
                         <div>
                             <h3 class="font-bold">Competency audit history</h3>
-                            <p class="mt-1 text-sm text-slate-500">
+                            <p class="mt-1 text-sm text-slate-500 dark:text-slate-400">
                                 Recent assessment changes and reassessment actions.
                             </p>
                         </div>
                     </div>
                     <div id="auditRows" class="mt-5 space-y-3"></div>
-                    <p id="auditEmpty" class="hidden mt-5 text-sm text-slate-500">
+                    <p id="auditEmpty" class="hidden mt-5 text-sm text-slate-500 dark:text-slate-400">
                         No competency actions recorded.
                     </p>
                 </section>
@@ -148,12 +138,12 @@
         <form id="competencyForm" class="card p-6">
             <div class="flex items-start justify-between">
                 <div>
-                    <p class="text-sm font-semibold text-green-600">
+                    <p class="text-sm font-semibold text-green-600 dark:text-green-400">
                         Competency review
                     </p>
                     <h3 id="competencyTitle" class="mt-1 text-xl font-bold"></h3>
                 </div>
-                <button type="button" data-close-competency class="rounded-lg p-2 text-slate-400">
+                <button type="button" data-close-competency class="rounded p-2 text-slate-400">
                     <i data-lucide="x" class="h-5 w-5"></i>
                 </button>
             </div>
@@ -162,7 +152,7 @@
             <div class="mt-5 grid gap-4 sm:grid-cols-2">
                 <label class="text-sm font-semibold">
                     Status
-                    <select id="competencyStatus" class="input mt-1.5 w-full rounded-xl border px-3 py-2.5">
+                    <select id="competencyStatus" class="input mt-1.5 w-full rounded border px-3 py-2.5">
                         <option>Not Started</option>
                         <option>In Progress</option>
                         <option>Competent</option>
@@ -171,26 +161,26 @@
                 </label>
                 <label class="text-sm font-semibold">
                     Assessment date
-                    <input id="assessmentDate" type="date" class="input mt-1.5 w-full rounded-xl border px-3 py-2.5" />
+                    <input id="assessmentDate" type="date" class="input mt-1.5 w-full rounded border px-3 py-2.5" />
                 </label>
                 <label class="text-sm font-semibold">
                     Assessor
-                    <input id="assessor" class="input mt-1.5 w-full rounded-xl border px-3 py-2.5" />
+                    <input id="assessor" class="input mt-1.5 w-full rounded border px-3 py-2.5" />
                 </label>
                 <label class="text-sm font-semibold">
                     Evidence link
-                    <input id="evidence" type="url" class="input mt-1.5 w-full rounded-xl border px-3 py-2.5" placeholder="https://..." />
+                    <input id="evidence" type="url" class="input mt-1.5 w-full rounded border px-3 py-2.5" placeholder="https://..." />
                 </label>
             </div>
             <label class="mt-4 block text-sm font-semibold">
                 Assessment remarks
-                <textarea id="remarks" rows="4" class="input mt-1.5 w-full rounded-xl border px-3 py-2.5"></textarea>
+                <textarea id="remarks" rows="4" class="input mt-1.5 w-full rounded border px-3 py-2.5"></textarea>
             </label>
             <div class="mt-6 flex justify-end gap-3">
-                <button type="button" data-close-competency class="rounded-xl border border-slate-200 px-4 py-2.5 font-semibold dark:border-slate-700">
+                <button type="button" data-close-competency class="rounded border border-slate-200 px-4 py-2.5 font-semibold dark:border-slate-700">
                     Cancel
                 </button>
-                <button type="submit" class="rounded-xl bg-green-600 px-5 py-2.5 font-semibold text-white">
+                <button type="submit" class="rounded bg-green-600 px-5 py-2.5 font-semibold text-white">
                     Save assessment
                 </button>
             </div>
@@ -200,37 +190,37 @@
         <form id="createCompetencyForm" class="card p-6">
             <div class="flex items-start justify-between">
                 <div>
-                    <p class="text-sm font-semibold text-green-600">New competency record</p>
+                    <p class="text-sm font-semibold text-green-600 dark:text-green-400">New competency record</p>
                     <h3 class="mt-1 text-xl font-bold">Assign competency to a student</h3>
-                    <p class="mt-1 text-sm text-slate-500">
+                    <p class="mt-1 text-sm text-slate-500 dark:text-slate-400">
                         Create the record first; the assigned teacher can complete
                         the assessment later.
                     </p>
                 </div>
-                <button type="button" data-close-create-competency class="rounded-lg p-2 text-slate-400" aria-label="Close">
+                <button type="button" data-close-create-competency class="rounded p-2 text-slate-400" aria-label="Close">
                     <i data-lucide="x" class="h-5 w-5"></i>
                 </button>
             </div>
             <div class="mt-5 grid gap-4 sm:grid-cols-2">
                 <label class="text-sm font-semibold sm:col-span-2">
                     Student
-                    <select id="createStudentId" required class="input mt-1.5 w-full rounded-xl border px-3 py-2.5">
+                    <select id="createStudentId" required class="input mt-1.5 w-full rounded border px-3 py-2.5">
                         <option value="">Select a student</option>
                     </select>
                 </label>
                 <label class="text-sm font-semibold"> 
                     Competency
-                    <input id="createCompetency" required maxlength="120" class="input mt-1.5 w-full rounded-xl border px-3 py-2.5" 
+                    <input id="createCompetency" required maxlength="120" class="input mt-1.5 w-full rounded border px-3 py-2.5" 
                         placeholder="e.g. Install computer systems" />
                 </label>
                 <label class="text-sm font-semibold">
                     Qualification
-                    <input id="createQualification" maxlength="120" class="input mt-1.5 w-full rounded-xl border px-3 py-2.5"
+                    <input id="createQualification" maxlength="120" class="input mt-1.5 w-full rounded border px-3 py-2.5"
                         placeholder="e.g. Computer Systems Servicing NC II" />
                 </label>
                 <label class="text-sm font-semibold">
                     Initial status
-                    <select id="createStatus" class="input mt-1.5 w-full rounded-xl border px-3 py-2.5">
+                    <select id="createStatus" class="input mt-1.5 w-full rounded border px-3 py-2.5">
                         <option>Not Started</option>
                         <option>In Progress</option>
                         <option>Competent</option>
@@ -240,33 +230,33 @@
                 <label class="text-sm font-semibold">
                     Assessment date 
                     <span class="font-normal text-slate-400">(optional)</span>
-                    <input id="createAssessmentDate" type="date" class="input mt-1.5 w-full rounded-xl border px-3 py-2.5" />
+                    <input id="createAssessmentDate" type="date" class="input mt-1.5 w-full rounded border px-3 py-2.5" />
                 </label>
                 <label class="text-sm font-semibold">
                     Assessor 
                     <span class="font-normal text-slate-400">(optional)</span>
-                    <input id="createAssessor" maxlength="120" class="input mt-1.5 w-full rounded-xl border px-3 py-2.5"
+                    <input id="createAssessor" maxlength="120" class="input mt-1.5 w-full rounded border px-3 py-2.5"
                         placeholder="Teacher or assessor name" />
                 </label>
                 <label class="text-sm font-semibold">
                     Evidence link 
                     <span class="font-normal text-slate-400">(optional)</span>
-                    <input id="createEvidence" type="url" class="input mt-1.5 w-full rounded-xl border px-3 py-2.5"
+                    <input id="createEvidence" type="url" class="input mt-1.5 w-full rounded border px-3 py-2.5"
                         placeholder="https://..." />
                 </label>
             </div>
             <label class="mt-4 block text-sm font-semibold">
                 Notes 
                 <span class="font-normal text-slate-400">(optional)</span>
-                <textarea id="createRemarks" rows="3" maxlength="500" class="input mt-1.5 w-full rounded-xl border px-3 py-2.5"
+                <textarea id="createRemarks" rows="3" maxlength="500" class="input mt-1.5 w-full rounded border px-3 py-2.5"
                     placeholder="Add context for the assigned teacher">
                 </textarea>
             </label>
             <div class="mt-6 flex justify-end gap-3">
-                <button type="button" data-close-create-competency class="rounded-xl border border-slate-200 px-4 py-2.5 font-semibold dark:border-slate-700">
+                <button type="button" data-close-create-competency class="rounded border border-slate-200 px-4 py-2.5 font-semibold dark:border-slate-700">
                     Cancel
                 </button>
-                <button type="submit" class="rounded-xl bg-green-600 px-5 py-2.5 font-semibold text-white hover:bg-green-700">
+                <button type="submit" class="rounded bg-green-600 px-5 py-2.5 font-semibold text-white hover:bg-green-700">
                     Create record
                 </button>
             </div>
@@ -286,7 +276,7 @@
                         class="h-9 w-9 rounded-full object-cover"
                         onerror="this.onerror=null;this.src='{{ asset('images/16432.png') }}'"
                     />
-                    <span data-student-initials class="hidden h-9 w-9 items-center justify-center rounded-full bg-green-50 text-xs font-bold text-green-700"></span>
+                    <span data-student-initials class="hidden h-9 w-9 items-center justify-center rounded-full bg-green-50 text-xs font-bold text-green-700 dark:text-green-300 dark:bg-emerald-950/40"></span>
                     <div>
                         <b data-student-name class="block"></b>
                         <small data-student-id class="text-xs text-slate-400"></small>
@@ -298,18 +288,18 @@
             <td data-assessment class="p-4"></td>
             <td class="p-4"><span data-record-status></span></td>
             <td class="p-4 text-right">
-                <button type="button" data-action="edit" class="rounded-lg p-2 text-blue-600 hover:bg-blue-50" title="Edit assessment">
+                <button type="button" data-action="edit" class="rounded p-2 text-blue-600 hover:bg-blue-50 dark:text-blue-400" title="Edit assessment">
                     <i data-lucide="pencil" class="h-4 w-4"></i>
                 </button>
             </td>
         </tr>
     </template><template id="auditRowTemplate">
-        <div class="rounded-xl bg-slate-50 p-3 dark:bg-slate-800">
+        <div class="rounded bg-slate-50 p-3 dark:bg-slate-800">
             <div class="flex justify-between gap-2">
                 <b data-audit-title class="text-sm"></b>
                 <time data-audit-date class="text-[11px] text-slate-400"></time>
             </div>
-            <p data-audit-meta class="mt-1 text-xs text-slate-500"></p>
+            <p data-audit-meta class="mt-1 text-xs text-slate-500 dark:text-slate-400"></p>
             <p data-audit-notes class="mt-1 text-xs"></p>
         </div>
     </template>

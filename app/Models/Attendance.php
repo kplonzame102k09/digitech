@@ -17,12 +17,15 @@ class Attendance extends Model
         'date',
         'status',
         'subject',
+        'classroomId',
+        'session',
         'recordedBy',
         'remarks',
     ];
 
     protected $casts = [
         'date' => 'date',
+        'session' => 'integer',
     ];
 
     protected $keyType = 'string';

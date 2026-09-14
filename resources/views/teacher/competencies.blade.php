@@ -19,12 +19,12 @@
         @include('teacher.components.header')
         <main class="p-4 sm:p-6 lg:p-8">
             <div class="mx-auto max-w-7xl">
-                <section class="teacher-hero mb-7 overflow-hidden rounded-3xl p-6 text-white shadow-xl sm:p-8">
-                    <p class="text-xs font-bold uppercase tracking-[0.18em] text-violet-600">TVET workspace</p>
+                <section class="mb-7 overflow-hidden sm:p-8">
+                    <p class="text-xs font-bold uppercase tracking-[0.18em] text-violet-600 dark:text-violet-400">TVET workspace</p>
                     <div class="mt-2 flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
                         <div>
                             <h2 class="text-3xl font-extrabold tracking-tight">Competency assessments</h2>
-                            <p class="mt-2 max-w-2xl text-white">
+                            <p class="mt-2 max-w-2xl text-slate-500">
                                 Review the competencies assigned by administration and record
                                 clear, evidence-based outcomes for your learners.
                             </p>
@@ -35,9 +35,9 @@
                         </span>
                     </div>
                 </section>
-                <section id="competencySummary" class="mb-6 grid gap-4 sm:grid-cols-2 xl:grid-cols-4"></section>
+                <section id="competencySummary" class="mt-6 mb-6 grid gap-4 sm:grid-cols-2 xl:grid-cols-4"></section>
                 <div class="mb-5 flex items-start gap-3 rounded-2xl border border-violet-100 bg-violet-50/70 p-4 text-sm text-violet-900 dark:border-violet-900/50 dark:bg-violet-950/30 dark:text-violet-200">
-                    <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-white text-violet-600 shadow-sm dark:bg-violet-950">
+                    <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded bg-white text-violet-600 shadow-sm dark:bg-violet-950 dark:text-violet-400">
                         <i data-lucide="lightbulb" class="h-4 w-4"></i>
                     </span>
                     <p>

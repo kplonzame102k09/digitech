@@ -17,12 +17,12 @@
         @include('admin.components.header')
         <main class="p-4 sm:p-6 lg:p-8">
         <div class="mx-auto max-w-7xl">
-            <section class="mb-7 student-hero mb-7 p-6 sm:p-8">
-            <p class="text-xs font-bold uppercase tracking-[0.18em] text-blue-600">Registrar workspace</p>
+            <section class="mb-2 p-6 sm:p-8">
+            <p class="text-xs font-bold uppercase tracking-[0.18em] text-blue-600 dark:text-blue-400">Registrar workspace</p>
             <div class="mt-2 flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
                 <div>
                 <h2 class="text-3xl font-extrabold tracking-tight">Parent link requests</h2>
-                <p class="mt-2 max-w-2xl text-white">Verify parent–student relationships before records are shared.
+                <p class="mt-2 max-w-2xl text-slate-500">Verify parent–student relationships before records are shared.
                 </p>
                 </div><span class="teacher-page-chip"><i data-lucide="shield-check" class="h-4 w-4"></i>Review
                 required</span>

@@ -2,8 +2,8 @@
     'role' => 'guest',
     'headerTitle' => 'My Profile',
     'headerSubtitle' => 'Guest Portal',
-    'heroClass' => 'student-hero',
-    'eyebrowClass' => 'text-emerald-600',
+    
+    'eyebrowClass' => 'text-green-600',
     'heroTitle' => 'Your guest profile',
     'heroIntro' => 'Keep your contact information current for college communication and document requests.',
     'saveButtonClass' => 'bg-emerald-600 hover:bg-emerald-700',

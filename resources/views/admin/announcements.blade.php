@@ -19,8 +19,8 @@
         @include('admin.components.header')
         <main class="p-4 sm:p-6 lg:p-8">
             <div class="mx-auto max-w-3xl">
-                <section class="mb-6">
-                    <p class="text-xs font-bold uppercase tracking-[0.18em] text-blue-600">Communication center</p>
+                <section class="mb-5">
+                    <p class="text-xs font-bold uppercase tracking-[0.18em] text-blue-600 dark:text-blue-400">Communication center</p>
                     <h2 class="mt-1 text-2xl font-extrabold tracking-tight">Announcements</h2>
                     <p class="mt-1 text-sm text-slate-500">A live feed of college-wide notices.</p>
                 </section>
@@ -35,11 +35,11 @@
                         </div>
                     </div>
                     <form id="announcementForm" class="p-5">
-                        <textarea id="message" rows="3" class="input w-full rounded-xl border px-3 py-3" placeholder="What's the announcement?" required></textarea>
+                        <textarea id="message" rows="3" class="input w-full rounded border px-3 py-3" placeholder="What's the announcement?" required></textarea>
                         <div class="mt-3 grid gap-3 sm:grid-cols-3">
-                            <input id="title" class="input rounded-xl border px-3 py-2.5 text-sm" placeholder="Title *" />
-                            <input id="category" class="input rounded-xl border px-3 py-2.5 text-sm" placeholder="Category (e.g. Registrar)" />
-                            <select id="audience" class="input rounded-xl border px-3 py-2.5 text-sm">
+                            <input id="title" class="input rounded border px-3 py-2.5 text-sm" placeholder="Title *" />
+                            <input id="category" class="input rounded border px-3 py-2.5 text-sm" placeholder="Category (e.g. Registrar)" />
+                            <select id="audience" class="input rounded border px-3 py-2.5 text-sm">
                                 <option>All</option>
                                 <option>Students</option>
                                 <option>Parents</option>
@@ -49,7 +49,7 @@
                         </div>
                         <div class="mt-4 flex flex-wrap items-center justify-between gap-3">
                             <span class="text-xs text-slate-400">Reaches every selected audience instantly.</span>
-                            <button type="submit" class="inline-flex items-center justify-center gap-2 rounded-xl bg-emerald-600 px-5 py-2.5 text-sm font-semibold text-white hover:bg-emerald-700">
+                            <button type="submit" class="inline-flex items-center justify-center gap-2 rounded bg-emerald-600 px-5 py-2.5 text-sm font-semibold text-white hover:bg-emerald-700">
                                 <i data-lucide="send" class="h-4 w-4"></i>
                                 Publish
                             </button>
@@ -59,7 +59,7 @@
                 <section>
                     <div class="mb-3 flex items-center gap-2 px-1">
                         <i data-lucide="newspaper" class="h-4 w-4 text-slate-400"></i>
-                        <h3 class="text-sm font-bold text-slate-500">Latest updates</h3>
+                        <h3 class="text-sm font-bold text-slate-500 dark:text-slate-400">Latest updates</h3>
                     </div>
                     <div id="rows" class="space-y-4"></div>
                 </section>

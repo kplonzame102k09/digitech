@@ -115,8 +115,8 @@ function esc(v = "") {
 function toast(message, type = "success") {
   const el = document.createElement("div");
   el.className =
-    "toast fixed bottom-5 right-5 z-[100] max-w-sm rounded-xl px-4 py-3 text-sm font-medium shadow-xl " +
-    (type === "error" ? "bg-red-600 text-white" : "bg-slate-900 text-white");
+    "toast fixed bottom-5 right-5 z-[100] max-w-sm rounded px-4 py-3 text-sm font-medium shadow-xl " +
+    (type === "error" ? "bg-red-600 text-white dark:bg-red-500" : "bg-slate-900 text-white dark:bg-slate-100 dark:text-slate-900");
   el.textContent = message;
   document.body.appendChild(el);
   setTimeout(() => el.remove(), 2800);
@@ -131,23 +131,23 @@ function roleLabel(r) {
 }
 function statusBadge(s) {
   const map = {
-    Approved: "bg-emerald-50 text-emerald-700",
-    Enrolled: "bg-emerald-50 text-emerald-700",
-    Verified: "bg-emerald-50 text-emerald-700",
-    Competent: "bg-emerald-50 text-emerald-700",
-    Submitted: "bg-blue-50 text-blue-700",
-    Processing: "bg-blue-50 text-blue-700",
-    "Under Review": "bg-amber-50 text-amber-700",
-    Pending: "bg-amber-50 text-amber-700",
-    "In Progress": "bg-amber-50 text-amber-700",
-    "Ready for Release": "bg-purple-50 text-purple-700",
-    Released: "bg-purple-50 text-purple-700",
-    Rejected: "bg-red-50 text-red-700",
-    "Not Yet Competent": "bg-red-50 text-red-700",
-    "Not Started": "bg-slate-100 text-slate-600",
-    Draft: "bg-slate-100 text-slate-600",
+    Approved: "bg-emerald-50 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-300",
+    Enrolled: "bg-emerald-50 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-300",
+    Verified: "bg-emerald-50 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-300",
+    Competent: "bg-emerald-50 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-300",
+    Submitted: "bg-blue-50 text-blue-700 dark:bg-blue-950/40 dark:text-blue-300",
+    Processing: "bg-blue-50 text-blue-700 dark:bg-blue-950/40 dark:text-blue-300",
+    "Under Review": "bg-amber-50 text-amber-700 dark:bg-amber-950/40 dark:text-amber-300",
+    Pending: "bg-amber-50 text-amber-700 dark:bg-amber-950/40 dark:text-amber-300",
+    "In Progress": "bg-amber-50 text-amber-700 dark:bg-amber-950/40 dark:text-amber-300",
+    "Ready for Release": "bg-purple-50 text-purple-700 dark:bg-purple-950/40 dark:text-purple-300",
+    Released: "bg-purple-50 text-purple-700 dark:bg-purple-950/40 dark:text-purple-300",
+    Rejected: "bg-red-50 text-red-700 dark:bg-red-950/40 dark:text-red-300",
+    "Not Yet Competent": "bg-red-50 text-red-700 dark:bg-red-950/40 dark:text-red-300",
+    "Not Started": "bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-300",
+    Draft: "bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-300",
   };
-  return `<span class="inline-flex items-center rounded-full px-2.5 py-1 text-xs font-semibold ${map[s] || "bg-slate-100 text-slate-600"}">${esc(s)}</span>`;
+  return `<span class="inline-flex items-center rounded-full px-2.5 py-1 text-xs font-semibold ${map[s] || "bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-300"}">${esc(s)}</span>`;
 }
 function formatDate(d) {
   if (!d) return "—";
@@ -172,17 +172,6 @@ function updateNotif() {
     b.textContent = n;
     b.classList.toggle("hidden", n === 0);
   }
-  document.querySelectorAll("[data-nav-notif]").forEach((el) => {
-    const sources = (el.dataset.navNotif || "portal").split(" ").filter(Boolean);
-    const count = sources.reduce((total, source) => {
-      if (source === "parentLinkRequest" && u.role === "admin") {
-        return total + DG.getData("parentLinkRequests", []).filter((r) => String(r.status || "").toLowerCase() === "pending").length;
-      }
-      return total + unread.filter((x) => (x.source || "portal") === source).length;
-    }, 0);
-    el.textContent = count;
-    el.classList.toggle("hidden", count === 0);
-  });
 }
 function notificationsEnabledFor(role) {
   if (!role) return true;
@@ -369,12 +358,52 @@ const PAGE_SOURCE_MAP = {
   "/admin/requirements": ["requirement"],
   "/admin/announcements": ["announcement"],
   "/admin/parent-links": ["parentLinkRequest"],
+  "/admin/grades": ["grade"],
+  "/admin/competencies": ["competency"],
+  "/admin/attendance": ["attendance"],
+  "/teacher/dashboard": ["grade", "competency"],
+  "/parent/children": ["enrollment"],
   "/guest/documents": ["document"],
   "/guest/announcements": ["announcement"],
 };
 
 function autoClearBadges() {
   (PAGE_SOURCE_MAP[location.pathname] || []).forEach(markSourceRead);
+}
+
+// Where a notification leads when clicked, per role. Sources without an
+// entry render statically (no dead links). Meeting/activity rows carry no
+// classroom context, so they land on the role's classroom list.
+const NOTIFICATION_ROUTES = {
+  grade: { admin: "/admin/grades", teacher: "/teacher/grades", student: "/student/grades", parent: "/parent/grades" },
+  competency: { admin: "/admin/competencies", teacher: "/teacher/competencies", student: "/student/competencies" },
+  attendance: { admin: "/admin/attendance", teacher: "/teacher/attendance", student: "/student/attendance", parent: "/parent/attendance" },
+  announcement: { admin: "/admin/announcements", teacher: "/teacher/announcements", student: "/student/announcements", parent: "/parent/announcements", guest: "/guest/announcements" },
+  enrollment: { admin: "/admin/enrollment", student: "/student/enrollment" },
+  requirement: { admin: "/admin/requirements", student: "/student/requirements" },
+  document: { admin: "/admin/documents", student: "/student/documents", parent: "/parent/documents", guest: "/guest/documents" },
+  parentLinkRequest: { admin: "/admin/parent-links", parent: "/parent/children" },
+  parentLink: { admin: "/admin/parent-links", parent: "/parent/children" },
+  meeting: { teacher: "/teacher/classrooms", student: "/student/classrooms" },
+  activity: { teacher: "/teacher/classrooms", student: "/student/classrooms" },
+};
+
+function notificationTarget(notification, user) {
+  if (!notification || !user) return null;
+  const routes = NOTIFICATION_ROUTES[notification.source || "portal"];
+  return (routes && routes[user.role]) || null;
+}
+
+function markNotificationRead(notification) {
+  const u = DG.getCurrentUser();
+  if (!u || !notification) return;
+  const ns = DG.getData("notifications", []);
+  const row = ns.find((n) => n.id === notification.id);
+  if (row && !row.read) {
+    row.read = true;
+    DG.saveData("notifications", ns);
+    updateNotif();
+  }
 }
 
 function showNotifications() {
@@ -405,11 +434,11 @@ function showNotifications() {
   const header = document.createElement("div");
   header.className = "flex items-center justify-between";
   const heading = document.createElement("h3");
-  heading.className = "text-lg font-bold";
+  heading.className = "text-lg font-bold text-slate-900 dark:text-white";
   heading.textContent = "Notifications";
   const close = document.createElement("button");
   close.type = "button";
-  close.className = "rounded-lg p-2 hover:bg-slate-100 dark:hover:bg-slate-800";
+  close.className = "rounded p-2 hover:bg-slate-100 dark:hover:bg-slate-800";
   close.setAttribute("aria-label", "Close notifications");
   close.addEventListener("click", closeModal);
   const closeIcon = document.createElement("i");
@@ -422,21 +451,45 @@ function showNotifications() {
   list.className = "mt-4 max-h-[55vh] space-y-2 overflow-auto";
   if (ns.length) {
     ns.forEach((notification) => {
-      const item = document.createElement("div");
-      item.className = `rounded-xl border p-3 ${notification.read ? "border-slate-200" : "border-green-200 bg-green-50/60"} dark:border-slate-700 dark:bg-slate-800`;
+      const target = notificationTarget(notification, u);
+      const item = document.createElement(target ? "button" : "div");
+      if (target) {
+        item.type = "button";
+        item.className = `w-full rounded border p-3 text-left transition hover:border-green-300 hover:shadow-sm ${notification.read ? "border-slate-200" : "border-green-200 bg-green-50/60"} dark:border-slate-700 dark:bg-slate-800`;
+        item.addEventListener("click", () => {
+          markNotificationRead(notification);
+          closeModal();
+          window.location.href = target;
+        });
+      } else {
+        item.className = `rounded border p-3 ${notification.read ? "border-slate-200" : "border-green-200 bg-green-50/60"} dark:border-slate-700 dark:bg-slate-800`;
+      }
+      const body = document.createElement("div");
+      body.className = "min-w-0 flex-1";
       const meta = document.createElement("div");
       meta.className = "flex justify-between gap-3";
       const title = document.createElement("p");
-      title.className = "text-sm font-semibold";
+      title.className = "text-sm font-semibold text-slate-900 dark:text-slate-100";
       title.textContent = notification.title || "Portal update";
       const when = document.createElement("span");
-      when.className = "text-[11px] text-slate-400";
+      when.className = "shrink-0 text-[11px] text-slate-400 dark:text-slate-500";
       when.textContent = formatDate(notification.date);
       meta.append(title, when);
       const message = document.createElement("p");
-      message.className = "mt-1 text-sm text-slate-500";
+      message.className = "mt-1 text-sm text-slate-500 dark:text-slate-400";
       message.textContent = notification.message || "No additional details.";
-      item.append(meta, message);
+      body.append(meta, message);
+      if (target) {
+        const row = document.createElement("div");
+        row.className = "flex items-center gap-2";
+        const chevron = document.createElement("i");
+        chevron.dataset.lucide = "chevron-right";
+        chevron.className = "h-4 w-4 shrink-0 text-slate-300";
+        row.append(body, chevron);
+        item.append(row);
+      } else {
+        item.append(body);
+      }
       list.append(item);
     });
   } else {
@@ -449,7 +502,7 @@ function showNotifications() {
   const markRead = document.createElement("button");
   markRead.type = "button";
   markRead.className =
-    "mt-4 w-full rounded-xl bg-green-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-green-700";
+    "mt-4 w-full rounded bg-green-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-green-700";
   markRead.textContent = "Mark all as read";
   markRead.addEventListener("click", markNotificationsRead);
   modal.append(header, list, markRead);

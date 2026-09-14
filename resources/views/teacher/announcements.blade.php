@@ -20,7 +20,7 @@
         <main class="p-4 sm:p-6 lg:p-8">
             <div class="mx-auto max-w-3xl">
                 <section class="mb-6">
-                    <p class="text-xs font-bold uppercase tracking-[0.18em] text-violet-700">Communication center</p>
+                    <p class="text-xs font-bold uppercase tracking-[0.18em] text-violet-700 dark:text-violet-300">Communication center</p>
                     <h2 class="mt-1 text-2xl font-extrabold tracking-tight">Announcements</h2>
                     <p class="mt-1 text-sm text-slate-500">Send clear updates to assigned learners and their parents.</p>
                 </section>
@@ -35,11 +35,11 @@
                         </div>
                     </div>
                     <form id="announcementForm" class="p-5">
-                        <textarea id="message" rows="3" class="input w-full rounded-xl border px-3 py-3" placeholder="What's the announcement?" required></textarea>
+                        <textarea id="message" rows="3" class="input w-full rounded border px-3 py-3" placeholder="What's the announcement?" required></textarea>
                         <div class="mt-3 grid gap-3 sm:grid-cols-3">
-                            <input id="title" class="input rounded-xl border px-3 py-2.5 text-sm" placeholder="Title *" />
-                            <input id="category" class="input rounded-xl border px-3 py-2.5 text-sm" placeholder="Category (e.g. Class)" />
-                            <select id="audience" class="input rounded-xl border px-3 py-2.5 text-sm">
+                            <input id="title" class="input rounded border px-3 py-2.5 text-sm" placeholder="Title *" />
+                            <input id="category" class="input rounded border px-3 py-2.5 text-sm" placeholder="Category (e.g. Class)" />
+                            <select id="audience" class="input rounded border px-3 py-2.5 text-sm">
                                 <option>All</option>
                                 <option>Students</option>
                                 <option>Parents</option>
@@ -47,7 +47,7 @@
                             </select>
                         </div>
                         <div class="mt-3 flex flex-wrap items-center gap-3">
-                            <label class="inline-flex cursor-pointer items-center gap-2 rounded-xl border border-slate-300 px-4 py-2.5 text-sm font-semibold hover:bg-slate-50 dark:border-slate-600 dark:hover:bg-slate-800">
+                            <label class="inline-flex cursor-pointer items-center gap-2 rounded border border-slate-300 px-4 py-2.5 text-sm font-semibold hover:bg-slate-50 dark:border-slate-600 dark:hover:bg-slate-800">
                                 <i data-lucide="image-plus" class="h-4 w-4"></i>
                                 Add photo
                                 <input id="announcementImage" type="file" accept="image/*" class="hidden" />
@@ -56,7 +56,7 @@
                         </div>
                         <div id="announcementImagePreview" class="mt-3 hidden">
                             <div class="relative inline-block">
-                                <img id="announcementImagePreviewImg" class="max-h-52 rounded-xl border border-slate-200 object-cover dark:border-slate-700" alt="Announcement photo preview" />
+                                <img id="announcementImagePreviewImg" class="max-h-52 rounded border border-slate-200 object-cover dark:border-slate-700" alt="Announcement photo preview" />
                                 <button type="button" id="announcementImageRemove" aria-label="Remove photo"
                                     class="absolute -top-2 -right-2 flex h-6 w-6 items-center justify-center rounded-full bg-slate-900 text-white shadow">
                                     <i data-lucide="x" class="h-3 w-3"></i>
@@ -65,7 +65,7 @@
                         </div>
                         <div class="mt-4 flex flex-wrap items-center justify-between gap-3">
                             <span class="text-xs text-slate-400">Reaches every selected audience instantly.</span>
-                            <button type="submit" class="inline-flex items-center justify-center gap-2 rounded-xl bg-emerald-600 px-5 py-2.5 text-sm font-semibold text-white hover:bg-emerald-700">
+                            <button type="submit" class="inline-flex items-center justify-center gap-2 rounded bg-emerald-600 px-5 py-2.5 text-sm font-semibold text-white hover:bg-emerald-700">
                                 <i data-lucide="send" class="h-4 w-4"></i>
                                 Publish
                             </button>
@@ -75,7 +75,7 @@
                 <section>
                     <div class="mb-3 flex items-center gap-2 px-1">
                         <i data-lucide="newspaper" class="h-4 w-4 text-slate-400"></i>
-                        <h3 class="text-sm font-bold text-slate-500">Latest updates</h3>
+                        <h3 class="text-sm font-bold text-slate-500 dark:text-slate-400">Latest updates</h3>
                     </div>
                     <div id="rows" class="space-y-4"></div>
                 </section>

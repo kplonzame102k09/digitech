@@ -8,6 +8,8 @@ use App\Models\Classroom;
 use App\Models\ClassroomActivity;
 use App\Models\ClassroomSubmission;
 use App\Models\Grade;
+use App\Models\Notification;
+use App\Models\SystemSetting;
 use App\Models\User;
 use App\Policies\ClassroomWorkPolicy;
 use Illuminate\Http\JsonResponse;
@@ -92,6 +94,16 @@ class ClassroomSubmissionController extends Controller
             'notes' => "Submission {$submission->id} scored {$submission->score}",
         ]);
 
+        if ((bool) (SystemSetting::getInstance()->notifyStudents ?? true)) {
+            Notification::alert(
+                (string) $submission->studentId,
+                'Submission graded',
+                ($submission->activity?->title ?? 'An activity')." was scored {$submission->score} in {$classroom->name}.",
+                'grade',
+                (string) $submission->id,
+            );
+        }
+
         return response()->json(['ok' => true, 'submission' => $this->serialize($submission)]);
     }
 
@@ -102,6 +114,24 @@ class ClassroomSubmissionController extends Controller
 
         $submission->status = ClassroomSubmission::RETURNED;
         $submission->save();
+
+        AuditLog::record([
+            'entity' => AuditLog::ENTITY_SUBMISSION,
+            'recordId' => (string) $submission->id,
+            'action' => 'submission.returned',
+            'notes' => 'Submission returned to '.(string) $submission->studentId.'.',
+            'actorId' => $request->user()->user_id,
+        ]);
+
+        if ((bool) (SystemSetting::getInstance()->notifyStudents ?? true)) {
+            Notification::alert(
+                (string) $submission->studentId,
+                'Submission returned',
+                ($submission->activity?->title ?? 'An activity')." was returned in {$classroom->name}.",
+                'grade',
+                (string) $submission->id,
+            );
+        }
 
         return response()->json(['ok' => true, 'submission' => $this->serialize($submission)]);
     }
@@ -240,6 +270,24 @@ class ClassroomSubmissionController extends Controller
         );
         $grade->remarks = $grade->finalGrade !== null && $grade->finalGrade >= 75 ? 'Passed' : 'Failed';
         $grade->save();
+
+        AuditLog::record([
+            'entity' => AuditLog::ENTITY_GRADE,
+            'recordId' => (string) $grade->id,
+            'action' => 'grade.updated',
+            'notes' => "Grade saved for {$studentId} in {$classroom->subject}.",
+            'actorId' => $user->user_id,
+        ]);
+
+        if ((bool) (SystemSetting::getInstance()->notifyStudents ?? true)) {
+            Notification::alert(
+                (string) $studentId,
+                'Grade updated',
+                "Your {$classroom->subject} grade was updated by your teacher.",
+                'grade',
+                (string) $grade->id,
+            );
+        }
 
         return response()->json(['ok' => true, 'grade' => [
             'id' => $grade->id,

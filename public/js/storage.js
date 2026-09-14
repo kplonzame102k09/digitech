@@ -25,6 +25,14 @@ function removeData(key) {
   if (syncEnabled && key !== "currentUser") queueSync(key, []);
 }
 function clearData(key) { saveData(key, []); }
+// Silent write used by the background sync poller: updates memory WITHOUT
+// queueing an outbound PUT (we just received this value from the server).
+function importData(key, data) {
+  memoryStore[key] = data;
+  return data;
+}
+// Keys with unsent local writes; the poller skips these to avoid pull-vs-push races.
+function pendingKeys() { return Object.keys(pendingSync); }
 function queueSync(key, data) {
   pendingSync[key] = data;
   if (queueSync._timer) clearTimeout(queueSync._timer);
@@ -204,4 +212,4 @@ function loadProfileElements() {
   document.querySelectorAll("[data-user-name]").forEach((el) => { el.textContent = `${user.firstName} ${user.lastName}`; });
   document.querySelectorAll("[data-user-id]").forEach((el) => { el.textContent = user.id; });
 }
-window.DG = { saveData, getData, removeData, clearData, generateId, generateUserId, userIdExists, getCurrentUser, setCurrentUser, logoutUser, getProfilePhoto, normalizePhotoUrl, DEFAULT_AVATAR, setProfilePhoto, uploadProfilePhoto, uploadImage, uploadRequirementFile, loadProfileElements, hydrateFromBoot, flushSync, dedupeNotifications, STORAGE_KEYS };
+window.DG = { saveData, getData, removeData, clearData, importData, pendingKeys, generateId, generateUserId, userIdExists, getCurrentUser, setCurrentUser, logoutUser, getProfilePhoto, normalizePhotoUrl, DEFAULT_AVATAR, setProfilePhoto, uploadProfilePhoto, uploadImage, uploadRequirementFile, loadProfileElements, hydrateFromBoot, flushSync, dedupeNotifications, STORAGE_KEYS };

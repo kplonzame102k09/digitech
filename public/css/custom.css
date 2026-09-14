@@ -2,6 +2,10 @@
   --brand: #16a34a;
   --brand-dark: #0a7632;
   --accent: #2563eb;
+  color-scheme: light dark;
+}
+.dark {
+  color-scheme: dark;
 }
 * {
   scrollbar-width: thin;
@@ -472,11 +476,12 @@ textarea {
   border-radius: .9rem;
   background: #f8fafc;
   padding: .8rem;
+  color: #334155;
 }
 .teacher-mini-detail span,
 .teacher-detail-card p {
   display: block;
-  color: #94a3b8;
+  color: #64748b;
   font-size: .7rem;
   font-weight: 600;
 }
@@ -488,16 +493,27 @@ textarea {
   text-overflow: ellipsis;
   white-space: nowrap;
   font-size: .82rem;
+  color: #0f172a;
 }
 .teacher-detail-card small {
   display: block;
   margin-top: .25rem;
-  color: #94a3b8;
+  color: #64748b;
   font-size: .7rem;
 }
 .dark .teacher-mini-detail,
 .dark .teacher-detail-card {
   background: #1e293b;
+  color: #e2e8f0;
+}
+.dark .teacher-mini-detail span,
+.dark .teacher-detail-card p,
+.dark .teacher-detail-card small {
+  color: #94a3b8;
+}
+.dark .teacher-mini-detail b,
+.dark .teacher-detail-card b {
+  color: #f1f5f9;
 }
 .teacher-empty-state {
   display: flex;
@@ -518,19 +534,23 @@ textarea {
   color: #94a3b8;
 }
 .teacher-empty-state b {
-  color: #334155;
+  color: #0f172a;
 }
 .teacher-empty-state p {
   max-width: 28rem;
   margin-top: .35rem;
   font-size: .85rem;
+  color: #64748b;
 }
 .dark .teacher-empty-state {
   border-color: #334155;
   color: #94a3b8;
 }
 .dark .teacher-empty-state b {
-  color: #e2e8f0;
+  color: #f1f5f9;
+}
+.dark .teacher-empty-state p {
+  color: #94a3b8;
 }
 .teacher-modal-backdrop {
   background: rgba(15,23,42,.62);
@@ -570,12 +590,18 @@ textarea {
 }
 
 /* Student and parent experience refresh */
+/* Shared page background: the same soft circle blob on every role's pages.
+   (Previously student/parent-only, which left teacher/admin pages flat.) */
+body main {
+  position: relative;
+}
 .student-portal main,
 body[data-parent-page] main {
   position: relative;
 }
 .student-portal main::before,
-body[data-parent-page] main::before {
+body[data-parent-page] main::before,
+body main::before {
   position: absolute;
   z-index: -1;
   top: -3rem;
@@ -586,6 +612,7 @@ body[data-parent-page] main::before {
   background: rgba(16,185,129,.055);
   content: "";
   filter: blur(2px);
+  pointer-events: none;
 }
 .student-hero,
 .family-hero {
@@ -858,4 +885,46 @@ body[data-parent-page] main > div > section:first-child:not(.family-hero) h2 {
   background:
     radial-gradient(circle at 84% 10%, rgba(245,158,11,.2), transparent 17rem),
     linear-gradient(135deg, #0c3445 0%, #115e75 45%, #312e81 135%);
+}
+
+/* Classroom video meetings: dark stage theme (teacher + student share the partial). */
+.video-hero {
+  isolation: isolate;
+  background:
+    radial-gradient(circle at 88% 8%, rgba(167, 139, 250, 0.45), transparent 16rem),
+    radial-gradient(circle at 8% 95%, rgba(16, 185, 129, 0.28), transparent 15rem),
+    linear-gradient(135deg, #1e1b4b 0%, #4c1d95 55%, #0f766e 135%);
+}
+.video-hero::after {
+  content: "";
+  position: absolute;
+  right: -4.5rem;
+  top: -6rem;
+  width: 15rem;
+  height: 15rem;
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  border-radius: 999px;
+  box-shadow: 0 0 0 1.75rem rgba(255, 255, 255, 0.04), 0 0 0 4rem rgba(255, 255, 255, 0.02);
+  pointer-events: none;
+}
+.video-schedule {
+  background: linear-gradient(135deg, rgba(139, 92, 246, 0.08), rgba(16, 185, 129, 0.06));
+  border: 1px solid rgba(139, 92, 246, 0.18);
+}
+.dark .video-schedule {
+  background: rgba(30, 27, 75, 0.35);
+  border-color: rgba(139, 92, 246, 0.25);
+}
+.video-stage {
+  background:
+    radial-gradient(circle at 50% 0%, rgba(139, 92, 246, 0.16), transparent 22rem),
+    #020617;
+  border: 1px solid rgba(139, 92, 246, 0.25);
+  border-radius: 1.5rem;
+  box-shadow: 0 24px 60px rgba(2, 6, 23, 0.45);
+}
+.video-controls {
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  backdrop-filter: blur(8px);
 }

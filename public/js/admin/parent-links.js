@@ -25,8 +25,8 @@
             const student = get("users").find((u) => u.id === req.studentId);
             const actions =
               req.status === "Pending"
-                ? `<button data-approve="${esc(req.id)}" class="mr-2 font-semibold text-emerald-700">Approve</button>
-                   <button data-reject="${esc(req.id)}" class="font-semibold text-rose-600">Reject</button>`
+                ? `<button data-approve="${esc(req.id)}" class="mr-2 font-semibold text-emerald-700 dark:text-emerald-300">Approve</button>
+                   <button data-reject="${esc(req.id)}" class="font-semibold text-rose-600 dark:text-rose-400">Reject</button>`
                 : "—";
             return `<tr class="border-t border-slate-200 dark:border-slate-800">
               <td class="p-4">
@@ -43,7 +43,7 @@
             </tr>`;
           })
           .join("")
-      : `<tr><td colspan="5" class="p-8 text-center text-slate-500">No parent link requests yet.</td></tr>`;
+      : `<tr><td colspan="5" class="p-8 text-center text-slate-500 dark:text-slate-400">No parent link requests yet.</td></tr>`;
 
     body.querySelectorAll("[data-approve]").forEach((btn) => {
       btn.addEventListener("click", () => decide(btn.dataset.approve, "Approved"));
@@ -103,5 +103,10 @@
   APP?.applyTheme?.();
   APP?.updateNotif?.();
   render();
+  // Live updates: refresh the request list when it changes elsewhere.
+  document.addEventListener("digitech:sync", () => {
+    if (!window.DG_SYNC?.idle()) return;
+    render();
+  });
   lucide.createIcons();
 })();
