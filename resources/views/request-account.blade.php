@@ -82,8 +82,8 @@
         </div>
 
         <div class="flex items-center justify-center p-5">
-            <div class="w-full max-w-md">
-                <div class="card p-7 sm:p-9 shadow-xl">
+            <div class="w-full max-w-2xl">
+                <div class="p-7 sm:p-9">
                     <p class="text-sm font-semibold text-green-600 dark:text-green-400">Account Request</p>
                     <h1 class="text-2xl font-bold mt-1">Request an account</h1>
                     <p class="text-sm text-slate-500 dark:text-slate-400 mt-2">Fill in your details below. Fields marked * are required.</p>

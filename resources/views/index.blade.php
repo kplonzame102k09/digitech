@@ -45,7 +45,7 @@
                     <a href="#services" class="text-lg">Services</a>
                     <a href="#about" class="text-lg">About</a>
                     <a href="#contact" class="text-lg">Contact</a>
-                    <a href="{{ route('account.request') }}" class="text-lg">Request Account</a>
+                    
                 </div>
                 <div class="hidden md:flex items-center gap-3">
                     <button type="button" data-theme-toggle title="Toggle dark / light mode" aria-label="Toggle dark / light mode"
@@ -106,9 +106,6 @@
                             class="px-5 py-3.5 rounded bg-green-600 text-white font-semibold shadow-lg">
                             Access Portal
                             <i data-lucide="arrow-right" class="inline w-5"></i>
-                        </a>
-                        <a href="{{ route('account.request') }}" class="px-6 py-3.5 rounded bg-white border font-semibold dark:bg-slate-900 dark:border-slate-700 dark:text-slate-100">
-                            Request Account
                         </a>
                         <a href="#services" class="px-6 py-3.5 rounded bg-white border font-semibold dark:bg-slate-900 dark:border-slate-700 dark:text-slate-100">
                             Explore Services
