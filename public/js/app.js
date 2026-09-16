@@ -1,3 +1,5 @@
+ 
+
 (function () {
     function ensure() {
         let el = document.getElementById("global-loader");

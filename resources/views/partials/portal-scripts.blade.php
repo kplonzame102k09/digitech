@@ -47,3 +47,10 @@
         });
     });
 </script>
+<script>
+    const link = document.createElement('link');
+    link.rel = 'icon';
+    link.type = 'image/png';
+    link.href = '/images/16432.png';
+    document.head.appendChild(link);   
+</script>

@@ -14,7 +14,7 @@
         </div>
         <nav class="flex-1 space-y-1 overflow-y-auto p-3">
             @php
-                $inRequests = request()->routeIs('admin.documents', 'admin.parent-links', 'admin.requirements');
+                $inRequests = request()->routeIs('admin.documents', 'admin.parent-links', 'admin.requirements', 'admin.account-requests');
                 $inAcademics = request()->routeIs('admin.attendance', 'admin.attendance.finalize', 'admin.competencies', 'admin.enrollment', 'admin.grades', 'admin.programs');
                 $inEngagement = request()->routeIs('admin.announcements');
                 $inSystem = request()->routeIs('admin.settings', 'admin.profile');
@@ -39,6 +39,12 @@
                     <i data-lucide="chevron-down" class="ml-auto h-4 w-4 transition-transform group-open:rotate-180"></i>
                 </summary>
                 <div class="ml-4 mt-1 space-y-1 border-l border-slate-200 pl-3 dark:border-slate-800">
+                    <a href="{{ route('admin.account-requests') }}" class="flex items-center gap-3 rounded px-3 py-2 text-sm font-medium
+                        {{ request()->routeIs('admin.account-requests')
+                        ? 'nav-active' : 'text-slate-600 hover:bg-slate-100 dark:text-slate-300 dark:hover:bg-slate-800' }}">
+                        <i data-lucide="user-plus" class="w-4"></i>
+                        Account Requests
+                    </a>
                     <a href="{{ route('admin.documents') }}" class="flex items-center gap-3 rounded px-3 py-2 text-sm font-medium
                         {{ request()->routeIs('admin.documents')
                         ? 'nav-active' : 'text-slate-600 hover:bg-slate-100 dark:text-slate-300 dark:hover:bg-slate-800' }}">

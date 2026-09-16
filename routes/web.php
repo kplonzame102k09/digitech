@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\AccountController;
 use App\Http\Controllers\AddressController;
+use App\Http\Controllers\Admin\AccountRequestController as AdminAccountRequestController;
 use App\Http\Controllers\Admin\AttendanceFinalizeController;
 use App\Http\Controllers\Admin\ProfileController as AdminProfileController;
 use App\Http\Controllers\Analytics\AttendanceAnalyticsController;
@@ -80,10 +81,16 @@ Route::middleware(['auth', 'password.updated', 'role:admin'])->prefix('admin')->
     Route::get('/attendance/finalize', fn () => view('admin.attendance-finalization'))->name('attendance.finalize');
     Route::get('/announcements', fn () => view('admin.announcements'))->name('announcements');
     Route::get('/parent-links', fn () => view('admin.parent-links'))->name('parent-links');
+    Route::get('/account-requests', fn () => view('admin.account-requests'))->name('account-requests');
     Route::get('/profile', fn () => view('admin.profile'))->name('profile');
     Route::get('/api/profile', [AdminProfileController::class, 'show'])->name('api.profile.show');
     Route::put('/api/profile', [AdminProfileController::class, 'update'])->name('api.profile.update');
     Route::post('/api/profile/photo', [AdminProfileController::class, 'uploadPhoto'])->name('api.profile.photo');
+    // Account request management
+    Route::get('/api/account-requests', [AdminAccountRequestController::class, 'index'])->name('api.account-requests.index');
+    Route::get('/api/account-requests/{id}', [AdminAccountRequestController::class, 'show'])->name('api.account-requests.show');
+    Route::post('/api/account-requests/{id}/approve', [AdminAccountRequestController::class, 'approve'])->name('api.account-requests.approve');
+    Route::post('/api/account-requests/{id}/reject', [AdminAccountRequestController::class, 'reject'])->name('api.account-requests.reject');
     // Advisory attendance: adviser submissions awaiting (or finished)
     // finalization, plus the RETURN route that sends a package back to its
     // adviser for correction.
