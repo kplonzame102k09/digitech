@@ -23,7 +23,7 @@ composer install
 cp .env.example .env
 php artisan key:generate
 php artisan migrate
-php artisan db:seed --class=DemoUserSeeder   # optional demo accounts
+php artisan db:seed
 npm install && npm run build                  # if assets are not prebuilt
 php artisan serve
 ```
@@ -36,18 +36,6 @@ php artisan serve
 - `SESSION_DRIVER` / `CACHE_STORE` / `QUEUE_CONNECTION` – use a persistent
   driver (database/redis) in production, never `file`/`array` on multi-server.
 - Test suite (see below): `DB_TEST_DATABASE`.
-
-### Demo accounts (password: `password`)
-
-| User               | user_id          | Email                       |
-|--------------------|------------------|-----------------------------|
-| Registrar admin    | ADMIN-2026-000001| admin@gmail.com             |
-| Teacher            | TCH-2026-000001  | teacher@school.local        |
-| Student            | STU-2026-000001  | juan.delacruz@student.local |
-| Student            | STU-2026-000002  | maria.reyes@student.local   |
-| Student            | STU-2026-000003  | jose.garcia@student.local   |
-| Parent (Juan's)    | PAR-2026-000001  | parent@school.local         |
-| Guest              | GST-2026-000001  | guest@school.local          |
 
 New/imported accounts without a real password are issued a random one and
 flagged `mustChangePassword`; they are forced through `/auth/password/change`
