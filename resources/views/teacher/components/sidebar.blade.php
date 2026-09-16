@@ -46,6 +46,12 @@
                 <i data-lucide="calendar-check-2" class="w-4"></i>
                 Attendance
             </a>
+            <a href="{{ route('teacher.attendance.review') }}" class="flex items-center gap-3 rounded px-3 py-2.5 text-sm font-medium 
+                {{ request()->routeIs('teacher.attendance.review')
+                ? 'nav-active' : 'text-slate-600 hover:bg-slate-100 dark:text-slate-300 dark:hover:bg-slate-800'}}">
+                <i data-lucide="shield-check" class="w-4"></i>
+                Review &amp; submit
+            </a>
             <a href="{{ route('teacher.announcements') }}" class="flex items-center gap-3 rounded px-3 py-2.5 text-sm font-medium 
                 {{ request()->routeIs('teacher.announcements')
                 ? 'nav-active' : 'text-slate-600 hover:bg-slate-100 dark:text-slate-300 dark:hover:bg-slate-800'}}">

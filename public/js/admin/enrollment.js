@@ -177,7 +177,7 @@
     return enrollments
       .filter((record) => {
         const haystack =
-          `${studentName(record)} ${record.studentId || ""} ${record.id || ""} ${program(record)} ${record.programType || ""}`.toLowerCase();
+          `${studentName(record)} ${record.studentId || ""} ${record.id || ""} ${program(record)} ${record.programType || ""} ${fullName(users.find((user) => user.id === record.assignedTeacherId))}`.toLowerCase();
         return (
           (!query || haystack.includes(query)) &&
           (!status || record.status === status) &&
@@ -234,6 +234,30 @@
       setText("[data-program]", program(record), row);
       setText("[data-school-year]", record.schoolYear || "—", row);
       setBadge($("[data-record-status]", row), record.status);
+      const adviser = $("[data-assigned-teacher]", row);
+      if (adviser) {
+        const teachers = users.filter((user) => user.role === "teacher");
+        adviser.replaceChildren(
+          ...teachers.map((user) => {
+            const option = document.createElement("option");
+            option.value = user.id;
+            option.textContent = `${fullName(user)} · ${user.id}`;
+            return option;
+          }),
+        );
+        const emptyOption = document.createElement("option");
+        emptyOption.value = "";
+        emptyOption.textContent = "No adviser";
+        adviser.prepend(emptyOption);
+        adviser.value = record.assignedTeacherId || "";
+        adviser.classList.toggle(
+          "text-slate-400",
+          !record.assignedTeacherId,
+        );
+        adviser.addEventListener("change", () =>
+          assignAdviser(record, adviser.value),
+        );
+      }
       const inline = $("[data-inline-status]", row);
       if (inline) {
         inline.value = record.status || "Draft";
@@ -461,6 +485,28 @@
           item.schoolYear === record.schoolYear,
       )
     );
+  }
+
+  function assignAdviser(record, teacherId) {
+    const next = teacherId || "";
+    if ((record.assignedTeacherId || "") === next) return;
+    const from = record.assignedTeacherId || "None";
+    Object.assign(record, {
+      assignedTeacherId: next,
+      updatedAt: new Date().toISOString(),
+    });
+    save("enrollments", enrollments);
+    addAudit(
+      record,
+      from,
+      next || "Not set",
+      next ? "Adviser assigned" : "Adviser cleared",
+      "",
+    );
+    APP.toast(
+      next ? `Adviser assigned to ${studentName(record)}` : "Adviser cleared",
+    );
+    render();
   }
 
   function updateRecord(

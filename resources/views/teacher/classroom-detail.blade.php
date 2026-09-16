@@ -16,7 +16,7 @@
 <body class="min-h-screen bg-slate-50 text-slate-800 dark:bg-slate-950 dark:text-slate-100" data-classroom-id="{{ $classroomId }}">
     @include('teacher.components.sidebar')
     <div class="lg:pl-64">
-        @include('teacher.components.header')
+        @include('teacher.components.header', ['title' => 'Classroom', 'subtitle' => 'Learner management'])
         <main class="p-4 sm:p-6 lg:p-8">
             <div class="mx-auto max-w-7xl">
                 <a href="{{ route('teacher.classrooms') }}"

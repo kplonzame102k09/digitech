@@ -15,7 +15,7 @@
         <nav class="flex-1 space-y-1 overflow-y-auto p-3">
             @php
                 $inRequests = request()->routeIs('admin.documents', 'admin.parent-links', 'admin.requirements');
-                $inAcademics = request()->routeIs('admin.attendance', 'admin.competencies', 'admin.enrollment', 'admin.grades', 'admin.programs');
+                $inAcademics = request()->routeIs('admin.attendance', 'admin.attendance.finalize', 'admin.competencies', 'admin.enrollment', 'admin.grades', 'admin.programs');
                 $inEngagement = request()->routeIs('admin.announcements');
                 $inSystem = request()->routeIs('admin.settings', 'admin.profile');
             @endphp
@@ -72,6 +72,12 @@
                         ? 'nav-active' : 'text-slate-600 hover:bg-slate-100 dark:text-slate-300 dark:hover:bg-slate-800' }}">
                         <i data-lucide="calendar-check-2" class="w-4"></i>
                         Attendance
+                    </a>
+                    <a href="{{ route('admin.attendance.finalize') }}" class="flex items-center gap-3 rounded px-3 py-2 text-sm font-medium
+                        {{ request()->routeIs('admin.attendance.finalize')
+                        ? 'nav-active' : 'text-slate-600 hover:bg-slate-100 dark:text-slate-300 dark:hover:bg-slate-800' }}">
+                        <i data-lucide="check-check" class="w-4"></i>
+                        Finalize Attendance
                     </a>
                     <a href="{{ route('admin.competencies') }}" class="flex items-center gap-3 rounded px-3 py-2 text-sm font-medium
                         {{ request()->routeIs('admin.competencies')

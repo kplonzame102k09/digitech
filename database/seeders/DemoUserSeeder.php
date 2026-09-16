@@ -151,7 +151,7 @@ class DemoUserSeeder extends Seeder
         }
 
         DB::table('parent_student')->updateOrInsert(
-            ['parent_id' => $parent->getKey(), 'student_id' => $child->getKey()],
+            ['parent_id' => $parent->user_id, 'student_id' => $child->user_id],
             ['created_at' => now(), 'updated_at' => now()],
         );
     }

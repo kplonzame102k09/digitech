@@ -16,7 +16,7 @@
 <body class="min-h-screen bg-slate-50 text-slate-800 dark:bg-slate-950 dark:text-slate-100">
     @include('admin.components.sidebar')
     <div class="lg:pl-64">
-        @include('admin.components.header')
+        @include('admin.components.header', ['title' => 'Enrollment', 'subtitle' => 'Admissions'])
         <main class="p-4 sm:p-6 lg:p-8">
             <div class="mx-auto max-w-7xl">
                 <section class="mb-2 p-6 sm:p-8">
@@ -108,6 +108,7 @@
                                     <th class="p-4">Student</th>
                                     <th class="p-4">Program</th>
                                     <th class="p-4">School year</th>
+                                    <th class="p-4">Adviser</th>
                                     <th class="p-4">Status</th>
                                     <th class="p-4 text-right">Actions</th>
                                 </tr>
@@ -275,6 +276,11 @@
             </td>
             <td data-program class="p-4"></td>
             <td data-school-year class="p-4"></td>
+            <td class="p-4">
+                <select data-assigned-teacher class="input rounded border px-2 py-1.5 text-xs">
+                    <option value="">No adviser</option>
+                </select>
+            </td>
             <td class="p-4"><span data-record-status></span></td>
             <td class="p-4">
                 <div class="flex justify-end gap-2">

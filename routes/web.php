@@ -2,11 +2,13 @@
 
 use App\Http\Controllers\AccountController;
 use App\Http\Controllers\AddressController;
+use App\Http\Controllers\Admin\AttendanceFinalizeController;
 use App\Http\Controllers\Admin\ProfileController as AdminProfileController;
 use App\Http\Controllers\Analytics\AttendanceAnalyticsController;
 use App\Http\Controllers\Analytics\GradeAnalyticsController;
 use App\Http\Controllers\Authentication\LoginController;
 use App\Http\Controllers\Authentication\PasswordController;
+use App\Http\Controllers\AccountRequestController;
 use App\Http\Controllers\PortalDataController;
 use App\Http\Controllers\Student\DocumentRequestController;
 use App\Http\Controllers\Student\EnrollmentController;
@@ -16,6 +18,8 @@ use App\Http\Controllers\Student\ClassroomDetailController;
 use App\Http\Controllers\Student\ClassroomJoinController;
 use App\Http\Controllers\Student\ClassroomMeetingController as StudentClassroomMeetingController;
 use App\Http\Controllers\Student\ClassroomWorkController;
+use App\Http\Controllers\Teacher\AttendanceController as TeacherAttendanceController;
+use App\Http\Controllers\Teacher\AttendanceReviewController;
 use App\Http\Controllers\Teacher\ClassroomActivityController;
 use App\Http\Controllers\Teacher\ClassroomMeetingController as TeacherClassroomMeetingController;
 use App\Http\Controllers\Teacher\ClassroomController as TeacherClassroomController;
@@ -33,6 +37,9 @@ Route::post('/login', [LoginController::class, 'login'])->middleware('throttle:l
 Route::post('/logout', [LoginController::class, 'logout'])->middleware('auth')->name('logout');
 Route::get('/auth/password/change', [PasswordController::class, 'show'])->middleware('auth')->name('auth.password.change');
 Route::post('/auth/password/change', [PasswordController::class, 'update'])->middleware('auth')->name('auth.password.update');
+
+Route::get('/request-account', fn () => view('request-account'))->name('account.request');
+Route::post('/account-requests', [AccountRequestController::class, 'store'])->middleware('throttle:account-requests')->name('account-requests.store');
 
 Route::get('/api/provinces/{regionCode}', [AddressController::class, 'provinces']);
 Route::get('/api/regions', [AddressController::class, 'regions']);
@@ -52,6 +59,7 @@ Route::middleware(['auth', 'password.updated'])->prefix('api/portal')->group(fun
     Route::post('/account/password', [AccountController::class, 'changePassword'])->name('account.password');
     // Phase 1: server-side analytics (additive; legacy bulk PUT below untouched).
     Route::get('/analytics/attendance', [AttendanceAnalyticsController::class, 'show']);
+    Route::get('/analytics/attendance/by-recorder/{recorderId}', [AttendanceAnalyticsController::class, 'byRecorder']);
     Route::get('/analytics/grades/summary', [GradeAnalyticsController::class, 'summary']);
     Route::post('/analytics/grades/preview', [GradeAnalyticsController::class, 'preview']);
     Route::get('/{key}', [PortalDataController::class, 'show']);
@@ -69,12 +77,20 @@ Route::middleware(['auth', 'password.updated', 'role:admin'])->prefix('admin')->
     Route::get('/settings', fn () => view('admin.settings'))->name('settings');
     Route::get('/competencies', fn () => view('admin.competencies'))->name('competencies');
     Route::get('/attendance', fn () => view('admin.attendance'))->name('attendance');
+    Route::get('/attendance/finalize', fn () => view('admin.attendance-finalization'))->name('attendance.finalize');
     Route::get('/announcements', fn () => view('admin.announcements'))->name('announcements');
     Route::get('/parent-links', fn () => view('admin.parent-links'))->name('parent-links');
     Route::get('/profile', fn () => view('admin.profile'))->name('profile');
     Route::get('/api/profile', [AdminProfileController::class, 'show'])->name('api.profile.show');
     Route::put('/api/profile', [AdminProfileController::class, 'update'])->name('api.profile.update');
     Route::post('/api/profile/photo', [AdminProfileController::class, 'uploadPhoto'])->name('api.profile.photo');
+    // Advisory attendance: adviser submissions awaiting (or finished)
+    // finalization, plus the RETURN route that sends a package back to its
+    // adviser for correction.
+    Route::get('/api/attendance/finalize', [AttendanceFinalizeController::class, 'index'])->name('api.attendance.finalize.index');
+    Route::get('/api/attendance/finalize/{id}', [AttendanceFinalizeController::class, 'show'])->name('api.attendance.finalize.show');
+    Route::post('/api/attendance/finalize/{id}', [AttendanceFinalizeController::class, 'finalize'])->name('api.attendance.finalize.finalize');
+    Route::post('/api/attendance/finalize/{id}/return', [AttendanceFinalizeController::class, 'returnPackage'])->name('api.attendance.finalize.return');
 });
 
 Route::middleware(['auth', 'password.updated', 'role:student'])->prefix('student')->name('student.')->group(function () {
@@ -113,6 +129,7 @@ Route::middleware(['auth', 'password.updated', 'role:student'])->prefix('student
 Route::middleware(['auth', 'password.updated', 'role:teacher'])->prefix('teacher')->name('teacher.')->group(function () {
     Route::get('/announcements', fn () => view('teacher.announcements'))->name('announcements');
     Route::get('/attendance', fn () => view('teacher.attendance'))->name('attendance');
+    Route::get('/attendance/review', fn () => view('teacher.attendance-review'))->name('attendance.review');
     Route::get('/competencies', fn () => view('teacher.competencies'))->name('competencies');
     Route::get('/dashboard', fn () => view('teacher.dashboard'))->name('dashboard');
     Route::get('/grades', fn () => view('teacher.grades'))->name('grades');
@@ -127,6 +144,7 @@ Route::middleware(['auth', 'password.updated', 'role:teacher'])->prefix('teacher
     Route::post('/api/classrooms/{id}/regenerate', [TeacherClassroomController::class, 'regenerate'])->name('api.classrooms.regenerate');
     Route::post('/api/classrooms/{id}/archive', [TeacherClassroomController::class, 'archive'])->name('api.classrooms.archive');
     Route::delete('/api/classrooms/{id}/students/{studentId}', [TeacherClassroomController::class, 'removeStudent'])->name('api.classrooms.removeStudent');
+    Route::delete('/api/classrooms/{id}', [TeacherClassroomController::class, 'destroy'])->name('api.classrooms.destroy');
     // Classroom detail page.
     Route::get('/classrooms/{id}', fn (string $id) => view('teacher.classroom-detail', ['classroomId' => $id]))->name('classrooms.show');
     // Activities (no per-activity subject; fixed classroom subject applies).
@@ -149,6 +167,23 @@ Route::middleware(['auth', 'password.updated', 'role:teacher'])->prefix('teacher
     Route::post('/api/classrooms/{id}/meetings/{meetingId}/cancel', [TeacherClassroomMeetingController::class, 'cancel'])->name('api.classroom-meetings.cancel');
     Route::delete('/api/classrooms/{id}/meetings/{meetingId}', [TeacherClassroomMeetingController::class, 'destroy'])->name('api.classroom-meetings.destroy');
     Route::post('/api/classrooms/{id}/video/token', [TeacherClassroomMeetingController::class, 'token'])->middleware('throttle:classroom-joins')->name('api.classrooms.video.token');
+    // Attendance sessions: the per-classroom funnel park (start/mark/verify/
+    // submit/cancel/export) and the advisory review flow (filters, day review,
+    // status edits, submit-to-admin). Session marks are checks; the adviser
+    // combines them into the official finals reviewed by the admin.
+    Route::get('/api/attendance/filters', [TeacherAttendanceController::class, 'filters'])->name('api.attendance.filters');
+    Route::get('/api/attendance/classrooms', [TeacherAttendanceController::class, 'classrooms'])->name('api.attendance.classrooms');
+    Route::get('/api/attendance/sessions', [TeacherAttendanceController::class, 'index'])->name('api.attendance.sessions.index');
+    Route::post('/api/attendance/sessions', [TeacherAttendanceController::class, 'start'])->name('api.attendance.sessions.start');
+    Route::get('/api/attendance/sessions/{id}', [TeacherAttendanceController::class, 'show'])->name('api.attendance.sessions.show');
+    Route::post('/api/attendance/sessions/{id}/mark', [TeacherAttendanceController::class, 'mark'])->name('api.attendance.sessions.mark');
+    Route::post('/api/attendance/sessions/{id}/verify', [TeacherAttendanceController::class, 'verify'])->name('api.attendance.sessions.verify');
+    Route::post('/api/attendance/sessions/{id}/submit', [TeacherAttendanceController::class, 'submit'])->name('api.attendance.sessions.submit');
+    Route::post('/api/attendance/sessions/{id}/cancel', [TeacherAttendanceController::class, 'cancel'])->name('api.attendance.sessions.cancel');
+    Route::get('/api/attendance/sessions/{id}/export', [TeacherAttendanceController::class, 'export'])->name('api.attendance.sessions.export');
+    Route::get('/api/attendance/review', [AttendanceReviewController::class, 'show'])->name('api.attendance.review.show');
+    Route::post('/api/attendance/review', [AttendanceReviewController::class, 'edit'])->name('api.attendance.review.edit');
+    Route::post('/api/attendance/review/submit', [AttendanceReviewController::class, 'submit'])->name('api.attendance.review.submit');
 });
 
 // Classroom invite-link landing (any authenticated user; students can join).

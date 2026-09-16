@@ -1,5 +1,7 @@
 @include('partials.profile-page', [
     'role' => 'student',
+    'headerTitle' => 'My Profile',
+    'headerSubtitle' => 'Student Portal',
     
     'eyebrowClass' => 'text-green-600',
     'heroTitle' => 'Your student profile',

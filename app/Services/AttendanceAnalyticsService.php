@@ -15,6 +15,10 @@ use Illuminate\Support\Facades\DB;
  * whenever the API is available.
  *
  * Rate definition: (Present + Late + Excused) / Total.
+ *
+ * Counts only the official record — admin-finalized finals
+ * (Attendance::scopeFinalized). Submitted-but-pending packages and
+ * provisional classroom checks never appear here.
  */
 class AttendanceAnalyticsService
 {
@@ -61,11 +65,14 @@ class AttendanceAnalyticsService
     }
 
     /**
-     * Base attendance query scoped to what the actor may see.
+     * Base attendance query scoped to what the actor may see, restricted to
+     * the official record: only admin-finalized finals (kind='final' with a
+     * finalizedAt stamp) count in analytics. Pending submissions and
+     * provisional classroom marks never count.
      */
     public function scopedQuery(?User $actor)
     {
-        $query = Attendance::query();
+        $query = Attendance::query()->finalized();
         $visible = $this->visibleStudentIds($actor);
 
         if ($visible !== null) {
@@ -164,7 +171,7 @@ class AttendanceAnalyticsService
             return [];
         }
 
-        $rows = Attendance::query()->get(['recordedBy', 'status']);
+        $rows = Attendance::query()->finalized()->get(['recordedBy', 'status']);
 
         $recorders = User::query()
             ->whereIn('role', ['teacher', 'admin'])
@@ -185,6 +192,57 @@ class AttendanceAnalyticsService
                     'name' => trim($recorder->firstName.' '.$recorder->lastName) ?: $recorder->user_id,
                     'role' => $recorder->role,
                     'photo' => $recorder->photo,
+                    'total' => $total,
+                    'present' => $present,
+                    'late' => $late,
+                    'excused' => $excused,
+                    'absent' => $absent,
+                    'rate' => $total > 0 ? round($presentLike / $total * 100, 1) : 0.0,
+                ];
+            })
+            ->sortByDesc('total')
+            ->values()
+            ->all();
+    }
+
+    /**
+     * Per-student finalized attendance summarized from every finalized row
+     * a given recorder entered. Only meaningful for admins.
+     *
+     * @return array<int, array{id:string,name:string,photo:string|null,total:int,present:int,late:int,excused:int,absent:int,rate:float}>
+     */
+    public function byRecorderStudents(string $recorderId): array
+    {
+        $rows = Attendance::query()
+            ->finalized()
+            ->where('recordedBy', $recorderId)
+            ->get(['studentId', 'status']);
+
+        if ($rows->isEmpty()) {
+            return [];
+        }
+
+        $ids = $rows->pluck('studentId')->unique()->values()->all();
+
+        $students = User::query()
+            ->where('role', 'student')
+            ->whereIn('user_id', $ids)
+            ->get(['user_id', 'firstName', 'lastName', 'photo']);
+
+        return $students
+            ->map(function (User $student) use ($rows) {
+                $mine = $rows->where('studentId', $student->user_id);
+                $total = $mine->count();
+                $present = $mine->where('status', 'Present')->count();
+                $late = $mine->where('status', 'Late')->count();
+                $excused = $mine->where('status', 'Excused')->count();
+                $absent = $mine->where('status', 'Absent')->count();
+                $presentLike = $present + $late + $excused;
+
+                return [
+                    'id' => $student->user_id,
+                    'name' => trim($student->firstName.' '.$student->lastName) ?: $student->user_id,
+                    'photo' => $student->photo,
                     'total' => $total,
                     'present' => $present,
                     'late' => $late,

@@ -16,7 +16,7 @@
 <body class="min-h-screen bg-slate-50 text-slate-800 dark:bg-slate-950 dark:text-slate-100">
     @include('teacher.components.sidebar')
     <div class="lg:pl-64">
-        @include('teacher.components.header')
+        @include('teacher.components.header', ['title' => 'Classrooms', 'subtitle' => 'Learner management'])
         <main class="p-4 sm:p-6 lg:p-8">
             <div class="mx-auto max-w-7xl">
                 <section class="mb-7 overflow-hidden sm:p-8">
@@ -102,6 +102,27 @@
                 <button class="rounded bg-emerald-600 px-5 py-2.5 font-semibold text-white hover:bg-emerald-700">Create</button>
             </div>
         </form>
+    </dialog>
+
+    <dialog id="deleteClassroomDialog"
+        class="w-[min(460px,calc(100%-2rem))] rounded-2xl border-0 p-0 shadow-2xl backdrop:bg-slate-950/50">
+        <div class="card p-6">
+            <div class="flex items-start gap-3">
+                <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-rose-100 dark:bg-rose-950/50">
+                    <i data-lucide="trash-2" class="h-5 w-5 text-rose-600 dark:text-rose-400"></i>
+                </span>
+                <div>
+                    <h3 class="text-lg font-extrabold">Delete classroom?</h3>
+                    <p class="mt-1 text-sm text-slate-500 dark:text-slate-400">This permanently removes <b id="deleteClassroomName"></b>, including its students, activities, submissions, and meetings. This cannot be undone.</p>
+                </div>
+            </div>
+            <div class="mt-6 flex justify-end gap-3">
+                <button type="button" data-close-delete-classroom
+                    class="rounded border border-slate-200 px-4 py-2.5 font-semibold dark:border-slate-700">Cancel</button>
+                <button id="confirmDeleteClassroom" type="button"
+                    class="rounded bg-rose-600 px-5 py-2.5 font-semibold text-white hover:bg-rose-700">Delete</button>
+            </div>
+        </div>
     </dialog>
 
     <div id="modalRoot"></div>

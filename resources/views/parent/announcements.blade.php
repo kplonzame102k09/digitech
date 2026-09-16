@@ -16,7 +16,7 @@
 <body data-role="parent" data-feature="announcements" class="min-h-screen bg-slate-50 text-slate-800 dark:bg-slate-950 dark:text-slate-100">
     @include('parent.components.sidebar')
     <div class="lg:pl-64">
-        @include('parent.components.header')
+        @include('parent.components.header', ['title' => 'Announcements', 'subtitle' => 'Campus life'])
         <main class="p-4 sm:p-6 lg:p-8">
             <div class="mx-auto max-w-3xl">
                 <section class="mb-6">

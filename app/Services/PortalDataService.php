@@ -286,6 +286,12 @@ class PortalDataService
                 : $this->visibleStudentIds($actor);
 
             $query->when($visible !== null, fn (Builder $q) => $q->whereIn('studentId', $visible));
+
+            // Students/parents only ever see the official record: finalized
+            // finals. Admins keep full visibility to manage pending work.
+            if ($key === 'attendance' && ($actor?->isStudent() || $actor?->isParent())) {
+                $query->where('kind', 'final')->whereNotNull('finalizedAt');
+            }
         }
 
         if ($key === 'auditLogs') {

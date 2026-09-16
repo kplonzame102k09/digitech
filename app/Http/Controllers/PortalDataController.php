@@ -13,6 +13,7 @@ use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Bus;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Str;
 use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class PortalDataController extends Controller
@@ -188,7 +189,7 @@ class PortalDataController extends Controller
         // Replacing a photo removes the previous one so uploads never pile up.
         $previous = $user->photo;
         if (is_string($previous) && $previous !== ''
-            && ! str_starts_with($previous, ['http://', 'https://', 'data:'])
+            && ! Str::startsWith($previous, ['http://', 'https://', 'data:'])
             && ! str_starts_with($previous, '/')) {
             Storage::disk('public')->delete($previous);
         }

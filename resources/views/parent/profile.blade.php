@@ -1,5 +1,7 @@
 @include('partials.profile-page', [
     'role' => 'parent',
+    'headerTitle' => 'My Profile',
+    'headerSubtitle' => 'Parent Portal',
     
     'eyebrowClass' => 'text-green-600',
     'heroTitle' => 'Your parent profile',

@@ -437,7 +437,11 @@
       if (initialsEl) initialsEl.textContent = initials(student);
       const photo = $("[data-attendance-photo]", row);
       if (photo && student?.photo) {
-        photo.src = student.photo;
+        photo.src = DG.normalizePhotoUrl(student.photo);
+        photo.onerror = () => {
+          photo.onerror = null;
+          photo.src = DG.DEFAULT_AVATAR || "/images/16432.png";
+        };
         photo.alt = studentName(student);
         photo.classList.remove("hidden");
       }

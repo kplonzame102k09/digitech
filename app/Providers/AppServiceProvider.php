@@ -32,6 +32,10 @@ class AppServiceProvider extends ServiceProvider
             return Limit::perMinute(10)->by($request->user()?->user_id ?? $request->ip());
         });
 
+        RateLimiter::for('account-requests', function (Request $request): Limit {
+            return Limit::perMinute(2)->by($request->ip());
+        });
+
         View::composer(
             [
                 'admin.*',

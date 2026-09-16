@@ -16,7 +16,7 @@
 <body data-parent-page="attendance" class="min-h-screen bg-slate-50 text-slate-800 dark:bg-slate-950 dark:text-slate-100">
    @include('parent.components.sidebar')
     <div class="lg:pl-64">
-        @include('parent.components.header')
+        @include('parent.components.header', ['title' => 'Attendance', 'subtitle' => 'Child attendance'])
         <main class="p-4 sm:p-6 lg:p-8">
             <div class="mx-auto max-w-7xl">
                 <section class="mb-7 mb-7 p-6 sm:p-8">

@@ -40,4 +40,21 @@ class AttendanceAnalyticsController extends Controller
             'byRecorder' => $this->analytics->byRecorder($user),
         ]);
     }
+
+    /**
+     * Per-student finalized attendance for one recorder (admin only).
+     * Powers the clickable teacher analytics cards.
+     */
+    public function byRecorder(Request $request, string $recorderId): JsonResponse
+    {
+        if (! $request->user()->isAdmin()) {
+            abort(403, 'Admins only');
+        }
+
+        return response()->json([
+            'ok' => true,
+            'recorderId' => $recorderId,
+            'students' => $this->analytics->byRecorderStudents($recorderId),
+        ]);
+    }
 }

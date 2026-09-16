@@ -16,7 +16,7 @@
 <body class="student-portal min-h-screen bg-slate-50 text-slate-800 dark:bg-slate-950 dark:text-slate-100" data-classroom-id="{{ $classroomId }}">
     @include('student.components.sidebar')
     <div class="lg:pl-64">
-        @include('student.components.header')
+        @include('student.components.header', ['title' => 'Classroom', 'subtitle' => 'Classrooms'])
         <main class="p-4 sm:p-6 lg:p-8">
             <div class="mx-auto max-w-5xl">
                 <a href="{{ route('student.classrooms') }}"

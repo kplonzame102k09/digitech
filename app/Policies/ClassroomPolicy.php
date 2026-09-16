@@ -45,4 +45,10 @@ class ClassroomPolicy
     {
         return $this->update($user, $classroom);
     }
+
+    public function delete(User $user, Classroom $classroom): bool
+    {
+        return $user->isAdmin()
+            || ($user->isTeacher() && (string) $classroom->teacherId === $user->user_id);
+    }
 }

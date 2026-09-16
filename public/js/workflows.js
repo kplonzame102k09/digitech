@@ -259,6 +259,160 @@
       drawTrendChart(formattedDates, attendanceRateData, absentData);
     };
 
+    const fetchRecorderStudents = async (recorderId) => {
+      const response = await fetch(
+        `/api/portal/analytics/attendance/by-recorder/${encodeURIComponent(recorderId)}`,
+        {
+          headers: { Accept: "application/json", "X-Requested-With": "XMLHttpRequest" },
+          credentials: "same-origin",
+        },
+      );
+      if (!response.ok) throw new Error(`Analytics ${response.status}`);
+      const data = await response.json().catch(() => ({}));
+      if (!data || data.ok !== true) throw new Error("Bad analytics payload");
+      return data.students || [];
+    };
+
+    const recorderStudentsLocal = (recorderId) => {
+      const all = F.get("attendance", []).filter(
+        (r) => String(r.recordedBy) === String(recorderId),
+      );
+      const byId = {};
+      all.forEach((r) => {
+        const bucket = (byId[r.studentId] ||= {});
+        bucket.total = (bucket.total || 0) + 1;
+        bucket[r.status] = (bucket[r.status] || 0) + 1;
+      });
+      const liveUsers = F.users();
+      return Object.keys(byId)
+        .map((sid) => {
+          const b = byId[sid];
+          const s = liveUsers.find((u) => String(u.id) === String(sid));
+          const present = b.Present || 0;
+          const late = b.Late || 0;
+          const excused = b.Excused || 0;
+          const absent = b.Absent || 0;
+          const total = present + late + excused + absent;
+          return {
+            id: sid,
+            name: s ? F.userName(s) : sid,
+            photo: s ? F.photoUrl(s) : "/images/16432.png",
+            total,
+            present,
+            late,
+            excused,
+            absent,
+            rate: total ? round(((present + late + excused) / total) * 100, 1) : 0,
+          };
+        })
+        .sort((a, b) => b.total - a.total);
+    };
+
+    const renderRecorderStudentsModal = (list, teacherName) => {
+      const root = document.getElementById("modalRoot");
+      if (!root) return;
+      APP.closeModal();
+      const backdrop = document.createElement("div");
+      backdrop.className =
+        "modal-backdrop fixed inset-0 z-[90] flex items-center justify-center bg-slate-950/50 p-4";
+      const panel = document.createElement("div");
+      panel.className =
+        "w-full max-w-4xl rounded-2xl bg-white p-5 shadow-2xl dark:bg-slate-900";
+      const close = () => APP.closeModal();
+      const initialsOf = (name) => (
+        String(name).split(/\s+/).map((w) => w[0]).slice(0, 2).join("") || "?"
+      ).toUpperCase();
+      const rows = list.length
+        ? list.map((st) => {
+            const rateColor = st.rate >= 80
+              ? "text-emerald-600 dark:text-emerald-400"
+              : st.rate >= 60
+                ? "text-amber-600 dark:text-amber-400"
+                : "text-rose-600 dark:text-rose-400";
+            return `<tr class="border-t border-slate-100 transition-colors hover:bg-slate-50/70 dark:border-slate-800 dark:hover:bg-slate-800/40">
+              <td class="p-3">
+                <div class="flex items-center gap-3">
+                  <span class="relative flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-blue-50 dark:bg-blue-950">
+                    <span class="text-xs font-bold text-blue-700 dark:text-blue-300">${F.esc(initialsOf(st.name))}</span>
+                    <img src="${F.esc(st.photo || "/images/16432.png")}" alt="${F.esc(st.name)}" loading="lazy" class="absolute inset-0 h-9 w-9 rounded-full object-cover" onerror="this.onerror=null;this.src='/images/16432.png'" />
+                  </span>
+                  <div>
+                    <b class="block text-sm">${F.esc(st.name)}</b>
+                    <small class="text-xs text-slate-400">${F.esc(st.id)}</small>
+                  </div>
+                </div>
+              </td>
+              <td class="p-3 font-semibold text-slate-700 dark:text-slate-200">${st.total}</td>
+              <td class="p-3 text-emerald-600 dark:text-emerald-400">${st.present ?? 0}</td>
+              <td class="p-3 text-amber-600 dark:text-amber-400">${st.late ?? 0}</td>
+              <td class="p-3 text-blue-600 dark:text-blue-400">${st.excused ?? 0}</td>
+              <td class="p-3 text-rose-600 dark:text-rose-400">${st.absent ?? 0}</td>
+              <td class="p-3 text-right font-bold ${rateColor}">${st.rate}%</td>
+            </tr>`;
+          }).join("")
+        : `<tr><td colspan="7" class="p-8 text-center text-slate-500 dark:text-slate-400">No finalized attendance for this recorder yet.</td></tr>`;
+      panel.innerHTML = `
+        <div class="flex items-start justify-between gap-4">
+          <div class="min-w-0">
+            <p class="text-xs font-semibold uppercase tracking-[0.16em] text-blue-600 dark:text-blue-400">Finalized attendance</p>
+            <h2 class="mt-1 truncate text-lg font-extrabold">${F.esc(teacherName || "Teacher")}</h2>
+            <p class="mt-1 text-xs text-slate-500 dark:text-slate-400">Students with admin-finalized attendance recorded by this teacher.</p>
+          </div>
+          <button type="button" data-recorder-close class="shrink-0 rounded p-2 text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800" aria-label="Close"><i data-lucide="x" class="h-5 w-5"></i></button>
+        </div>
+        <div class="mt-4 max-h-[70vh] overflow-auto rounded border border-slate-200 dark:border-slate-700">
+          <table class="w-full text-left text-sm">
+            <thead class="bg-slate-50 text-[11px] font-semibold uppercase tracking-wider text-slate-500 dark:bg-slate-800 dark:text-slate-400">
+              <tr>
+                <th class="px-4 py-3">Student</th>
+                <th class="px-4 py-3">Records</th>
+                <th class="px-4 py-3">Present</th>
+                <th class="px-4 py-3">Late</th>
+                <th class="px-4 py-3">Excused</th>
+                <th class="px-4 py-3">Absent</th>
+                <th class="px-4 py-3 text-right">Rate</th>
+              </tr>
+            </thead>
+            <tbody>${rows}</tbody>
+          </table>
+        </div>
+        <div class="mt-4 flex justify-end">
+          <button type="button" data-recorder-close class="rounded bg-blue-600 px-4 py-2 text-sm font-semibold text-white">Close</button>
+        </div>`;
+      panel.querySelectorAll("[data-recorder-close]").forEach((b) => b.addEventListener("click", close));
+      backdrop.append(panel);
+      root.append(backdrop);
+      lucide.createIcons();
+    };
+
+    const bindTeacherCard = (container) => {
+      if (!container) return;
+      container.querySelectorAll("[data-recorder]").forEach((card) => {
+        if (card.dataset.bound) return;
+        card.dataset.bound = "1";
+        const recorderId = card.dataset.recorder;
+        const recorderName = card.dataset.recorderName || "Teacher";
+        const open = () => {
+          (async () => {
+            let list = [];
+            try {
+              list = await fetchRecorderStudents(recorderId);
+            } catch (_) {
+              list = recorderStudentsLocal(recorderId);
+            }
+            renderRecorderStudentsModal(list, recorderName);
+          })();
+        };
+        card.addEventListener("click", open);
+        card.addEventListener("keydown", (e) => {
+          if (e.key === "Enter" || e.key === " ") {
+            e.preventDefault();
+            open();
+          }
+        });
+      });
+    };
+
     const renderTeacherCards = (list) => {
       const container = $("#teacherAnalytics");
       if (!container) return;
@@ -280,7 +434,7 @@
               : rate >= 60
                 ? "text-amber-600"
                 : "text-rose-600";
-            return `<div class="rounded border border-slate-200 bg-slate-50 p-4 dark:border-slate-700 dark:bg-slate-800">
+            return `<div data-recorder="${F.esc(teacherId)}" data-recorder-name="${F.esc(teacherName)}" role="button" tabindex="0" class="cursor-pointer rounded border border-slate-200 bg-slate-50 p-4 transition hover:shadow-md dark:border-slate-700 dark:bg-slate-800">
               <div class="flex items-center gap-3 mb-3">
                 <span class="relative flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-violet-100 dark:bg-violet-950">
                   <span class="text-sm font-bold text-violet-700 dark:text-violet-300">${F.esc(initials)}</span>
@@ -307,10 +461,14 @@
                 <div><p class="text-[10px] text-slate-400">Late</p><p class="text-sm font-semibold text-amber-600 dark:text-amber-400">${stat.late ?? 0}</p></div>
                 <div><p class="text-[10px] text-slate-400">Excused</p><p class="text-sm font-semibold text-blue-600 dark:text-blue-400">${stat.excused ?? 0}</p></div>
               </div>
+              <div class="mt-3 flex items-center gap-1.5 border-t border-slate-200 pt-3 text-xs font-semibold text-blue-600 dark:border-slate-700 dark:text-blue-400">
+                <i data-lucide="users" class="h-3.5 w-3.5"></i>View student attendance
+              </div>
             </div>`;
           }).join("")
         : `<div class="col-span-full text-center p-8 text-slate-500 dark:text-slate-400">No teacher attendance data available</div>`;
       lucide.createIcons();
+      bindTeacherCard(container);
     };
 
     const renderOverallAnalytics = async () => {
@@ -394,7 +552,7 @@
                 ? "text-amber-600" 
                 : "text-rose-600";
             
-            return `<div class="rounded border border-slate-200 bg-slate-50 p-4 dark:border-slate-700 dark:bg-slate-800">
+            return `<div data-recorder="${F.esc(stat.teacher.id)}" data-recorder-name="${F.esc(teacherName)}" role="button" tabindex="0" class="cursor-pointer rounded border border-slate-200 bg-slate-50 p-4 transition hover:shadow-md dark:border-slate-700 dark:bg-slate-800">
               <div class="flex items-center gap-3 mb-3">
                 <span class="relative flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-violet-100 dark:bg-violet-950">
                   <span class="text-sm font-bold text-violet-700 dark:text-violet-300">${F.esc(initials)}</span>
@@ -433,11 +591,15 @@
                   <p class="text-sm font-semibold text-blue-600 dark:text-blue-400">${stat.excused}</p>
                 </div>
               </div>
+              <div class="mt-3 flex items-center gap-1.5 border-t border-slate-200 pt-3 text-xs font-semibold text-blue-600 dark:border-slate-700 dark:text-blue-400">
+                <i data-lucide="users" class="h-3.5 w-3.5"></i>View student attendance
+              </div>
             </div>`;
           }).join("")
         : `<div class="col-span-full text-center p-8 text-slate-500 dark:text-slate-400">No teacher attendance data available</div>`;
       
       lucide.createIcons();
+      bindTeacherCard(container);
     };
 
     const renderTeacherAnalytics = async () => {

@@ -16,7 +16,7 @@
 <body data-role="guest" data-feature="announcements" class="student-portal min-h-screen bg-slate-50 text-slate-800 dark:bg-slate-950 dark:text-slate-100">
     @include('guest.components.sidebar')
     <div class="lg:pl-64">
-        @include('guest.components.header')
+        @include('guest.components.header', ['title' => 'Announcements', 'subtitle' => 'Campus life'])
         <main class="p-4 sm:p-6 lg:p-8">
             <div class="mx-auto max-w-3xl">
                 <section class="mb-6">

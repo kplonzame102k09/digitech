@@ -1,5 +1,7 @@
 @include('partials.profile-page', [
     'role' => 'teacher',
+    'headerTitle' => 'My Profile',
+    'headerSubtitle' => 'Teacher Portal',
     
     'eyebrowClass' => 'text-green-600',
     'heroTitle' => 'Your teacher profile',

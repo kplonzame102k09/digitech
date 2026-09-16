@@ -45,6 +45,7 @@
                     <a href="#services" class="text-lg">Services</a>
                     <a href="#about" class="text-lg">About</a>
                     <a href="#contact" class="text-lg">Contact</a>
+                    <a href="{{ route('account.request') }}" class="text-lg">Request Account</a>
                 </div>
                 <div class="hidden md:flex items-center gap-3">
                     <button type="button" data-theme-toggle title="Toggle dark / light mode" aria-label="Toggle dark / light mode"
@@ -71,6 +72,7 @@
                 <a class="block p-3" href="#services">Services</a>
                 <a class="block p-3" href="#about">About</a>
                 <a class="block p-3" href="#contact">Contact</a>
+                <a class="block p-3" href="{{ route('account.request') }}">Request Account</a>
                 <button type="button" data-theme-toggle
                     class="flex w-full items-center justify-center gap-2 rounded border border-slate-200 p-3 text-sm font-semibold dark:border-slate-700">
                     <i data-lucide="moon" data-theme-icon class="h-4 w-4"></i>
@@ -100,10 +102,13 @@
                         through one convenient portal.
                     </p>
                     <div class="mt-8 flex flex-wrap gap-2">
-                        <a href="{{ url('/') }}"
+                        <a href="{{ route('auth.login') }}"
                             class="px-5 py-3.5 rounded bg-green-600 text-white font-semibold shadow-lg">
                             Access Portal
                             <i data-lucide="arrow-right" class="inline w-5"></i>
+                        </a>
+                        <a href="{{ route('account.request') }}" class="px-6 py-3.5 rounded bg-white border font-semibold dark:bg-slate-900 dark:border-slate-700 dark:text-slate-100">
+                            Request Account
                         </a>
                         <a href="#services" class="px-6 py-3.5 rounded bg-white border font-semibold dark:bg-slate-900 dark:border-slate-700 dark:text-slate-100">
                             Explore Services
@@ -355,9 +360,16 @@
         </section>
         <section id="contact" class="py-20 bg-white border-t dark:bg-slate-950 dark:border-slate-800">
             <div class="max-w-7xl mx-auto px-4 text-center">
-                <p class="text-sm font-semibold text-green-600 uppercase tracking-wider dark:text-green-400">Contact</p>
-                <h2 class="mt-3 text-3xl font-bold">Need Assistance?</h2>
-                <p class="mt-4 text-slate-500 dark:text-slate-400">Contact Digitech College for assistance with portal services.</p>
+                <p class="text-sm font-semibold text-green-600 uppercase tracking-wider dark:text-green-400">Request Account</p>
+                <h2 class="mt-3 text-3xl font-bold">Need a Portal Account?</h2>
+                <p class="mt-4 text-slate-500 dark:text-slate-400">No account yet? Submit a request and our team will review it for you.</p>
+                <div class="mt-8 flex justify-center">
+                    <a href="{{ route('account.request') }}"
+                        class="inline-flex items-center gap-2 px-6 py-3.5 rounded bg-green-600 text-white font-semibold shadow-lg hover:bg-green-700">
+                        <i data-lucide="user-plus" class="w-5 h-5"></i>
+                        Request Account Here
+                    </a>
+                </div>
                 <div class="mt-10 grid sm:grid-cols-3 gap-8">
                     <div><i data-lucide="map-pin" class="mx-auto text-blue-600 dark:text-blue-400"></i><b
                             class="block mt-3">Campus</b><span class="text-sm text-slate-500 dark:text-slate-400">Digitech College</span>

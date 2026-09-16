@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Teacher;
 
 use App\Http\Controllers\Controller;
+use App\Models\Attendance;
 use App\Models\AuditLog;
 use App\Models\Classroom;
 use App\Models\User;
@@ -181,6 +182,35 @@ class ClassroomController extends Controller
         ]);
 
         return response()->json(['ok' => true]);
+    }
+
+    /**
+     * Permanently delete a classroom. Child rows (roster, activities,
+     * submissions, meetings, attendance sessions) cascade via FK constraints;
+     * provisional attendance checks are removed explicitly while admin-
+     * finalized finals are kept as the official record.
+     */
+    public function destroy(Request $request, string $id): JsonResponse
+    {
+        $classroom = Classroom::query()->findOrFail($id);
+        $this->authorize('delete', $classroom);
+
+        Attendance::query()
+            ->where('classroomId', $id)
+            ->where('kind', Attendance::KIND_CHECK)
+            ->delete();
+
+        $classroom->delete();
+
+        AuditLog::record([
+            'entity' => AuditLog::ENTITY_CLASSROOM,
+            'recordId' => (string) $classroom->id,
+            'action' => 'classroom.deleted',
+            'notes' => "Classroom {$classroom->name} deleted.",
+            'actorId' => $request->user()->user_id,
+        ]);
+
+        return response()->json(['ok' => true, 'deletedId' => $classroom->id]);
     }
 
     private function serialize(Classroom $classroom): array

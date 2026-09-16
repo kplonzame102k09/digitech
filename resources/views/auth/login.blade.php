@@ -146,9 +146,9 @@
                     <p class="text-center text-sm text-slate-500 dark:text-slate-400 mt-6">
                         No account? 
                         <br>
-                        <a href="{{ route('index') }}"><strong>Contact us</strong></a> 
+                        <a href="{{ route('account.request') }}"><strong>Request account</strong></a> 
                         <br>
-                        Go to the nearest Digitech College branch.
+                        Or visit the nearest Digitech College branch.
                     </p>
                 </div>
             </div>
