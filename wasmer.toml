@@ -4,7 +4,7 @@ version = "1.0.0"
 namespace = "kplonzame102k09"
 
 [dependencies]
-"php/php" = "=8.3.4"
+"php/php" = "=8.3.403"
 
 [fs]
 "/app/" = "."
