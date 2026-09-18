@@ -8,7 +8,6 @@ namespace = "kplonzame102k09"
 
 [fs]
 "/app/" = "."
-"/config" = "config"
 
 [[command]]
 name = "run"
@@ -16,8 +15,7 @@ module = "php/php:php"
 runner = "wasi"
 
 [command.annotations.wasi]
-main-args = ["-t", "/app/public", "-S", "localhost:8080"]
-env = ["PHPRC=/config/"]
+main-args = ["-d", "upload_max_filesize=20M", "-d", "post_max_size=25M", "-d", "memory_limit=256M", "-t", "/app/public", "-S", "localhost:8080"]
 
 [[command]]
 name = "migrate"
@@ -25,8 +23,7 @@ module = "php/php:php"
 runner = "wasi"
 
 [command.annotations.wasi]
-main-args = ["/app/artisan", "migrate", "--force"]
-env = ["PHPRC=/config/"]
+main-args = ["-d", "memory_limit=256M", "/app/artisan", "migrate", "--force"]
 
 [[command]]
 name = "debug"
@@ -35,4 +32,3 @@ runner = "wasi"
 
 [command.annotations.wasi]
 main-args = ["-r", "phpinfo();"]
-env = ["PHPRC=/config/"]
