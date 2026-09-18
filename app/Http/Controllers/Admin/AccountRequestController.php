@@ -3,12 +3,19 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
+use App\Mail\AccountRequestApproved;
+use App\Mail\AccountRequestDenied;
 use App\Models\AccountRequest;
 use App\Models\User;
+use App\Support\ReferenceCode;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Str;
+use Illuminate\Validation\ValidationException;
 
 class AccountRequestController extends Controller
 {
@@ -29,17 +36,21 @@ class AccountRequestController extends Controller
             $query->where('role', $request->role);
         }
 
-        // Search by name or email
+        // Search by name, email, or request ID
         if ($request->has('search')) {
-            $search = $request->search;
+            $search = addcslashes((string) $request->search, '%_\\');
             $query->where(function ($q) use ($search) {
                 $q->where('firstName', 'like', "%{$search}%")
                     ->orWhere('lastName', 'like', "%{$search}%")
-                    ->orWhere('email', 'like', "%{$search}%");
+                    ->orWhere('email', 'like', "%{$search}%")
+                    ->orWhere('request_id', 'like', "%{$search}%");
             });
         }
 
-        $requests = $query->orderBy('created_at', 'desc')->get();
+        $perPage = (int) $request->integer('per_page', 15);
+        $perPage = max(1, min(50, $perPage));
+
+        $requests = $query->orderBy('created_at', 'desc')->paginate($perPage);
 
         return response()->json([
             'ok' => true,
@@ -61,6 +72,13 @@ class AccountRequestController extends Controller
                     'updatedAt' => $request->updated_at?->toIso8601String(),
                 ];
             }),
+            'pagination' => [
+                'total' => $requests->total(),
+                'perPage' => $requests->perPage(),
+                'currentPage' => $requests->currentPage(),
+                'lastPage' => $requests->lastPage(),
+                'hasMorePages' => $requests->hasMorePages(),
+            ],
         ]);
     }
 
@@ -98,77 +116,103 @@ class AccountRequestController extends Controller
      */
     public function approve(Request $request, int $id): JsonResponse
     {
-        $accountRequest = AccountRequest::findOrFail($id);
-
-        if ($accountRequest->status !== 'pending') {
-            return response()->json([
-                'ok' => false,
-                'error' => 'This request has already been processed.',
-            ], 400);
-        }
-
         $validated = $request->validate([
             'username' => ['required', 'string', 'max:50', 'unique:users,username'],
             'password' => ['required', 'string', 'min:8'],
             'adminNotes' => ['nullable', 'string', 'max:1000'],
         ]);
 
-        // Check if email already exists in users table
-        if (User::query()->where('email', $accountRequest->email)->exists()) {
+        $accountRequest = DB::transaction(function () use ($id, $validated) {
+            $accountRequest = AccountRequest::query()->lockForUpdate()->findOrFail($id);
+
+            if ($accountRequest->status !== 'pending') {
+                return null;
+            }
+
+            if (User::query()->where('email', $accountRequest->email)->exists()) {
+                throw ValidationException::withMessages([
+                    'email' => 'A user with this email already exists.',
+                ]);
+            }
+
+            $contact = Str::limit($accountRequest->contact ?? '', 20, '');
+
+            $year = now()->year;
+            $prefix = match ($accountRequest->role) {
+                'student' => "STU-{$year}",
+                'parent'   => "PAR-{$year}",
+                'guest'    => "GST-{$year}",
+                default    => 'USR',
+            };
+
+            do {
+                $userId = $prefix . '-' . ReferenceCode::generate(6);
+            } while (User::query()->where('user_id', $userId)->exists());
+
+            $user = User::query()->create([
+                'user_id'           => $userId,
+                'role'              => $accountRequest->role,
+                'status'            => 'active',
+                'firstName'         => $accountRequest->firstName,
+                'middleName'        => $accountRequest->middleName,
+                'lastName'          => $accountRequest->lastName,
+                'email'             => $accountRequest->email,
+                'username'          => $validated['username'],
+                'password'          => Hash::make($validated['password']),
+                'contact'           => $contact,
+                'birthDate'         => null,
+                'birthPlace'        => null,
+                'barangay'          => null,
+                'city'              => null,
+                'province'          => null,
+                'region'            => null,
+                'strand'            => $accountRequest->strand,
+                'mustChangePassword' => true,
+            ]);
+
+            $accountRequest->update([
+                'status'     => 'approved',
+                'adminNotes' => $validated['adminNotes'] ?? null,
+            ]);
+
+            return [
+                'accountRequest' => $accountRequest,
+                'user'           => $user,
+                'password'       => $validated['password'],
+            ];
+        });
+
+        if ($accountRequest === null) {
             return response()->json([
-                'ok' => false,
-                'error' => 'A user with this email already exists.',
-            ], 422);
+                'ok'    => false,
+                'error' => 'This request has already been processed.',
+            ], 400);
         }
 
-        // Generate user_id
-        $prefix = match ($accountRequest->role) {
-            'student' => 'STU-2026',
-            'parent' => 'PAR-2026',
-            'guest' => 'GST-2026',
-            default => 'USR',
-        };
-
-        do {
-            $userId = $prefix . '-' . strtoupper(substr(bin2hex(random_bytes(4)), 0, 6));
-        } while (User::query()->where('user_id', $userId)->exists());
-
-        // Create the user account
-        $user = User::query()->create([
-            'user_id' => $userId,
-            'role' => $accountRequest->role,
-            'status' => 'active',
-            'firstName' => $accountRequest->firstName,
-            'middleName' => $accountRequest->middleName,
-            'lastName' => $accountRequest->lastName,
-            'email' => $accountRequest->email,
-            'username' => $validated['username'],
-            'password' => Hash::make($validated['password']),
-            'contact' => $accountRequest->contact ?? '',
-            'birthDate' => '1970-01-01',
-            'birthPlace' => 'N/A',
-            'barangay' => 'N/A',
-            'city' => 'N/A',
-            'province' => 'N/A',
-            'region' => 'N/A',
-            'strand' => $accountRequest->strand,
-            'mustChangePassword' => true,
-        ]);
-
-        // Update the account request status
-        $accountRequest->update([
-            'status' => 'approved',
-            'adminNotes' => $validated['adminNotes'] ?? null,
-        ]);
+        try {
+            Mail::to($accountRequest['accountRequest']->email)->send(
+                new AccountRequestApproved(
+                    name: trim($accountRequest['user']->firstName.' '.$accountRequest['user']->lastName),
+                    userId: $accountRequest['user']->user_id,
+                    username: $accountRequest['user']->username,
+                    password: $accountRequest['password'],
+                )
+            );
+        } catch (\Throwable $e) {
+            Log::warning('Failed to send approval email', [
+                'email' => $accountRequest['accountRequest']->email,
+                'error' => $e->getMessage(),
+            ]);
+        }
 
         return response()->json([
-            'ok' => true,
+            'ok'      => true,
             'message' => 'Account request approved and user account created.',
-            'user' => [
-                'id' => $user->user_id,
-                'username' => $user->username,
-                'email' => $user->email,
-                'role' => $user->role,
+            'user'    => [
+                'id'       => $accountRequest['user']->user_id,
+                'username' => $accountRequest['user']->username,
+                'email'    => $accountRequest['user']->email,
+                'role'     => $accountRequest['user']->role,
             ],
         ]);
     }
@@ -178,26 +222,48 @@ class AccountRequestController extends Controller
      */
     public function reject(Request $request, int $id): JsonResponse
     {
-        $accountRequest = AccountRequest::findOrFail($id);
-
-        if ($accountRequest->status !== 'pending') {
-            return response()->json([
-                'ok' => false,
-                'error' => 'This request has already been processed.',
-            ], 400);
-        }
-
         $validated = $request->validate([
             'adminNotes' => ['required', 'string', 'min:10', 'max:1000'],
         ]);
 
-        $accountRequest->update([
-            'status' => 'denied',
-            'adminNotes' => $validated['adminNotes'],
-        ]);
+        $accountRequest = DB::transaction(function () use ($id, $validated) {
+            $accountRequest = AccountRequest::query()->lockForUpdate()->findOrFail($id);
+
+            if ($accountRequest->status !== 'pending') {
+                return null;
+            }
+
+            $accountRequest->update([
+                'status'     => 'denied',
+                'adminNotes' => trim($validated['adminNotes']),
+            ]);
+
+            return $accountRequest;
+        });
+
+        if ($accountRequest === null) {
+            return response()->json([
+                'ok'    => false,
+                'error' => 'This request has already been processed.',
+            ], 400);
+        }
+
+        try {
+            Mail::to($accountRequest->email)->send(
+                new AccountRequestDenied(
+                    name: trim($accountRequest->firstName.' '.$accountRequest->lastName),
+                    reason: $accountRequest->adminNotes,
+                )
+            );
+        } catch (\Throwable $e) {
+            Log::warning('Failed to send rejection email', [
+                'email' => $accountRequest->email,
+                'error' => $e->getMessage(),
+            ]);
+        }
 
         return response()->json([
-            'ok' => true,
+            'ok'      => true,
             'message' => 'Account request rejected.',
         ]);
     }

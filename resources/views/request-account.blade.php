@@ -130,7 +130,7 @@
 
                         <label class="block text-sm font-medium">
                             Contact number
-                            <input id="raContact" maxlength="30"
+                            <input id="raContact" maxlength="20"
                                 class="input mt-1 w-full rounded border px-3 py-3 dark:bg-slate-900 dark:border-slate-700"
                                 placeholder="09XXXXXXXXX">
                         </label>

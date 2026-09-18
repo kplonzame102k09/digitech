@@ -10,6 +10,9 @@
             </div>
         </div>
         <nav class="p-3 space-y-1 flex-1">
+            @php
+            $inClassroom = request()->routeIs('teacher.classrooms', 'teacher.attendance', 'teacher.grades', 'teacher.competencies');
+            @endphp
             <a href="{{ route('teacher.dashboard') }}" class="flex items-center gap-3 rounded px-3 py-2.5 text-sm font-medium
                 {{ request()->routeIs('teacher.dashboard') 
                 ? 'nav-active' : 'text-slate-600 hover:bg-slate-100 dark:text-slate-300 dark:hover:bg-slate-800'}}">
@@ -22,30 +25,40 @@
                 <i data-lucide="users" class="w-4"></i>
                 Students
             </a>
-            <a href="{{ route('teacher.classrooms') }}" class="flex items-center gap-3 rounded px-3 py-2.5 text-sm font-medium
-                {{ request()->routeIs('teacher.classrooms')
-                ? 'nav-active' : 'text-slate-600 hover:bg-slate-100 dark:text-slate-300 dark:hover:bg-slate-800'}}">
-                <i data-lucide="school" class="w-4"></i>
-                Classrooms
-            </a>
-            <a href="{{ route('teacher.grades') }}" class="flex items-center gap-3 rounded px-3 py-2.5 text-sm font-medium 
-                {{ request()->routeIs('teacher.grades') 
-                ? 'nav-active' : 'text-slate-600 hover:bg-slate-100 dark:text-slate-300 dark:hover:bg-slate-800'}}"><i
-                data-lucide="chart-no-axes-combined" class="w-4"></i>
-                Grades
-            </a>
-            <a href="{{ route('teacher.competencies') }}" class="flex items-center gap-3 rounded px-3 py-2.5 text-sm font-medium 
-                {{ request()->routeIs('teacher.competencies') 
-                ? 'nav-active' : 'text-slate-600 hover:bg-slate-100 dark:text-slate-300 dark:hover:bg-slate-800'}}">
-                <i data-lucide="award" class="w-4"></i>
-                Competencies
-            </a>
-            <a href="{{ route('teacher.attendance') }}" class="flex items-center gap-3 rounded px-3 py-2.5 text-sm font-medium 
-                {{ request()->routeIs('teacher.attendance')
-                ? 'nav-active' : 'text-slate-600 hover:bg-slate-100 dark:text-slate-300 dark:hover:bg-slate-800'}}">
-                <i data-lucide="calendar-check-2" class="w-4"></i>
-                Attendance
-            </a>
+            <details {{ $inClassroom ? 'open' :  '' }} class="group">
+                <summary class="flex cursor-pointer items-center gap-3 rounded px-3 py-2.5 text-sm font-medium
+                    {{ $inClassroom ? 'text-slate-900 dark:text-white' : 'text-slate-500 hover:bg-slate-100 dark:text-slate-400 dark:hover:bg-slate-800' }}">
+                    <i data-lucide="school" class="w-4"></i>
+                    Classroom
+                    <i data-lucide="chevron-down"  class="ml-auto h-4 w-4 transition-transform group-open:rotate-180"></i>
+                </summary>
+                <div class="ml-4 mt-1 space-y-1 border-l border-slate-200 pl-3 dark:border-slate-800">
+                    <a href="{{ route('teacher.classrooms') }}" class="flex items-center gap-3 rounded px-3 py-2.5 text-sm font-medium
+                        {{ request()->routeIs('teacher.classrooms')
+                        ? 'nav-active' : 'text-slate-600 hover:bg-slate-100 dark:text-slate-300 dark:hover:bg-slate-800'}}">
+                        <i data-lucide="school" class="w-4"></i>
+                        Classrooms
+                    </a>
+                    <a href="{{ route('teacher.grades') }}" class="flex items-center gap-3 rounded px-3 py-2.5 text-sm font-medium 
+                        {{ request()->routeIs('teacher.grades') 
+                        ? 'nav-active' : 'text-slate-600 hover:bg-slate-100 dark:text-slate-300 dark:hover:bg-slate-800'}}"><i
+                        data-lucide="chart-no-axes-combined" class="w-4"></i>
+                        Grades
+                    </a>
+                    <a href="{{ route('teacher.competencies') }}" class="flex items-center gap-3 rounded px-3 py-2.5 text-sm font-medium 
+                        {{ request()->routeIs('teacher.competencies') 
+                        ? 'nav-active' : 'text-slate-600 hover:bg-slate-100 dark:text-slate-300 dark:hover:bg-slate-800'}}">
+                        <i data-lucide="award" class="w-4"></i>
+                        Competencies
+                    </a>
+                    <a href="{{ route('teacher.attendance') }}" class="flex items-center gap-3 rounded px-3 py-2.5 text-sm font-medium 
+                        {{ request()->routeIs('teacher.attendance')
+                        ? 'nav-active' : 'text-slate-600 hover:bg-slate-100 dark:text-slate-300 dark:hover:bg-slate-800'}}">
+                        <i data-lucide="calendar-check-2" class="w-4"></i>
+                        Attendance
+                    </a>
+                </div>
+            </details>
             <a href="{{ route('teacher.attendance.review') }}" class="flex items-center gap-3 rounded px-3 py-2.5 text-sm font-medium 
                 {{ request()->routeIs('teacher.attendance.review')
                 ? 'nav-active' : 'text-slate-600 hover:bg-slate-100 dark:text-slate-300 dark:hover:bg-slate-800'}}">

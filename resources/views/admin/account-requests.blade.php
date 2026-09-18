@@ -76,6 +76,14 @@
                             Try a different search or filter.
                         </p>
                     </div>
+                    <div id="tableFooter"
+                        class="hidden items-center justify-between gap-3 border-t border-slate-100 px-4 py-3 dark:border-slate-800">
+                        <p id="resultCount" class="text-sm text-slate-500 dark:text-slate-400"></p>
+                        <button type="button" id="loadMoreBtn"
+                            class="rounded border border-slate-200 px-4 py-2 text-sm font-semibold hover:bg-slate-50 dark:border-slate-700 dark:hover:bg-slate-800">
+                            Load more
+                        </button>
+                    </div>
                 </section>
             </div>
         </main>
@@ -211,9 +219,12 @@
             const CSRF_TOKEN = document.querySelector('meta[name="csrf-token"]')?.content || '';
             let requests = [];
             let filteredRequests = [];
+            let currentPage = 1;
+            let hasMorePages = false;
+            let totalCount = 0;
 
-            // Fetch requests from API
-            async function fetchRequests() {
+            // Fetch requests from API (reset = fetch page 1, otherwise load the next page)
+            async function fetchRequests(reset = true) {
                 const params = new URLSearchParams();
                 const search = document.getElementById('q').value.trim();
                 const status = document.getElementById('statusFilter').value;
@@ -222,13 +233,19 @@
                 if (search) params.append('search', search);
                 if (status) params.append('status', status);
                 if (role) params.append('role', role);
+                params.append('page', reset ? 1 : currentPage + 1);
 
                 try {
                     const response = await fetch(`${API_BASE}?${params.toString()}`);
                     const data = await response.json();
                     if (data.ok) {
-                        requests = data.requests;
+                        const pageItems = data.requests || [];
+                        requests = reset ? pageItems : requests.concat(pageItems);
                         filteredRequests = requests;
+                        const pagination = data.pagination || {};
+                        currentPage = pagination.currentPage || currentPage || 1;
+                        hasMorePages = !!pagination.hasMorePages;
+                        totalCount = typeof pagination.total === 'number' ? pagination.total : requests.length;
                         renderRequests();
                     }
                 } catch (error) {
@@ -241,11 +258,15 @@
                 const tbody = document.getElementById('rows');
                 const emptyState = document.getElementById('emptyState');
                 const template = document.getElementById('requestRowTemplate');
+                const footer = document.getElementById('tableFooter');
+                const resultCount = document.getElementById('resultCount');
+                const loadMoreBtn = document.getElementById('loadMoreBtn');
 
                 tbody.innerHTML = '';
 
                 if (filteredRequests.length === 0) {
                     emptyState.classList.remove('hidden');
+                    footer.classList.add('hidden');
                     return;
                 }
 
@@ -278,6 +299,10 @@
 
                     tbody.appendChild(clone);
                 });
+
+                footer.classList.remove('hidden');
+                resultCount.textContent = `${filteredRequests.length} of ${totalCount} request${totalCount === 1 ? '' : 's'}`;
+                loadMoreBtn.classList.toggle('hidden', !hasMorePages);
 
                 if (window.lucide) lucide.createIcons();
             }
@@ -323,6 +348,13 @@
                 });
             }
 
+            // Minimal HTML entity escaping to prevent XSS.
+            function esc(str) {
+                if (str == null) return '';
+                const s = String(str);
+                return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+            }
+
             // Show details dialog
             function showDetails(requestId) {
                 const request = requests.find(r => r.request_id === requestId);
@@ -333,38 +365,38 @@
                 body.innerHTML = `
                     <div>
                         <span class="text-xs text-slate-500 dark:text-slate-400">Full Name</span>
-                        <p class="font-medium">${request.firstName} ${request.middleName ? request.middleName + ' ' : ''}${request.lastName}</p>
+                        <p class="font-medium">${esc(request.firstName)} ${esc(request.middleName) ? esc(request.middleName) + ' ' : ''}${esc(request.lastName)}</p>
                     </div>
                     <div>
                         <span class="text-xs text-slate-500 dark:text-slate-400">Email</span>
-                        <p class="font-medium">${request.email}</p>
+                        <p class="font-medium">${esc(request.email)}</p>
                     </div>
                     <div>
                         <span class="text-xs text-slate-500 dark:text-slate-400">Role</span>
-                        <p class="font-medium">${formatRole(request.role)}</p>
+                        <p class="font-medium">${esc(formatRole(request.role))}</p>
                     </div>
                     <div>
                         <span class="text-xs text-slate-500 dark:text-slate-400">Contact</span>
-                        <p class="font-medium">${request.contact || '-'}</p>
+                        <p class="font-medium">${esc(request.contact) || '-'}</p>
                     </div>
                     ${request.strand ? `
                     <div>
                         <span class="text-xs text-slate-500 dark:text-slate-400">Program / Strand</span>
-                        <p class="font-medium">${request.strand}</p>
+                        <p class="font-medium">${esc(request.strand)}</p>
                     </div>
                     ` : ''}
                     <div>
                         <span class="text-xs text-slate-500 dark:text-slate-400">Status</span>
-                        <p class="font-medium">${formatStatus(request.status)}</p>
+                        <p class="font-medium">${esc(formatStatus(request.status))}</p>
                     </div>
                     <div class="sm:col-span-2">
                         <span class="text-xs text-slate-500 dark:text-slate-400">Reason for Request</span>
-                        <p class="font-medium mt-1">${request.purpose}</p>
+                        <p class="font-medium mt-1">${esc(request.purpose)}</p>
                     </div>
                     ${request.adminNotes ? `
                     <div class="sm:col-span-2">
                         <span class="text-xs text-slate-500 dark:text-slate-400">Admin Notes</span>
-                        <p class="font-medium mt-1">${request.adminNotes}</p>
+                        <p class="font-medium mt-1">${esc(request.adminNotes)}</p>
                     </div>
                     ` : ''}
                     <div>
@@ -404,6 +436,22 @@
                 document.getElementById('rejectDialog').showModal();
             }
 
+            // Return a single user-facing error message from an API error body.
+            function firstErrorMessage(data) {
+                if (!data) return '';
+                if (data.error) return data.error;
+                if (data.message) return data.message;
+                if (data.errors && typeof data.errors === 'object') {
+                    const fields = Object.keys(data.errors);
+                    for (let i = 0; i < fields.length; i++) {
+                        const value = data.errors[fields[i]];
+                        if (Array.isArray(value) && value.length) return value[0];
+                        if (typeof value === 'string') return value;
+                    }
+                }
+                return '';
+            }
+
             // Handle approve form submission
             async function handleApprove(e) {
                 e.preventDefault();
@@ -417,6 +465,7 @@
                         method: 'POST',
                         headers: {
                             'Content-Type': 'application/json',
+                            'Accept': 'application/json',
                             'X-CSRF-TOKEN': CSRF_TOKEN
                         },
                         body: JSON.stringify({ username, password, adminNotes })
@@ -428,7 +477,7 @@
                         alert('Account request approved and user account created successfully!');
                         fetchRequests();
                     } else {
-                        alert(data.error || 'Failed to approve request');
+                        alert(firstErrorMessage(data) || 'Failed to approve request');
                     }
                 } catch (error) {
                     console.error('Failed to approve request:', error);
@@ -447,6 +496,7 @@
                         method: 'POST',
                         headers: {
                             'Content-Type': 'application/json',
+                            'Accept': 'application/json',
                             'X-CSRF-TOKEN': CSRF_TOKEN
                         },
                         body: JSON.stringify({ adminNotes })
@@ -458,7 +508,7 @@
                         alert('Account request rejected successfully!');
                         fetchRequests();
                     } else {
-                        alert(data.error || 'Failed to reject request');
+                        alert(firstErrorMessage(data) || 'Failed to reject request');
                     }
                 } catch (error) {
                     console.error('Failed to reject request:', error);
@@ -467,9 +517,10 @@
             }
 
             // Event listeners
-            document.getElementById('q').addEventListener('input', fetchRequests);
-            document.getElementById('statusFilter').addEventListener('change', fetchRequests);
-            document.getElementById('roleFilter').addEventListener('change', fetchRequests);
+            document.getElementById('q').addEventListener('input', () => fetchRequests(true));
+            document.getElementById('statusFilter').addEventListener('change', () => fetchRequests(true));
+            document.getElementById('roleFilter').addEventListener('change', () => fetchRequests(true));
+            document.getElementById('loadMoreBtn').addEventListener('click', () => fetchRequests(false));
 
             document.getElementById('rows').addEventListener('click', (e) => {
                 const button = e.target.closest('button[data-action]');

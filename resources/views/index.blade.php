@@ -23,6 +23,7 @@
     </script>
     <script src="https://unpkg.com/lucide@latest"></script>
     <link rel="stylesheet" href="{{ asset('css/custom.css') }}">
+    <link rel="icon" href="{{ asset('images/16432.png') }}" type="png">
 </head>
 
 <body class="bg-slate-50 text-slate-800 dark:bg-slate-950 dark:text-slate-100">
@@ -321,7 +322,7 @@
                         <!-- Buttons -->
                         <div class="mt-8 flex flex-col sm:flex-row items-center justify-center gap-3">
                             <a href="{{ route('auth.login') }}"
-                                class="group inline-flex items-center justify-center gap-2 text-green-700 px-7 py-3.5 rounded font-semibold shadow-lg shadow-green-950/20 hover:bg-slate-900 hover:-translate-y-0.5 transition-all duration-200 dark:text-green-300">
+                                class="group inline-flex items-center justify-center gap-2 text-green-700 px-7 py-3.5 rounded font-semibold shadow-lg shadow-green-950/20 hover:bg-green-700 hover:text-slate-200 hover:-translate-y-0.5 transition-all duration-200 dark:text-green-300">
                                 Go to Portal
                                 <i data-lucide="arrow-right"
                                     class="w-4 h-4 group-hover:translate-x-1 transition-transform duration-200"></i>

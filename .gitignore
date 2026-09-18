@@ -27,3 +27,6 @@ _ide_helper.php
 Homestead.json
 Homestead.yaml
 Thumbs.db
+
+# Wasmer/portal build artifact (254MB, exceeds GitHub limit)
+digitech-portal-1.0.0.webc

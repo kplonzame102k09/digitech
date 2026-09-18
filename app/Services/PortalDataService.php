@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Mail\AdminAccountCreated;
 use App\Models\Announcement;
 use App\Models\Attendance;
 use App\Models\AuditLog;
@@ -21,6 +22,8 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\QueryException;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 
@@ -454,6 +457,9 @@ class PortalDataService
                 ]);
             }
         });
+
+        // Credential emails are sent only after the import transaction commits.
+        $this->flushCreatedAccountEmails();
     }
 
     protected function syncUsers(array $users, ?User $actor): array
@@ -462,7 +468,7 @@ class PortalDataService
             return $this->syncOwnProfile($actor, $users);
         }
 
-        return DB::transaction(function () use ($users, $actor): array {
+        $result = DB::transaction(function () use ($users, $actor): array {
             // An admin payload must never be allowed to remove the acting
             // account from the active administrator role.
             $this->assertNotAdminSelfModification($users, $actor);
@@ -516,6 +522,11 @@ class PortalDataService
 
             return $this->usersForJs();
         });
+
+        // Credential emails are sent only after the sync transaction commits.
+        $this->flushCreatedAccountEmails();
+
+        return $result;
     }
 
     /**
@@ -623,7 +634,12 @@ class PortalDataService
                 $fields['mustChangePassword'] = true;
             }
 
-            $user ? $user->fill($fields)->save() : User::query()->create($fields);
+            if (! $user) {
+                $user = User::query()->create($fields);
+                $this->createdAccounts[] = $this->createdAccountMemo($fields);
+            } else {
+                $user->fill($fields)->save();
+            }
             $portalIds[] = $portalId;
         }
 
@@ -633,6 +649,71 @@ class PortalDataService
     }
 
     protected int $skippedDuplicateEmails = 0;
+
+    /**
+     * Credentials of brand-new accounts created during the current upsert.
+     *
+     * @var array<int, array<string, mixed>>
+     */
+    protected array $createdAccounts = [];
+
+    /**
+     * Build a memo of a just-created account so its credentials can be mailed
+     * once the surrounding transaction has committed. Synthetic fallback
+     * emails (e.g. "@digitech.local") are never mailed.
+     *
+     * @param  array<string, mixed>  $fields
+     * @return array<string, mixed>
+     */
+    protected function createdAccountMemo(array $fields): array
+    {
+        $email = strtolower(trim((string) ($fields['email'] ?? '')));
+
+        if ($email === '' || str_ends_with($email, '@digitech.local')) {
+            return [];
+        }
+
+        return [
+            'email' => $email,
+            'name' => trim(($fields['firstName'] ?? 'User').' '.($fields['lastName'] ?? 'Account')),
+            'user_id' => (string) ($fields['user_id'] ?? ''),
+            'username' => isset($fields['username']) && $fields['username'] !== '' ? (string) $fields['username'] : null,
+            'password' => (string) ($fields['password'] ?? ''),
+            'mustChangePassword' => (bool) ($fields['mustChangePassword'] ?? false),
+        ];
+    }
+
+    /**
+     * Send the buffered "account created" credential emails. Never throws:
+     * a mail failure only logs a warning so account creation stays intact.
+     */
+    protected function flushCreatedAccountEmails(): void
+    {
+        foreach ($this->createdAccounts as $account) {
+            if ($account === []) {
+                continue;
+            }
+
+            try {
+                Mail::to($account['email'])->send(
+                    new AdminAccountCreated(
+                        name: $account['name'],
+                        userId: $account['user_id'],
+                        username: $account['username'],
+                        password: $account['password'],
+                        mustChangePassword: $account['mustChangePassword'],
+                    )
+                );
+            } catch (\Throwable $e) {
+                Log::warning('Failed to send account creation email', [
+                    'email' => $account['email'],
+                    'error' => $e->getMessage(),
+                ]);
+            }
+        }
+
+        $this->createdAccounts = [];
+    }
 
     /**
      * Per-student counts of brand-new unpublished grade rows pushed by a

@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\AccountRequest;
 use App\Models\User;
+use App\Support\ReferenceCode;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
@@ -17,8 +18,7 @@ class AccountRequestController extends Controller
             'lastName' => ['required', 'string', 'max:100'],
             'role' => ['required', 'in:student,parent,guest'],
             'email' => ['required', 'email', 'max:255'],
-            'username' => ['nullable', 'string', 'max:50'],
-            'contact' => ['nullable', 'string', 'max:30'],
+            'contact' => ['nullable', 'string', 'max:20'],
             'strand' => ['nullable', 'string', 'max:120'],
             'purpose' => ['required', 'string', 'min:20', 'max:2000'],
         ]);
@@ -44,16 +44,18 @@ class AccountRequestController extends Controller
 
         $requestId = $this->generateRequestId($validated['role']);
 
+        $middleName = isset($validated['middleName']) && trim($validated['middleName']) !== '' ? trim($validated['middleName']) : null;
+        $contact = isset($validated['contact']) && trim($validated['contact']) !== '' ? trim($validated['contact']) : null;
+
         $accountRequest = AccountRequest::query()->create([
             'request_id' => $requestId,
             'role' => $validated['role'],
             'status' => 'pending',
             'firstName' => trim($validated['firstName']),
-            'middleName' => isset($validated['middleName']) ? trim($validated['middleName']) : null,
+            'middleName' => $middleName,
             'lastName' => trim($validated['lastName']),
             'email' => $email,
-            'username' => isset($validated['username']) ? trim($validated['username']) : null,
-            'contact' => isset($validated['contact']) ? trim($validated['contact']) : null,
+            'contact' => $contact,
             'strand' => isset($validated['strand']) ? trim($validated['strand']) : null,
             'purpose' => trim($validated['purpose']),
         ]);
@@ -73,7 +75,7 @@ class AccountRequestController extends Controller
         };
 
         do {
-            $requestId = $prefix.'-REQ-'.strtoupper(substr(bin2hex(random_bytes(4)), 0, 6));
+            $requestId = $prefix.'-REQ-'.ReferenceCode::generate(6);
         } while (AccountRequest::query()->where('request_id', $requestId)->exists());
 
         return $requestId;
