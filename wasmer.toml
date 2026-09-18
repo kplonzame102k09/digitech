@@ -4,10 +4,11 @@ version = "1.0.0"
 namespace = "kplonzame102k09"
 
 [dependencies]
-"php/php" = "=8.3.403"
+"php/php" = "=8.3.4"
 
 [fs]
 "/app/" = "."
+"/config" = "config"
 
 [[command]]
 name = "run"
@@ -16,3 +17,22 @@ runner = "wasi"
 
 [command.annotations.wasi]
 main-args = ["-t", "/app/public", "-S", "localhost:8080"]
+env = ["PHPRC=/config/"]
+
+[[command]]
+name = "migrate"
+module = "php/php:php"
+runner = "wasi"
+
+[command.annotations.wasi]
+main-args = ["/app/artisan", "migrate", "--force"]
+env = ["PHPRC=/config/"]
+
+[[command]]
+name = "debug"
+module = "php/php:php"
+runner = "wasi"
+
+[command.annotations.wasi]
+main-args = ["-r", "phpinfo();"]
+env = ["PHPRC=/config/"]
