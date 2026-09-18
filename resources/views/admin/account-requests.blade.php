@@ -2,10 +2,8 @@
 <html lang="en">
 
 <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    @include('partials.meta', ['pageTitle' => 'Account Requests | Digitech College'])
     <meta name="csrf-token" content="{{ csrf_token() }}" />
-    <title>Account Requests | Digitech College</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
         tailwind.config = { darkMode: "class" };

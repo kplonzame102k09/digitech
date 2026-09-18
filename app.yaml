@@ -7,12 +7,6 @@ locality:
   regions:
   - us-losa1
 capabilities:
-  instaboot:
-    mode: null
-    requests:
-    - path: /
-    - path: /auth/login
-    - path: /request-account
   database:
     engine: mysql
 volumes:

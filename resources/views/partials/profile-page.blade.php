@@ -6,9 +6,7 @@
 <html>
 
 <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width,initial-scale=1" />
-    <title>My Profile | Digitech College</title>
+    @include('partials.meta', ['pageTitle' => 'My Profile | Digitech College'])
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
         tailwind.config = { darkMode: "class" };

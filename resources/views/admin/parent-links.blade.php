@@ -2,9 +2,7 @@
 <html lang="en">
 
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Parent Link Requests | Digitech College</title>
+  @include('partials.meta', ['pageTitle' => 'Parent Link Requests | Digitech College'])
   <script src="https://cdn.tailwindcss.com"></script>
   <script>tailwind.config = { darkMode: "class" };</script>
   <script src="https://unpkg.com/lucide@latest"></script>
