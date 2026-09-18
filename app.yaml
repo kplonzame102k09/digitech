@@ -1,45 +1,30 @@
 kind: wasmer.io/App.v0
 name: digitech-portal
+app_id: da_R36ILtlUQX47
 owner: kplonzame102k09
 package: .
-
-enable_email: true
-
-volumes:
-  - name: data
-    mount: /app/storage/app
-
-capabilities:
-  database:
-    engine: mysql
-  instaboot:
-    requests:
-      - path: /
-      - path: /auth/login
-      - path: /request-account
-
-health_checks:
-  - http:
-      method: get
-      path: /
-      interval: 30s
-      timeout: 10s
-      unhealthy_threshold: 2
-      healthy_threshold: 1
-      expected_status_codes:
-        - 200
-
 locality:
   regions:
-    - us-losa1
-
+  - us-losa1
+capabilities:
+  instaboot:
+    mode: null
+    requests:
+    - path: /
+    - path: /auth/login
+    - path: /request-account
+  database:
+    engine: mysql
+volumes:
+- name: data
+  mount: /app/storage/app
+debug: true
 scaling:
   mode: single_concurrency
-
 jobs:
-  - name: migrate
-    trigger: post-deployment
-    action:
-      execute:
-        command: migrate
-        timeout: 10m
+- name: migrate
+  trigger: post-deployment
+  action:
+    execute:
+      command: migrate
+enable_email: true

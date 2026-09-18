@@ -7,7 +7,8 @@ namespace = "kplonzame102k09"
 "php/php" = "=8.3.403"
 
 [fs]
-"/app/" = "."
+"/app/" = "deploy"
+"/app/vendor" = "vendor"
 
 [[command]]
 name = "run"
@@ -23,7 +24,7 @@ module = "php/php:php"
 runner = "wasi"
 
 [command.annotations.wasi]
-main-args = ["-d", "memory_limit=256M", "/app/artisan", "migrate", "--force"]
+main-args = ["-d", "memory_limit=256M", "/app/runtime/console.php", "migrate", "--force"]
 
 [[command]]
 name = "debug"
