@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\AuthenticateUserRequest;
 use App\Models\AuditLog;
 use App\Models\User;
+use App\Support\LoginAttemptGuard;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -47,6 +48,7 @@ class LoginController extends Controller
             $user->forceFill(['password' => $validated['password']])->save();
         }
 
+        LoginAttemptGuard::clearAttempts($request);
         Auth::login($user);
         $request->session()->regenerate();
 

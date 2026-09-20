@@ -31,13 +31,13 @@
                 <i data-lucide="clipboard-list" class="w-4"></i>
                   Enrollment
               </a>
-              <a href="{{ route('student.requirements') }}"
+              <a href="{{ route('student.requirements') }}" data-enroll-blocked
                 class="flex items-center gap-3 rounded px-3 py-2.5 text-sm font-medium
                 {{ request()->routeIs('student.requirements') ? 'nav-active' : 'text-slate-600 hover:bg-slate-100 dark:text-slate-300 dark:hover:bg-slate-800'}}">
                 <i data-lucide="folder-check" class="w-4"></i>
                   Requirements
               </a>
-              <a href="{{ route('student.documents') }}"
+              <a href="{{ route('student.documents') }}" data-enroll-blocked
                 class="flex items-center gap-3 rounded px-3 py-2.5 text-sm font-medium
                 {{ request()->routeIs('student.documents') ? 'nav-active' : 'text-slate-600 hover:bg-slate-100 dark:text-slate-300 dark:hover:bg-slate-800'}}">
                 <i data-lucide="file-text" class="w-4"></i>
@@ -45,7 +45,7 @@
               </a>
             </div>
           </details>
-          <details {{ $inClass ? 'open' : '' }} class="group">
+          <details {{ $inClass ? 'open' : '' }} data-enroll-blocked class="group">
             <summary class="flex cursor-pointer items-center gap-3 rounded px-3 py-2.5 text-sm font-medium
             {{ $inClass ? 'text-slate-900 dark:text-white' : 'text-slate-500 hover:bg-slate-100 dark:text-slate-400 dark:hover:bg-slate-800' }}">
             <i data-lucide="school" class="w-4"></i>

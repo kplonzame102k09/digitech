@@ -176,8 +176,12 @@
                 </label>
                 <label class="block text-[11px] font-medium text-slate-700 dark:text-slate-300">
                     Password
-                    <input id="password" type="password" minlength="12" class="mt-1 w-full rounded border border-slate-200 bg-white px-3 py-2.5 text-xs outline-none transition focus:border-green-500 focus:ring-2 focus:ring-green-100 dark:border-slate-700 dark:bg-slate-900"
-                        placeholder="Required for a new account; leave blank to keep current password" />
+                    <input id="password" type="text" maxlength="64" autocomplete="new-password" class="mt-1 w-full rounded border border-slate-200 bg-white px-3 py-2.5 text-xs outline-none transition focus:border-green-500 focus:ring-2 focus:ring-green-100 dark:border-slate-700 dark:bg-slate-900"
+                        placeholder="Generated for a new account; leave blank to keep current password" />
+                    <span id="passwordGenButtons" class="mt-2 gap-2" style="display:none">
+                        <button type="button" id="passRegenerate" class="inline-flex items-center gap-1 rounded border border-slate-200 px-2.5 py-1 text-[11px] font-semibold text-slate-600 transition hover:bg-slate-50 dark:border-slate-700 dark:text-slate-300 dark:hover:bg-slate-800"><i data-lucide="refresh-cw" class="h-3 w-3"></i>Regenerate</button>
+                        <button type="button" id="passCopy" class="inline-flex items-center gap-1 rounded border border-slate-200 px-2.5 py-1 text-[11px] font-semibold text-slate-600 transition hover:bg-slate-50 dark:border-slate-700 dark:text-slate-300 dark:hover:bg-slate-800"><i data-lucide="copy" class="h-3 w-3"></i>Copy</button>
+                    </span>
                 </label>
                 <label class="block text-[11px] font-medium text-slate-700 dark:text-slate-300">
                     Contact number

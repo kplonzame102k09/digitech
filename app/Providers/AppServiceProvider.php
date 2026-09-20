@@ -3,13 +3,13 @@
 namespace App\Providers;
 
 use App\Services\PortalDataService;
+use App\Support\LoginAttemptGuard;
 use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\Facades\View;
 use Illuminate\Support\ServiceProvider;
-use Illuminate\Support\Str;
 
 class AppServiceProvider extends ServiceProvider
 {
@@ -21,7 +21,11 @@ class AppServiceProvider extends ServiceProvider
     public function boot(): void
     {
         RateLimiter::for('login', function (Request $request): Limit {
-            return Limit::perMinute(5)->by(Str::lower($request->string('user_id')->toString()).'|'.$request->ip());
+            return Limit::perMinutes(LoginAttemptGuard::LOCK_MINUTES, LoginAttemptGuard::MAX_ATTEMPTS)
+                ->by(LoginAttemptGuard::keyFor($request))
+                ->response(function (Request $request, array $headers) {
+                    return LoginAttemptGuard::blocked($request, LoginAttemptGuard::keyFor($request), $headers);
+                });
         });
 
         RateLimiter::for('uploads', function (Request $request): Limit {

@@ -24,7 +24,9 @@
     });
     const data = await response.json().catch(() => ({}));
     if (!response.ok || data.ok === false) {
-      throw new Error(data.error || `Request failed (${response.status})`);
+      const first = data.errors && Object.values(data.errors)[0];
+      const detail = (Array.isArray(first) ? first[0] : first) || data.message;
+      throw new Error(detail || data.error || `Request failed (${response.status})`);
     }
     return data;
   }
@@ -145,6 +147,10 @@
     const subject = $("classroomSubject").value.trim();
     if (name.length < 3) {
       setError("Classroom name must be at least 3 characters.");
+      return;
+    }
+    if (!/^[A-Za-zÀ-ÿ0-9][A-Za-zÀ-ÿ0-9 .,'()&@_:;\/\-]{0,49}$/.test(name)) {
+      setError("Classroom name may only contain letters, numbers, spaces and : ( ) & _ @ , . ' / - (3-50 characters).");
       return;
     }
     if (subject.length < 3) {

@@ -61,6 +61,8 @@ class AuditLog extends Model
 
     const ENTITY_CLASSROOM = 'classroom';
 
+    const ENTITY_ACCOUNT_REQUEST = 'accountRequest';
+
     public function actor()
     {
         return $this->belongsTo(User::class, 'actorId', 'user_id');

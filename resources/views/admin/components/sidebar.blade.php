@@ -17,7 +17,7 @@
                 $inRequests = request()->routeIs('admin.documents', 'admin.parent-links', 'admin.requirements', 'admin.account-requests');
                 $inAcademics = request()->routeIs('admin.attendance', 'admin.attendance.finalize', 'admin.competencies', 'admin.enrollment', 'admin.grades', 'admin.programs');
                 $inEngagement = request()->routeIs('admin.announcements');
-                $inSystem = request()->routeIs('admin.settings', 'admin.profile');
+                $inSystem = request()->routeIs('admin.settings', 'admin.profile', 'admin.live-monitoring');
             @endphp
             <a href="{{ route('admin.dashboard') }}" class="flex items-center gap-3 rounded px-3 py-2.5 text-sm font-medium
                 {{ request()->routeIs('admin.dashboard')
@@ -146,6 +146,12 @@
                         ? 'nav-active' : 'text-slate-600 dark:text-slate-300 hover:bg-slate-800' }}">
                         <i data-lucide="settings" class="w-4"></i>
                         Settings
+                    </a>
+                    <a href="{{ route('admin.live-monitoring') }}" class="flex items-center gap-3 rounded px-3 py-2 text-sm font-medium
+                        {{ request()->routeIs('admin.live-monitoring')
+                        ? 'nav-active' : 'text-slate-600 dark:text-slate-300 hover:bg-slate-800' }}">
+                        <i data-lucide="radio" class="w-4"></i>
+                        Live Monitoring
                     </a>
                 </div>
             </details>

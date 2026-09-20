@@ -928,3 +928,12 @@ body[data-parent-page] main > div > section:first-child:not(.family-hero) h2 {
   border: 1px solid rgba(255, 255, 255, 0.1);
   backdrop-filter: blur(8px);
 }
+/* Students without an active "Enrolled" record: gated items stay visible
+   but inert and faded so the portal communicates what unlocks later. */
+.enroll-locked {
+  opacity: 0.5;
+  filter: saturate(0.5);
+  pointer-events: none;
+  cursor: not-allowed;
+  transition: opacity 0.2s ease, filter 0.2s ease;
+}

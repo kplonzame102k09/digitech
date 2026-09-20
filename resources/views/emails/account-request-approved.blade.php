@@ -22,8 +22,6 @@
                                     <td style="padding:16px 20px;">
                                         <p style="margin:0 0 8px;font-size:12px;color:#64748b;text-transform:uppercase;">User ID</p>
                                         <p style="margin:0 0 16px;font-size:15px;font-family:Consolas,Menlo,monospace;color:#065f46;"><strong>{{ $userId }}</strong></p>
-                                        <p style="margin:0 0 8px;font-size:12px;color:#64748b;text-transform:uppercase;">Username</p>
-                                        <p style="margin:0 0 16px;font-size:15px;color:#0f172a;">{{ $username }}</p>
                                         <p style="margin:0 0 8px;font-size:12px;color:#64748b;text-transform:uppercase;">Initial Password</p>
                                         <p style="margin:0;font-size:15px;font-family:Consolas,Menlo,monospace;color:#0f172a;">{{ $password }}</p>
                                     </td>

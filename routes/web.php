@@ -4,6 +4,7 @@ use App\Http\Controllers\AccountController;
 use App\Http\Controllers\AddressController;
 use App\Http\Controllers\Admin\AccountRequestController as AdminAccountRequestController;
 use App\Http\Controllers\Admin\AttendanceFinalizeController;
+use App\Http\Controllers\Admin\MonitorController;
 use App\Http\Controllers\Admin\ProfileController as AdminProfileController;
 use App\Http\Controllers\Analytics\AttendanceAnalyticsController;
 use App\Http\Controllers\Analytics\GradeAnalyticsController;
@@ -82,6 +83,9 @@ Route::middleware(['auth', 'password.updated', 'role:admin'])->prefix('admin')->
     Route::get('/announcements', fn () => view('admin.announcements'))->name('announcements');
     Route::get('/parent-links', fn () => view('admin.parent-links'))->name('parent-links');
     Route::get('/account-requests', fn () => view('admin.account-requests'))->name('account-requests');
+    Route::get('/live-monitoring', [MonitorController::class, 'index'])->name('live-monitoring');
+    Route::get('/api/monitor/activity', [MonitorController::class, 'activity'])->name('api.monitor.activity');
+    Route::post('/api/monitor/unlock', [MonitorController::class, 'unlock'])->name('api.monitor.unlock');
     Route::get('/profile', fn () => view('admin.profile'))->name('profile');
     Route::get('/api/profile', [AdminProfileController::class, 'show'])->name('api.profile.show');
     Route::put('/api/profile', [AdminProfileController::class, 'update'])->name('api.profile.update');
@@ -100,7 +104,7 @@ Route::middleware(['auth', 'password.updated', 'role:admin'])->prefix('admin')->
     Route::post('/api/attendance/finalize/{id}/return', [AttendanceFinalizeController::class, 'returnPackage'])->name('api.attendance.finalize.return');
 });
 
-Route::middleware(['auth', 'password.updated', 'role:student'])->prefix('student')->name('student.')->group(function () {
+Route::middleware(['auth', 'password.updated', 'role:student', 'student.enrolled'])->prefix('student')->name('student.')->group(function () {
     Route::get('/dashboard', fn () => view('student.dashboard'))->name('dashboard');
     Route::get('/enrollment', fn () => view('student.enrollment'))->name('enrollment');
     Route::get('/attendance', fn () => view('student.attendance'))->name('attendance');

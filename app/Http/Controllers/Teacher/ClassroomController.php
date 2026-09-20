@@ -38,7 +38,7 @@ class ClassroomController extends Controller
         $this->authorize('create', Classroom::class);
 
         $validated = $request->validate([
-            'name' => ['required', 'string', 'min:3', 'max:50', 'regex:/^[A-Za-z0-9][A-Za-z0-9 .,\'\/\-]{0,49}$/'],
+            'name' => ['required', 'string', 'min:3', 'max:50', 'regex:/^[A-Za-zÀ-ÿ0-9][A-Za-zÀ-ÿ0-9 .,\'()&@_:;\/\-]{0,49}$/'],
             // Subject is fixed per classroom: required at create, immutable after.
             'subject' => ['required', 'string', 'min:3', 'max:120'],
             'description' => ['nullable', 'string', 'max:2000'],
@@ -97,7 +97,7 @@ class ClassroomController extends Controller
         }
 
         $validated = $request->validate([
-            'name' => ['sometimes', 'string', 'min:3', 'max:50', 'regex:/^[A-Za-z0-9][A-Za-z0-9 .,\'\/\-]{0,49}$/'],
+            'name' => ['sometimes', 'string', 'min:3', 'max:50', 'regex:/^[A-Za-zÀ-ÿ0-9][A-Za-zÀ-ÿ0-9 .,\'()&@_:;\/\-]{0,49}$/'],
             'description' => ['nullable', 'string', 'max:2000'],
             'sessionsPerDay' => ['sometimes', 'integer', 'min:1', 'max:20'],
         ]);

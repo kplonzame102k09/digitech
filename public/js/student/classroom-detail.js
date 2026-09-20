@@ -1,6 +1,7 @@
 (() => {
   const U = AUTH.requireRole("student");
   if (!U) return;
+  if (!AUTH.gateEnrolled(true)) return;
 
   const classroomId = document.body.dataset.classroomId;
   if (!classroomId) return;

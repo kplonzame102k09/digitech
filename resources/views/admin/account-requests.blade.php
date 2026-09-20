@@ -130,7 +130,11 @@
                 </label>
                 <label class="block text-sm font-medium">
                     Password *
-                    <input id="approvePassword" type="password" required minlength="8" class="input mt-1 w-full rounded border px-3 py-2.5 dark:bg-slate-900 dark:border-slate-700" placeholder="Set initial password" />
+                    <input id="approvePassword" type="text" required readonly class="input mt-1 w-full rounded border px-3 py-2.5 dark:bg-slate-900 dark:border-slate-700" placeholder="Generated automatically" />
+                    <span class="mt-2 flex gap-2">
+                        <button type="button" id="approvePassRegenerate" class="rounded border border-slate-200 px-2.5 py-1 text-xs font-semibold dark:border-slate-700">Regenerate</button>
+                        <button type="button" id="approvePassCopy" class="rounded border border-slate-200 px-2.5 py-1 text-xs font-semibold dark:border-slate-700">Copy</button>
+                    </span>
                 </label>
                 <label class="block text-sm font-medium">
                     Admin notes (optional)
@@ -418,7 +422,7 @@
                 document.getElementById('approveRequestId').textContent = request.request_id;
                 document.getElementById('approveRequestIdInput').value = request.id;
                 document.getElementById('approveUsername').value = '';
-                document.getElementById('approvePassword').value = '';
+                document.getElementById('approvePassword').value = generatePassword();
                 document.getElementById('approveNotes').value = '';
                 document.getElementById('approveDialog').showModal();
             }
@@ -543,6 +547,21 @@
 
             document.getElementById('approveForm').addEventListener('submit', handleApprove);
             document.getElementById('rejectForm').addEventListener('submit', handleReject);
+
+            // Generated password helpers
+            const approvePassInput = document.getElementById('approvePassword');
+            document.getElementById('approvePassRegenerate').addEventListener('click', () => {
+                approvePassInput.value = generatePassword();
+            });
+            document.getElementById('approvePassCopy').addEventListener('click', async () => {
+                if (!approvePassInput.value) return;
+                try {
+                    await navigator.clipboard.writeText(approvePassInput.value);
+                } catch {
+                    approvePassInput.select();
+                    document.execCommand('copy');
+                }
+            });
 
             // Dialog close handlers
             document.querySelectorAll('[data-close-detail]').forEach(btn => {

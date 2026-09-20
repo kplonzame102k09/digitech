@@ -17,6 +17,38 @@
         @include('student.components.header')
         <main class="p-4 sm:p-6 lg:p-8">
             <div class="mx-auto max-w-7xl">
+                @if ($errors->has('enrollment'))
+                    <div class="mb-6 flex items-start gap-3 rounded-2xl border border-amber-200 bg-amber-50 p-4 text-amber-800 dark:border-amber-800/40 dark:bg-amber-950/40 dark:text-amber-200">
+                        <i data-lucide="shield-alert" class="mt-0.5 h-5 w-5 shrink-0"></i>
+                        <div class="text-sm">
+                            <p class="font-bold">Enrollment required</p>
+                            <p class="mt-1 opacity-90">{{ $errors->first('enrollment') }}</p>
+                            <a href="{{ route('student.enrollment') }}" class="mt-3 inline-flex items-center gap-1 rounded bg-amber-600 px-3 py-1.5 text-xs font-bold text-white hover:bg-amber-700">
+                                Start enrollment <i data-lucide="arrow-right" class="h-3.5 w-3.5"></i>
+                            </a>
+                        </div>
+                    </div>
+                @endif
+                <div id="enrollGuide" class="mb-6 hidden overflow-hidden rounded-2xl border border-blue-200 bg-gradient-to-br from-blue-50 via-white to-emerald-50 p-5 sm:p-6 dark:border-blue-800/40 dark:from-blue-950/40 dark:via-slate-900 dark:to-emerald-950/40">
+                    <div class="flex flex-wrap items-center justify-between gap-4">
+                        <div class="flex min-w-0 items-start gap-3">
+                            <span class="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-blue-600 text-white shadow-lg shadow-blue-600/20">
+                                <i data-lucide="graduation-cap" class="h-6 w-6"></i>
+                            </span>
+                            <div class="min-w-0">
+                                <p class="text-xs font-bold uppercase tracking-[0.16em] text-blue-600 dark:text-blue-300">Almost there</p>
+                                <h3 class="mt-1 text-xl font-extrabold text-slate-900 dark:text-white">Complete your enrollment to unlock your portal</h3>
+                                <p class="mt-1 max-w-xl text-sm text-slate-500 dark:text-slate-300">
+                                    Grades, Classrooms, Competencies, Attendance, Documents, and Requirements open once your enrollment is marked <b>Enrolled</b>. Submit it below to get started.
+                                </p>
+                                <p class="mt-2 text-sm font-semibold text-slate-700 dark:text-slate-200">Current status: <span id="enrollGuideStatus" class="text-blue-700 dark:text-blue-300"></span></p>
+                            </div>
+                        </div>
+                        <a href="{{ route('student.enrollment') }}" class="inline-flex shrink-0 items-center gap-2 rounded-xl bg-blue-600 px-5 py-3 text-sm font-bold text-white shadow-lg shadow-blue-600/20 hover:bg-blue-700">
+                            Start enrollment <i data-lucide="arrow-right" class="h-4 w-4"></i>
+                        </a>
+                    </div>
+                </div>
                 <section class="mb-7 p-6 sm:p-8">
                     <div>
                         <div
@@ -113,14 +145,14 @@
                         <h3 class="mt-1 text-xl font-extrabold">Keep moving</h3>
                     </div>
                     <div class="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-                        <a href="{{ route('student.requirements') }}"  class="student-action-card">
+                        <a href="{{ route('student.requirements') }}" data-enroll-blocked class="student-action-card">
                             <span class="flex h-10 w-10 items-center justify-center rounded bg-amber-50 text-amber-600 dark:bg-amber-950/50 dark:text-amber-300">
                                 <i data-lucide="folder-check"></i>
                             </span>
                             <b class="mt-4 block">Requirements</b>
                             <span class="mt-1 block text-xs text-slate-400">Track submissions</span>
                         </a>
-                        <a href="{{ route('student.documents') }}" class="student-action-card">
+                        <a href="{{ route('student.documents') }}" data-enroll-blocked class="student-action-card">
                             <span class="flex h-10 w-10 items-center justify-center rounded bg-blue-50 text-blue-600 dark:bg-blue-950/50 dark:text-blue-300">
                                 <i data-lucide="file-text"></i>
                             </span>

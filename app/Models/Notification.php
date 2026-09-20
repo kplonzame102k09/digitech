@@ -44,6 +44,10 @@ class Notification extends Model
 
     const SOURCE_ATTENDANCE = 'attendance';
 
+    const SOURCE_ACCOUNT_REQUEST = 'accountRequest';
+
+    const SOURCE_SECURITY = 'security';
+
     public function user()
     {
         return $this->belongsTo(User::class, 'userId', 'user_id');

@@ -1,5 +1,23 @@
  
 
+function generatePassword(len) {
+    const length = len || 12;
+    const pool =
+        "ABCDEFGHJKMNPQRSTUVWXYZabcdefghjkmnpqrstuvwxyz23456789";
+    const bytes = window.crypto?.getRandomValues
+        ? new Uint32Array(length)
+        : null;
+    if (bytes) window.crypto.getRandomValues(bytes);
+    let out = "";
+    for (let i = 0; i < length; i++) {
+        const seed = bytes
+            ? bytes[i]
+            : Math.floor(Math.random() * 4294967296);
+        out += pool[seed % pool.length];
+    }
+    return out;
+}
+
 (function () {
     function ensure() {
         let el = document.getElementById("global-loader");
@@ -388,6 +406,8 @@ const NOTIFICATION_ROUTES = {
   parentLink: { admin: "/admin/parent-links", parent: "/parent/children" },
   meeting: { teacher: "/teacher/classrooms", student: "/student/classrooms" },
   activity: { teacher: "/teacher/classrooms", student: "/student/classrooms" },
+  accountRequest: { admin: "/admin/account-requests" },
+  security: { admin: null },
 };
 
 function notificationTarget(notification, user) {

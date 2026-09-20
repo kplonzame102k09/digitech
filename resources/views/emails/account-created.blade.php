@@ -22,10 +22,6 @@
                                     <td style="padding:16px 20px;">
                                         <p style="margin:0 0 8px;font-size:12px;color:#64748b;text-transform:uppercase;">User ID</p>
                                         <p style="margin:0 0 16px;font-size:15px;font-family:Consolas,Menlo,monospace;color:#065f46;"><strong>{{ $userId }}</strong></p>
-                                        @if($username)
-                                        <p style="margin:0 0 8px;font-size:12px;color:#64748b;text-transform:uppercase;">Username</p>
-                                        <p style="margin:0 0 16px;font-size:15px;color:#0f172a;">{{ $username }}</p>
-                                        @endif
                                         <p style="margin:0 0 8px;font-size:12px;color:#64748b;text-transform:uppercase;">Initial Password</p>
                                         <p style="margin:0;font-size:15px;font-family:Consolas,Menlo,monospace;color:#0f172a;">{{ $password }}</p>
                                     </td>
@@ -37,7 +33,7 @@
                             </p>
                             @endif
                             <p style="margin:0 0 24px;font-size:14px;line-height:1.6;">
-                                Sign in with your <strong>User ID</strong> or <strong>email address</strong>, then select the matching account type.
+                                Sign in with your <strong>User ID</strong>, then select the matching account type.
                             </p>
                             <a href="{{ $loginUrl }}" style="display:inline-block;background-color:#16a34a;color:#ffffff;text-decoration:none;font-weight:bold;font-size:14px;padding:12px 28px;border-radius:8px;">Sign in to the portal</a>
                         </td>

@@ -1,7 +1,6 @@
 [package]
-name = "digitech-portal"
+name = "kplonzame102k09/digitech-portal"
 version = "1.0.0"
-namespace = "kplonzame102k09"
 
 [dependencies]
 "php/php" = "=8.3.403"

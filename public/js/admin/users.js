@@ -409,7 +409,7 @@
       username: user?.username || "",
       role: user?.role || "student",
       accountStatus: user?.status === "inactive" ? "inactive" : "active",
-      password: "",
+      password: user ? "" : generatePassword(),
       contact: user?.contact || "",
       strand: user?.strand || "",
       address: user?.address || "",
@@ -423,6 +423,7 @@
       if (element) element.value = value;
     });
     syncParentField();
+    syncPasswordField();
     void populateAddressFields(user);
     $("#formFeedback").textContent = "";
     dialog.showModal();
@@ -433,6 +434,36 @@
       "hidden",
       $("#role")?.value !== "parent",
     );
+  }
+
+  function syncPasswordField() {
+    const input = $("#password");
+    const buttons = $("#passwordGenButtons");
+    if (!input || !buttons) return;
+    if (editingId) {
+      input.readOnly = false;
+      buttons.style.display = "none";
+      input.placeholder = "Leave blank to keep current password";
+    } else {
+      input.readOnly = true;
+      buttons.style.display = "flex";
+      input.placeholder = "Generated password";
+    }
+  }
+
+  async function copyText(text) {
+    try {
+      await navigator.clipboard.writeText(text);
+    } catch {
+      const textarea = document.createElement("textarea");
+      textarea.value = text;
+      textarea.style.position = "fixed";
+      textarea.style.opacity = "0";
+      document.body.appendChild(textarea);
+      textarea.select();
+      document.execCommand("copy");
+      textarea.remove();
+    }
   }
 
   function saveUser(event) {
@@ -1123,6 +1154,16 @@ function importUsers() {
     $("[data-bulk-deactivate]")?.addEventListener("click", bulkDeactivate);
     $("[data-bulk-delete]")?.addEventListener("click", bulkDelete);
     $("#userForm")?.addEventListener("submit", saveUser);
+    $("#passRegenerate")?.addEventListener("click", () => {
+      const input = $("#password");
+      if (input && !editingId) input.value = generatePassword();
+    });
+    $("#passCopy")?.addEventListener("click", async () => {
+      const input = $("#password");
+      if (!input || !input.value) return;
+      await copyText(input.value);
+      APP.toast("Password copied");
+    });
     $("#role")?.addEventListener("change", syncParentField);
     $("#region")?.addEventListener("change", async (event) => {
       try {

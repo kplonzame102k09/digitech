@@ -1171,7 +1171,14 @@ class PortalDataService
             $this->pendingGradeAlerts = [];
         }
 
-        $this->reconcileDomainRows($key, $model, $records, $actor);
+        // Notifications are merge-only: a client PUT may upsert/mark-read its
+        // own rows but must never delete rows it never saw (e.g. server-side
+        // Notification::alert() rows for other users, or alerts that landed
+        // between the previous poll and this write). Skipping the reconcile
+        // guarantees alerts can't be wiped by a stale full-collection PUT.
+        if ($key !== 'notifications') {
+            $this->reconcileDomainRows($key, $model, $records, $actor);
+        }
 
         if ($key === 'notifications') {
             $this->dedupeNotifications($model);
@@ -2267,9 +2274,9 @@ class PortalDataService
      * instead of stacking (the same contract dedupeNotifications applies to
      * client-pushed notifications).
      */
-    protected function createAdminAlert(string $title, string $message, string $source, ?string $recordId = null): void
+    public function createAdminAlert(string $title, string $message, string $source, ?string $recordId = null, bool $always = false): void
     {
-        if ((bool) (SystemSetting::getInstance()->notifyAdmins ?? true) === false) {
+        if (! $always && (bool) (SystemSetting::getInstance()->notifyAdmins ?? true) === false) {
             return;
         }
 
@@ -2309,6 +2316,39 @@ class PortalDataService
                 'recordId' => $recordId,
             ]);
         }
+    }
+
+    /**
+     * Public helper for flows outside this service (controllers, guards) that
+     * need the exact same "alert every active admin" behaviour. Pass
+     * $always = true for security-critical events that must fire even when the
+     * notify-admins toggle is off.
+     */
+    public function notifyAdmins(string $title, string $message, string $source, ?string $recordId = null, bool $always = false): void
+    {
+        $this->createAdminAlert($title, $message, $source, $recordId, $always);
+    }
+
+    /**
+     * Active admins' user ids, non-empty emails and display names, for in-app
+     * alerts and administrative mail alike.
+     *
+     * @return array<int, array{id: string, email: string, name: string}>
+     */
+    public function adminRecipients(): array
+    {
+        return User::query()
+            ->where('role', 'admin')
+            ->where('status', 'active')
+            ->get(['user_id', 'email', 'firstName', 'lastName'])
+            ->filter(fn (User $u): bool => is_string($u->email) && trim($u->email) !== '')
+            ->map(fn (User $u): array => [
+                'id' => (string) $u->user_id,
+                'email' => trim($u->email),
+                'name' => trim($u->firstName.' '.$u->lastName) ?: (string) $u->user_id,
+            ])
+            ->values()
+            ->all();
     }
 
     protected function generateNotificationId(): string

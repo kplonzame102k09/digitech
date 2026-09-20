@@ -1,6 +1,7 @@
 (() => {
   const U = AUTH.requireRole("student");
   if (!U) return;
+  if (!AUTH.gateEnrolled(true)) return;
 
   const $ = (id) => document.getElementById(id);
   const esc = (value) => APP.esc(value ?? "");

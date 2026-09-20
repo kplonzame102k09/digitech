@@ -1,6 +1,18 @@
 (() => {
   const U = AUTH.requireRole("student");
   if (!U) return;
+  const bodyPage =
+    document.body.dataset.studentPage ||
+    location.pathname.split("/").pop();
+  if (
+    !AUTH.gateEnrolled(
+      ["grades", "documents", "competencies", "requirements"].includes(
+        bodyPage,
+      ),
+    )
+  ) {
+    return;
+  }
 
   const $ = (sel, root = document) =>
     typeof sel === "string" ? root.querySelector(sel) : sel;
@@ -199,6 +211,16 @@
       
       const enr = cache.enrollments[0]; // Get latest enrollment
       text("#enrollmentstatus", enr?.status || "Not started");
+
+      const guide = $("#enrollGuide");
+      if (guide) {
+        if (enr && enr.status === "Enrolled") {
+          guide.classList.add("hidden");
+        } else {
+          text("#enrollGuideStatus", enr?.status || "Not started");
+          guide.classList.remove("hidden");
+        }
+      }
       
       const enrollBox = $("#enroll");
       if (enrollBox) {

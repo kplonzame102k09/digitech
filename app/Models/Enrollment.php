@@ -107,6 +107,14 @@ class Enrollment extends Model
      * of them queued at once would still create conflicting records, so the
      * portal rejects them as duplicates too.
      */
+    public static function isStudentEnrolled(string $studentId): bool
+    {
+        return self::query()
+            ->where('studentId', $studentId)
+            ->where('status', self::ENROLLED)
+            ->exists();
+    }
+
     public static function hasPending($studentId, $schoolYear, $excludeId = null)
     {
         $query = self::where('studentId', $studentId)

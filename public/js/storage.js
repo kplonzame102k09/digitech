@@ -153,8 +153,13 @@ function setProfilePhoto(photo, user = getCurrentUser()) {
 }
 async function uploadProfilePhoto(file) {
   if (!file) throw new Error("No photo selected");
+  // Downscale + re-encode in the browser so uploads stay far below
+  // shared-hosting PHP limits (InfinityFree caps post/upload size) and the
+  // server's 2 MB file validation. Falls back to the original file if the
+  // browser can't decode it (e.g. HEIC from phones).
+  const resized = await resizeImage(file, 1600);
   const form = new FormData();
-  form.append("photo", file);
+  form.append("photo", resized, "profile.jpg");
   const response = await fetch(`${apiBase}/photo`, {
     method: "POST",
     headers: { Accept: "application/json", "X-CSRF-TOKEN": csrfToken, "X-Requested-With": "XMLHttpRequest" },
@@ -162,11 +167,51 @@ async function uploadProfilePhoto(file) {
     body: form,
   });
   const data = await response.json().catch(() => ({}));
-  if (!response.ok) throw new Error(data.error || `Upload failed (${response.status})`);
+  if (!response.ok) {
+    const first = data.errors && Object.values(data.errors)[0];
+    throw new Error((Array.isArray(first) ? first[0] : first) || data.message || data.error || `Upload failed (${response.status})`);
+  }
   if (data.photo) {
     setProfilePhoto(data.photo);
   }
   return data;
+}
+
+function resizeImage(file, maxDim = 1600) {
+  return new Promise((resolve) => {
+    const objectUrl = (typeof URL !== "undefined" && URL.createObjectURL) ? URL.createObjectURL(file) : null;
+    const finish = (value) => {
+      if (objectUrl) URL.revokeObjectURL(objectUrl);
+      resolve(value);
+    };
+    const img = new Image();
+    img.onload = () => {
+      try {
+        const scale = Math.min(1, maxDim / Math.max(img.width, img.height));
+        const canvas = document.createElement("canvas");
+        canvas.width = Math.max(1, Math.round(img.width * scale));
+        canvas.height = Math.max(1, Math.round(img.height * scale));
+        const ctx = canvas.getContext("2d");
+        ctx.fillStyle = "#fff";
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+        ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+        canvas.toBlob((blob) => finish(blob || file), "image/jpeg", 0.85);
+      } catch (_) {
+        finish(file);
+      }
+    };
+    img.onerror = () => finish(file);
+    if (objectUrl) {
+      img.src = objectUrl;
+    } else {
+      const reader = new FileReader();
+      reader.onload = () => {
+        img.src = typeof reader.result === "string" ? reader.result : "";
+      };
+      reader.onerror = () => finish(file);
+      reader.readAsDataURL(file);
+    }
+  });
 }
 async function uploadImage(file) {
   if (!file) throw new Error("No image selected");

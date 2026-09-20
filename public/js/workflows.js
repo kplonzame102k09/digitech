@@ -4,6 +4,13 @@
   const page = document.body.dataset.feature;
   const U = AUTH.requireRole(document.body.dataset.role);
   if (!U) return;
+  if (
+    (document.body.dataset.role === "student" &&
+      (page === "attendance" || page === "requirements")) &&
+    !AUTH.gateEnrolled(true)
+  ) {
+    return;
+  }
   const shell = () => {
     APP.applyTheme();
     APP.updateNotif();
