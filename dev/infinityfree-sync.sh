@@ -66,13 +66,17 @@ MIRROR_OPTS=(-R -n --continue -v)
 [ "$PRUNE" = 1 ] && MIRROR_OPTS+=(--delete)
 
 echo "==> [4/4] Mirroring $DEST -> ftp://$INF_FTP_HOST/$INF_FTP_DIR"
+DRY_FLAG=()
 if [ "$DRY" = 1 ]; then
-    lftp --dry-run -u "$INF_FTP_USER,$INF_FTP_PASS" "$INF_FTP_HOST" \
-        -e "set net:max-retries 3; set cmd:fail-exit yes; mirror ${MIRROR_OPTS[*]} ${EXCLUDES[*]} '$DEST' '$INF_FTP_DIR'; bye"
-else
-    lftp -u "$INF_FTP_USER,$INF_FTP_PASS" "$INF_FTP_HOST" \
-        -e "set net:max-retries 3; set cmd:fail-exit yes; mirror ${MIRROR_OPTS[*]} ${EXCLUDES[*]} '$DEST' '$INF_FTP_DIR'; bye"
+    lftp --help 2>&1 | grep -q -- '--dry-run' && DRY_FLAG=(--dry-run) || true
+    if [ "${#DRY_FLAG[@]}" -eq 0 ]; then
+        echo "ERROR: this lftp ($(lftp --version | head -1)) has no --dry-run support;"
+        echo "       upgrade lftp or run without --dry-run."
+        exit 2
+    fi
 fi
+lftp "${DRY_FLAG[@]}" -u "$INF_FTP_USER,$INF_FTP_PASS" "$INF_FTP_HOST" \
+    -e "set net:max-retries 3; set cmd:fail-exit yes; mirror ${MIRROR_OPTS[*]} ${EXCLUDES[*]} '$DEST' '$INF_FTP_DIR'; bye"
 
 echo ""
 echo "==> Sync complete. If this was the first push, verify the site"
