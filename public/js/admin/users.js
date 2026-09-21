@@ -1118,9 +1118,12 @@ function importUsers() {
     APP.applyTheme();
     APP.updateNotif();
     resumePendingImport();
-    $("#open")?.addEventListener("click", () =>
-      $("#side")?.classList.toggle("-translate-x-full"),
-    );
+    const menuButton = $("#open");
+    const menuSide = $("#side");
+    if (menuButton && menuSide && !menuButton.dataset.menuBound) {
+      menuButton.dataset.menuBound = "1";
+      menuButton.addEventListener("click", () => menuSide.classList.toggle("-translate-x-full"));
+    }
     $$("[data-theme-toggle]").forEach((button) =>
       button.addEventListener("click", () => APP.toggleTheme()),
     );

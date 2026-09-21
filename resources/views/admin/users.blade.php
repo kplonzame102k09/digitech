@@ -87,18 +87,18 @@
                 </section>
                 <section class="card mt-5 overflow-hidden">
                     <div class="overflow-x-auto">
-                        <table class="w-full text-left text-sm">
+                        <table class="w-full text-center text-sm">
                             <thead class="bg-slate-50 dark:bg-slate-800">
                                 <tr>
                                     <th class="w-12 p-4">
                                         <input id="selectAll" type="checkbox" aria-label="Select all visible users" />
                                     </th>
-                                    <th class="p-4">User</th>
-                                    <th class="p-4">User ID</th>
-                                    <th class="p-4">Role</th>
-                                    <th class="p-4">Email</th>
-                                    <th class="p-4">Status</th>
-                                    <th class="p-4 text-right">Actions</th>
+                                    <th class="p-4 text-center">User</th>
+                                    <th class="p-4 text-center">User ID</th>
+                                    <th class="p-4 text-center">Role</th>
+                                    <th class="p-4 text-center">Email</th>
+                                    <th class="p-4 text-center">Status</th>
+                                    <th class="p-4 text-center">Actions</th>
                                 </tr>
                             </thead>
                             <tbody id="rows"></tbody>
@@ -154,10 +154,6 @@
                     <input id="email" type="email" required class="mt-1 w-full rounded border border-slate-200 bg-white px-3 py-2.5 text-xs outline-none transition focus:border-green-500 focus:ring-2 focus:ring-green-100 dark:border-slate-700 dark:bg-slate-900"  placeholder="you@example.com" />
                 </label>
                 <label class="block text-[11px] font-medium text-slate-700 dark:text-slate-300">
-                    Username
-                    <input id="username" class="mt-1 w-full rounded border border-slate-200 bg-white px-3 py-2.5 text-xs outline-none transition focus:border-green-500 focus:ring-2 focus:ring-green-100 dark:border-slate-700 dark:bg-slate-900"  placeholder="Choose a username" />
-                </label>
-                <label class="block text-[11px] font-medium text-slate-700 dark:text-slate-300">
                     Role
                     <select id="role" class="mt-1 w-full rounded border border-slate-200 bg-white px-3 py-2.5 text-xs outline-none transition focus:border-green-500 focus:ring-2 focus:ring-green-100 dark:border-slate-700 dark:bg-slate-900">
                         <option value="student">Student</option>
@@ -186,10 +182,6 @@
                 <label class="block text-[11px] font-medium text-slate-700 dark:text-slate-300">
                     Contact number
                     <input id="contact" class="mt-1 w-full rounded border border-slate-200 bg-white px-3 py-2.5 text-xs outline-none transition focus:border-green-500 focus:ring-2 focus:ring-green-100 dark:border-slate-700 dark:bg-slate-900"  placeholder="09XXXXXXXXX" />
-                </label>
-                <label class="block text-[11px] font-medium text-slate-700 dark:text-slate-300">
-                    Program / strand
-                    <input id="strand" class="mt-1 w-full rounded border border-slate-200 bg-white px-3 py-2.5 text-xs outline-none transition focus:border-green-500 focus:ring-2 focus:ring-green-100 dark:border-slate-700 dark:bg-slate-900"  placeholder="Program or strand" />
                 </label>
                 <div class="mt-6 flex items-center gap-3 sm:col-span-2">
                     <div class="flex h-8 w-8 items-center justify-center rounded bg-green-50 text-green-600 dark:bg-green-950/40 dark:text-green-400"><i data-lucide="graduation-cap" class="h-4 w-4"></i></div>
@@ -289,7 +281,7 @@
                                 </span>
                                 <div>
                                     <b data-row-user-name class="block"></b>
-                                    <small data-user-email class="text-xs text-slate-400"></small>
+                                   
                                 </div>
                             </div>
                         </td>

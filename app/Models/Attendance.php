@@ -112,25 +112,20 @@ class Attendance extends Model
 
     public static function getAttendanceRate($studentId, $startDate = null, $endDate = null)
     {
-        $query = self::where('studentId', $studentId)
-            ->whereIn('status', [self::PRESENT, self::LATE, self::ABSENT]);
+        $records = self::where('studentId', $studentId)
+            ->where('kind', 'final')
+            ->whereNotNull('finalizedAt')
+            ->when($startDate, fn ($query) => $query->where('date', '>=', $startDate))
+            ->when($endDate, fn ($query) => $query->where('date', '<=', $endDate))
+            ->get();
 
-        if ($startDate) {
-            $query->where('date', '>=', $startDate);
-        }
-
-        if ($endDate) {
-            $query->where('date', '<=', $endDate);
-        }
-
-        $records = $query->get();
         $total = $records->count();
 
         if ($total === 0) {
             return 0;
         }
 
-        $present = $records->where('status', self::PRESENT)->count();
+        $present = $records->whereIn('status', ['Present', 'Late', 'Excused'])->count();
 
         return round(($present / $total) * 100, 2);
     }

@@ -82,6 +82,9 @@
 
         <div class="flex items-center justify-center p-5">
             <div class="w-full max-w-2xl">
+                <a href="{{ route('index') }}" title="Back" class="fixed p-2.5 rounded-xl text-xl text-black hover:bg-green-500 hover:text-white dark:hover:bg-green-500 dark:hover:text-white dark:text-white">
+                    <i data-lucide="arrow-left" class="w-4 h-4"></i>
+                </a>
                 <div class="p-7 sm:p-9">
                     <p class="text-sm font-semibold text-green-600 dark:text-green-400">Account Request</p>
                     <h1 class="text-2xl font-bold mt-1">Request an account</h1>
@@ -121,7 +124,8 @@
                         </label>
 
                         <label class="block text-sm font-medium">
-                            Email address *
+                            Email address * 
+                            <small class="m-4 text-xs text-slate-400 italic">Please use a valid and active email.</small>
                             <input id="raEmail" type="email" required maxlength="255"
                                 class="input mt-1 w-full rounded border px-3 py-3 dark:bg-slate-900 dark:border-slate-700"
                                 placeholder="you@example.com">
@@ -134,11 +138,11 @@
                                 placeholder="09XXXXXXXXX">
                         </label>
 
-                        <label class="block text-sm font-medium" id="raStrandField">
+                        <label class="block text-sm font-medium hidden" id="raStrandField">
                             Program / Strand
                             <input id="raStrand" maxlength="120"
                                 class="input mt-1 w-full rounded border px-3 py-3 dark:bg-slate-900 dark:border-slate-700"
-                                placeholder="e.g. TVET – Cookery NC II">
+                                placeholder="e.g. TVET – Cookery NC II" disabled>
                         </label>
 
                         <label class="block text-sm font-medium">
@@ -165,7 +169,7 @@
 
                     <p class="text-center text-sm text-slate-500 dark:text-slate-400 mt-6">
                         Already have an account?
-                        <a href="{{ route('auth.login') }}" class="text-green-600 font-semibold dark:text-green-400">Sign in</a>
+                        <a href="{{ route('auth.login') }}" class="text-green-600 hover:underline hover:text-blue-500 dark:text-green-400 dark:hover:text-blue-500"><strong>Sign in</strong></a>
                     </p>
                 </div>
             </div>

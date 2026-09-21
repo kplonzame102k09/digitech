@@ -27,7 +27,7 @@ class LoginAttemptGuard
 {
     public const MAX_ATTEMPTS = 3;
 
-    public const LOCK_MINUTES = 1;
+    public const LOCK_MINUTES = 15;
 
     private const ALLOWED_ROLES = ['student', 'teacher', 'admin', 'parent', 'guest'];
 

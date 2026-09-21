@@ -23,8 +23,10 @@ class ClassroomPolicy
         }
 
         if ($user->isStudent()) {
-            return $classroom->students()->where('users.id', $user->id)->exists()
-                || $classroom->isActive();
+            // Only roster members may view a classroom (its roster, activities,
+            // submissions and meeting rooms). "Any active classroom" browsing
+            // leaks other learners' data to the whole student body.
+            return $classroom->students()->where('users.id', $user->id)->exists();
         }
 
         return false;

@@ -118,7 +118,7 @@ class AccountRequestController extends Controller
     {
         $validated = $request->validate([
             'username' => ['required', 'string', 'max:50', 'unique:users,username'],
-            'password' => ['required', 'string', 'min:8'],
+            'password' => ['required', 'string', 'min:12'],
             'adminNotes' => ['nullable', 'string', 'max:1000'],
         ]);
 

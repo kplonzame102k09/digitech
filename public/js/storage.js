@@ -9,6 +9,10 @@ let csrfToken = "";
 let apiBase = "/api/portal";
 let logoutUrl = "/logout";
 const pendingSync = Object.create(null);
+// per-key consecutive-failure counter so a persistent server rejection stops
+// being retried instead of hammering the endpoint forever.
+const syncRetryCount = Object.create(null);
+const MAX_SYNC_RETRIES = 5;
 const DEFAULT_AVATAR = "/images/16432.png";
 
 function saveData(key, data) {
@@ -40,38 +44,72 @@ function queueSync(key, data) {
 }
 async function flushSync() {
   const entries = Object.entries(pendingSync);
-  entries.forEach(([key]) => delete pendingSync[key]);
-  const failed = [];
-  for (const [key, value] of entries) {
-    try {
-      const response = await fetch(`${apiBase}/${encodeURIComponent(key)}`, {
-        method: "PUT",
-        headers: { "Content-Type": "application/json", Accept: "application/json", "X-CSRF-TOKEN": csrfToken, "X-Requested-With": "XMLHttpRequest" },
-        credentials: "same-origin",
-        body: JSON.stringify({ value }),
-      });
-      if (!response.ok) throw new Error(`Sync failed with status ${response.status}`);
-    } catch (error) {
-      // Permission-denied is permanent for this payload: the account no
-      // longer has write access (e.g. auditLogs were removed from a
-      // teacher's writable collections), so endlessly re-queueing it would
-      // hammer the server. Drop the key instead and keep the rest moving.
-      if (error && /403/.test(error.message || "")) {
-        console.warn("Skipped syncing", key, "– write access denied");
-        continue;
+  if (!entries.length) return { ok: true, synced: 0, total: 0, failed: [] };
+  if (flushSync._busy) return { ok: false, synced: 0, total: 0, failed: entries.map(([key]) => key), busy: true };
+  flushSync._busy = true;
+  try {
+    const failed = [];
+    const synced = [];
+    for (const [key, value] of entries) {
+      // Do NOT delete the key before the PUT resolves: pendingKeys() drives
+      // the background poller, which must keep skipping this key while the
+      // write is in flight so a stale server snapshot can't overwrite the
+      // user's just-saved optimistic value. The key is removed only after its
+      // PUT settles.
+      try {
+        const response = await fetch(`${apiBase}/${encodeURIComponent(key)}`, {
+          method: "PUT",
+          headers: { "Content-Type": "application/json", Accept: "application/json", "X-CSRF-TOKEN": csrfToken, "X-Requested-With": "XMLHttpRequest" },
+          credentials: "same-origin",
+          body: JSON.stringify({ value }),
+        });
+        if (!response.ok) throw new Error(`Sync failed with status ${response.status}`);
+        // Server-normalized mirror flows back into local memory so the next
+        // render matches what was actually persisted.
+        const data = await response.json().catch(() => null);
+        if (data && Array.isArray(data.value)) importData(key, data.value);
+        delete pendingSync[key];
+        delete syncRetryCount[key];
+        synced.push(key);
+      } catch (error) {
+        // Permission-denied is permanent for this payload: the account no
+        // longer has write access (e.g. auditLogs were removed from a
+        // teacher's writable collections), so endlessly re-queueing it would
+        // hammer the server. Drop the key instead and keep the rest moving.
+        if (error && /403/.test(error.message || "")) {
+          console.warn("Skipped syncing", key, "– write access denied");
+          delete pendingSync[key];
+          delete syncRetryCount[key];
+          continue;
+        }
+        console.error("Failed to sync", key, error);
+        const attempts = (syncRetryCount[key] || 0) + 1;
+        syncRetryCount[key] = attempts;
+        if (attempts >= MAX_SYNC_RETRIES) {
+          console.warn("Dropping", key, "after", attempts, "consecutive sync failures");
+          delete pendingSync[key];
+          delete syncRetryCount[key];
+          failed.push(key);
+          continue;
+        }
+        // Preserve the newest local value if the user edited again mid-flight.
+        if (!Object.prototype.hasOwnProperty.call(pendingSync, key)) pendingSync[key] = value;
+        failed.push(key);
       }
-      console.error("Failed to sync", key, error);
-      pendingSync[key] = value;
-      failed.push(key);
     }
+    if (Object.keys(pendingSync).length) {
+      if (queueSync._retry) clearTimeout(queueSync._retry);
+      queueSync._retry = setTimeout(flushSync, 1500);
+    }
+    return {
+      ok: failed.length === 0,
+      synced: synced.length,
+      total: entries.length,
+      failed,
+    };
+  } finally {
+    flushSync._busy = false;
   }
-  if (Object.keys(pendingSync).length) queueSync._retry = setTimeout(flushSync, 1500);
-  return {
-    ok: failed.length === 0,
-    synced: entries.length - failed.length,
-    total: entries.length,
-    failed,
-  };
 }
 function hydrateFromBoot(boot) {
   if (!boot || typeof boot !== "object") return;

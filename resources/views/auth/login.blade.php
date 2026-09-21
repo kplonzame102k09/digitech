@@ -91,10 +91,15 @@
 
         <div class="flex items-center justify-center p-5">
             <div class="w-full max-w-2xl">
+                <a href="{{ route('index') }}" title="Back" class="fixed inline-flex top-4 p-2.5 text-green-500 hover:text-blue-500  dark:hover:text-blue-500 dark:text-white">
+                    
+                    Back to Home
+                </a>
                 <div class="p-7 sm:p-9">
                     <p class="text-sm font-semibold text-green-600 dark:text-green-400">Welcome back</p>
                     <h1 class="text-2xl font-bold mt-1">Sign in to your portal</h1>
-                    <p class="text-sm text-slate-500 dark:text-slate-400 mt-2">Use your generated User ID or registered email.</p>
+                    <p class="text-sm text-slate-500 dark:text-slate-400 mt-2">Use your User ID to sign in.</p>
+                    
                     <form method="POST" action="{{ route('login.submit') }}" class="space-y-4 mt-7">
                         @csrf
 
@@ -145,14 +150,29 @@
                     <p class="text-center text-sm text-slate-500 dark:text-slate-400 mt-6">
                         No account? 
                         <br>
-                        <a href="{{ route('account.request') }}"><strong>Request account</strong></a> 
+                        <a href="{{ route('account.request') }}" class="text-green-500 hover:underline hover:text-blue-500 dark:hover:text-blue-500"><strong>Request account</strong></a> 
                         <br>
-                        Or visit the nearest Digitech College branch.
+                        <span>----------------------------Or----------------------------</span>
+                        <br>
+                        Visit the nearest Digitech College branch.
                     </p>
                 </div>
+                <div class="border border-red-900 text-center text-left bg-red-800/20 rounded-xl">
+                    <small class="m-7 text-red-500 mt-2 text-xs italic">
+                        <strong>NOTE:</strong>
+                        <br>
+                        
+                        IF YOU DO NOT REMEMBER YOUR PASSWORD DO NOT TRY TO GUESS <br>
+                        TOO MANY FAILED ATTEMPT CAN CAUSE TEMPORARY LOCK OF YOUR ACCOUNT <br>
+                        PLEASE CONTACT THE ADMINISTRATOR FOR PASSWORD RESET.
+                        
+                </small>
+                </div>
+                
             </div>
         </div>
     </div>
+    
     <script>
         function updatePublicThemeIcon(isDark) {
             document.querySelectorAll("[data-theme-icon]").forEach(function (icon) {
@@ -180,9 +200,9 @@
             const placeholders = {
                 student: 'STU-2026-XXXXXX',
                 teacher: 'TCH-2026-XXXXXX',
-                admin: 'ADMIN-000001',
+                admin: 'ADMIN-2026-XXXXXX',
                 parent: 'PRT-2026-XXXXXX',
-                guest: 'GUEST-2026-XXXXX'
+                guest: 'GST-2026-XXXXXX'
             };
 
             function updateUserIdPlaceholder() {

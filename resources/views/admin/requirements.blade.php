@@ -17,19 +17,7 @@
         @include('admin.components.header', ['title' => 'Requirements', 'subtitle' => 'Student Services'])
         <main class="p-4 sm:p-6 lg:p-8">
             <div class="mx-auto max-w-7xl">
-                <section class="mb-2 p-6 sm:p-8">
-                    <p class="text-xs font-bold uppercase tracking-[0.18em] text-blue-600 dark:text-blue-400">Enrollment operations</p>
-                    <div class="mt-2 flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
-                        <div>
-                            <h2 class="text-3xl font-extrabold tracking-tight">Requirements management</h2>
-                            <p class="mt-2 max-w-2xl text-slate-500">Assign checklists and review student submissions.</p>
-                        </div>
-                        <span class="teacher-page-chip">
-                            <i data-lucide="shield-check" class="h-4 w-4"></i>
-                            Portal workspace
-                        </span>
-                    </div>
-                </section>
+                
                 <section class="mb-6 p-5 sm:p-6">
                     <div class="mb-5">
                         <p class="text-xs font-bold uppercase tracking-[0.16em] text-amber-600 dark:text-amber-400">Enrollment operations</p>

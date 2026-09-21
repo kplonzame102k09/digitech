@@ -22,6 +22,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\QueryException;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Storage;
@@ -198,6 +199,17 @@ class PortalDataService
             ->unique()
             ->values()
             ->all();
+    }
+
+    /**
+     * Whether a teacher may write grade/attendance/competency rows that name a
+     * given student. Mirrors the read scope: the student must be one of the
+     * teacher's advisees, a member of an active classroom they teach, or
+     * already linked to the teacher through their own records.
+     */
+    protected function teacherMayWriteStudent(string $studentId, User $actor): bool
+    {
+        return $studentId !== '' && in_array($studentId, $this->getEnrolledStudentIds($actor) ?? [], true);
     }
 
     /**
@@ -575,8 +587,35 @@ class PortalDataService
             ['notifications', 'userId'],
         ];
 
+        // Cascade-on-delete tables: destroying these accounts would take a
+        // whole classroom tree (roster, activities, submissions, meetings,
+        // attendance sessions) or the adviser's finalized attendance
+        // packages with them, so deletion must be blocked (deactivate).
+        // Guarded so a deployment that has not yet migrated these tables
+        // (e.g. classrooms) keeps working.
+        if (Schema::hasTable('classrooms')) {
+            $checks[] = ['classrooms', 'teacherId'];
+        }
+        if (Schema::hasTable('attendance_packages')) {
+            $checks[] = ['attendance_packages', 'adviserId'];
+        }
+        if (Schema::hasTable('classroom_submissions')) {
+            $checks[] = ['classroom_submissions', 'studentId'];
+        }
+
         foreach ($checks as [$table, $column]) {
             if (DB::table($table)->where($column, $userId)->exists()) {
+                return true;
+            }
+        }
+
+        // A learner with no enrollments yet may still hold classroom roster
+        // membership, which cascades away on delete.
+        if (Schema::hasTable('classroom_student') && Schema::hasTable('users')) {
+            if (DB::table('classroom_student')
+                ->join('users as s', 's.id', '=', 'classroom_student.student_id')
+                ->where('s.user_id', $userId)
+                ->exists()) {
                 return true;
             }
         }
@@ -1127,6 +1166,22 @@ class PortalDataService
     }
 
     /**
+     * Map any audience spelling (lowercase roles, singular forms) onto the
+     * canonical values the announcement feed and read scope match against.
+     */
+    protected function normalizeAnnouncementAudience(string $audience): string
+    {
+        return match (strtolower(trim($audience))) {
+            'all' => 'All',
+            'student', 'students' => 'Students',
+            'parent', 'parents' => 'Parents',
+            'teacher', 'teachers' => 'Teachers',
+            'guest', 'guests' => 'Guests',
+            default => $audience ?: 'All',
+        };
+    }
+
+    /**
      * @param  array<int, array<string, mixed>>  $records
      */
     protected function syncDomainRows(string $key, array $records, ?User $actor): void
@@ -1444,10 +1499,15 @@ class PortalDataService
                             return null;
                         }
 
+                        $data['studentId'] = (string) $existing->studentId;
                         $data['published'] = (bool) $existing->published;
                         $data['publishedAt'] = $existing->publishedAt;
                         $data['publishedBy'] = $existing->publishedBy;
                     } else {
+                        if (! $this->teacherMayWriteStudent((string) ($data['studentId'] ?? ''), $actor)) {
+                            return null;
+                        }
+
                         $data['published'] = false;
                         unset($data['publishedAt']);
                     }
@@ -1500,6 +1560,22 @@ class PortalDataService
                 break;
 
             case 'attendance':
+                // A teacher may only record attendance for learners on their own
+                // roster (advisees / classroom members). An existing row keeps
+                // its studentId so a record can never be re-pointed at someone
+                // else, regardless of who marks it.
+                if ($actor?->isTeacher()) {
+                    $existing = $model::query()->find($raw['id']);
+
+                    if ($existing) {
+                        if (! $this->teacherMayWriteStudent((string) $existing->studentId, $actor)) {
+                            return null;
+                        }
+                        $data['studentId'] = (string) $existing->studentId;
+                    } elseif (! $this->teacherMayWriteStudent((string) ($data['studentId'] ?? ''), $actor)) {
+                        return null;
+                    }
+                }
                 // A free-text status field is otherwise a garbage-in vector;
                 // only the states the UI emits are accepted.
                 if (isset($data['status']) && ! in_array($data['status'], ['Present', 'Late', 'Absent', 'Excused'], true)) {
@@ -1513,7 +1589,19 @@ class PortalDataService
                 break;
 
             case 'competencies':
+                // Teachers assess only learners on their own roster. Existing
+                // rows keep their studentId; new rows must name a roster member.
                 if ($actor?->isTeacher()) {
+                    $existing = $model::query()->find($raw['id']);
+
+                    if ($existing) {
+                        if (! $this->teacherMayWriteStudent((string) $existing->studentId, $actor)) {
+                            return null;
+                        }
+                        $data['studentId'] = (string) $existing->studentId;
+                    } elseif (! $this->teacherMayWriteStudent((string) ($data['studentId'] ?? ''), $actor)) {
+                        return null;
+                    }
                     $data['updatedBy'] = $actor->user_id;
                 }
                 break;
@@ -1649,6 +1737,13 @@ class PortalDataService
                 break;
 
             case 'announcements':
+                // Audience is stored in canonical casing ("All", "Students", …)
+                // so the client feed and read-scope can match exactly. Coerce
+                // any legacy/lowercase spelling a client (e.g. the admin
+                // dashboard composer) may send.
+                if (isset($data['audience'])) {
+                    $data['audience'] = $this->normalizeAnnouncementAudience((string) $data['audience']);
+                }
                 // Replacing the banner removes the previous upload so orphaned
                 // images never pile up on the public disk.
                 if (isset($data['image'])) {
@@ -1656,7 +1751,7 @@ class PortalDataService
                     if ($existingRow && $data['image'] !== $existingRow) {
                         $oldName = basename((string) $existingRow);
                         if (preg_match('/^[A-Za-z0-9_.-]+$/', $oldName)) {
-                            @Storage::disk('public')->delete('announcement-images/'.$oldName);
+                            @Storage::disk('public')->delete('uploads/'.$oldName);
                         }
                     }
                 }

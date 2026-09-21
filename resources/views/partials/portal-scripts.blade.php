@@ -36,6 +36,12 @@
         if (window.lucide) {
             lucide.createIcons();
         }
+        const menuButton = document.getElementById('open');
+        const sidebar = document.getElementById('side');
+        if (menuButton && sidebar && !menuButton.dataset.menuBound) {
+            menuButton.dataset.menuBound = '1';
+            menuButton.addEventListener('click', () => sidebar.classList.toggle('-translate-x-full'));
+        }
         document.querySelectorAll('[data-logout]').forEach((button) => {
             if (button.dataset.boundLogout) return;
             button.dataset.boundLogout = '1';

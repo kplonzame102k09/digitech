@@ -277,7 +277,7 @@
         text("[data-announcement-date]", formatDate(announcement.date || announcement.createdAt), row);
         text(
           "[data-announcement-meta]",
-          `${announcement.category || "General"} · ${announcement.audience === "all" ? "Everyone" : announcement.audience}`,
+          `${announcement.category || "General"} · ${(announcement.audience || "All") === "All" ? "Everyone" : announcement.audience}`,
           row,
         );
         container?.append(row);
@@ -292,7 +292,7 @@
       const title = $("#announcementTitle")?.value.trim();
       const message = $("#announcementMessage")?.value.trim();
       const category = $("#announcementCategory")?.value || "General";
-      const audience = $("#announcementAudience")?.value || "all";
+      const audience = $("#announcementAudience")?.value || "All";
       if (!title || !message) return;
       const announcement = {
         id: DG.generateId("ANN"),
@@ -309,7 +309,7 @@
       DG.saveData("announcements", announcements);
       APP.notifyUsers(
         users
-          .filter((user) => audience === "all" || user.role === audience)
+          .filter((user) => audience === "All" || user.role === audience.toLowerCase())
           .map((user) => user.id),
         title,
         message,
@@ -318,7 +318,7 @@
       );
       const feedback = $("#announcementFeedback");
       if (feedback)
-        feedback.textContent = `Published to ${audience === "all" ? "everyone" : `${audience}s`}.`;
+        feedback.textContent = `Published to ${audience === "All" ? "everyone" : `${audience}s`}.`;
       form.reset();
       renderAnnouncements(announcements);
       APP.updateNotif();
@@ -387,9 +387,12 @@
     APP.applyTheme();
     APP.updateNotif();
     lucide.createIcons();
-    $("#open")?.addEventListener("click", () =>
-      $("#side")?.classList.toggle("-translate-x-full"),
-    );
+    const menuButton = $("#open");
+    const menuSide = $("#side");
+    if (menuButton && menuSide && !menuButton.dataset.menuBound) {
+      menuButton.dataset.menuBound = "1";
+      menuButton.addEventListener("click", () => menuSide.classList.toggle("-translate-x-full"));
+    }
     $$("[data-theme-toggle]").forEach((button) =>
       button.addEventListener("click", () => APP.toggleTheme()),
     );

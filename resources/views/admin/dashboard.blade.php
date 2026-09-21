@@ -210,10 +210,10 @@
                             <label class="text-sm font-semibold">
                                 Audience
                                 <select id="announcementAudience" class="input mt-1.5 w-full rounded border px-3 py-2.5">
-                                    <option value="all">Everyone</option>
-                                    <option value="student">Students</option>
-                                    <option value="parent">Parents</option>
-                                    <option value="teacher">Teachers</option>
+                                    <option value="All">Everyone</option>
+                                    <option value="Students">Students</option>
+                                    <option value="Parents">Parents</option>
+                                    <option value="Teachers">Teachers</option>
                                 </select>
                             </label>
                             <label class="text-sm font-semibold md:col-span-2">

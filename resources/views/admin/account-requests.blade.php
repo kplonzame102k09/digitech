@@ -52,16 +52,16 @@
                 </section>
                 <section class="card mt-5 overflow-hidden">
                     <div class="overflow-x-auto">
-                        <table class="w-full text-left text-sm">
+                        <table class="w-full text-center text-sm">
                             <thead class="bg-slate-50 dark:bg-slate-800">
                                 <tr>
-                                    <th class="p-4">Request ID</th>
-                                    <th class="p-4">Name</th>
-                                    <th class="p-4">Role</th>
-                                    <th class="p-4">Email</th>
-                                    <th class="p-4">Status</th>
-                                    <th class="p-4">Submitted</th>
-                                    <th class="p-4 text-right">Actions</th>
+                                    <th class="p-4 text-center">Request ID</th>
+                                    <th class="p-4 text-center">Name</th>
+                                    <th class="p-4 text-center">Role</th>
+                                    <th class="p-4 text-center">Email</th>
+                                    <th class="p-4 text-center">Status</th>
+                                    <th class="p-4 text-center">Submitted</th>
+                                    <th class="p-4 text-center">Actions</th>
                                 </tr>
                             </thead>
                             <tbody id="rows"></tbody>

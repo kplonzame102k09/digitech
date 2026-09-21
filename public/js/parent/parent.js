@@ -160,9 +160,12 @@
       else link.removeAttribute("aria-current");
     });
 
-    $("[data-menu-toggle]")?.addEventListener("click", () =>
-      $("#sidebar")?.classList.toggle("-translate-x-full"),
-    );
+    const openBtn = $("#open");
+    const side = $("#side");
+    if (openBtn && side && !openBtn.dataset.menuBound) {
+      openBtn.dataset.menuBound = "1";
+      openBtn.addEventListener("click", () => side.classList.toggle("-translate-x-full"));
+    }
     $$("[data-logout]").forEach((button) =>
       button.addEventListener("click", () => AUTH.logout()),
     );
@@ -473,7 +476,7 @@
 
   function renderGrades(children) {
     const selected = new URLSearchParams(location.search).get("student");
-    const semester = $("semesterFilter")?.value || "1st Semester";
+    const semester = $("#semesterFilter")?.value || "1st Semester";
     const visibleChildren = selected
       ? children.filter((child) => child.id === selected)
       : children;
@@ -558,7 +561,7 @@
     text("#gradesModal [data-grade-student]", studentName(student));
     text("#gradesModal [data-grade-student-id]", `${student.id}${student.strand ? ` · ${student.strand}` : ""}`);
     if (yearSelect) yearSelect.value = years[0] || "2026-2027";
-    $("#modalSemester").value = $("semesterFilter")?.value || "1st Semester";
+    $("#modalSemester").value = $("#semesterFilter")?.value || "1st Semester";
     const photo = $("#gradesModal [data-grade-photo]");
     const initialsEl = $("#gradesModal [data-grade-initials]");
     if (photo) {
@@ -639,7 +642,7 @@
   }
 
   function exportGrades() {
-    const semester = $("semesterFilter")?.value || "1st Semester";
+    const semester = $("#semesterFilter")?.value || "1st Semester";
     const selected = new URLSearchParams(location.search).get("student");
     const children = linkedChildren(currentParent());
     const visibleChildren = selected

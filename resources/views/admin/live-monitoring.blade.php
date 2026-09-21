@@ -147,6 +147,29 @@
                             Activity is captured as users browse the portal. Check back in a moment.
                         </p>
                     </div>
+                    <div id="tablePagination"
+                        class="hidden flex flex-col items-center justify-between gap-3 border-t border-slate-100 p-4 dark:border-slate-800 md:flex-row md:items-center">
+                        <div class="flex flex-wrap items-center gap-3">
+                            <label for="pageSize" class="text-xs font-medium text-slate-500 dark:text-slate-400">Rows</label>
+                            <select id="pageSize" class="input rounded border px-2 py-1.5 text-xs" title="Rows per page">
+                                <option value="10">10</option>
+                                <option value="20">20</option>
+                                <option value="50">50</option>
+                            </select>
+                            <span id="tableInfo" class="text-xs text-slate-500 dark:text-slate-400"></span>
+                        </div>
+                        <div class="flex items-center gap-2">
+                            <span id="pageLabel" class="text-xs font-medium text-slate-500 dark:text-slate-400"></span>
+                            <button type="button" id="pagePrev"
+                                class="rounded border border-slate-200 px-3 py-1.5 text-xs font-semibold text-slate-600 hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-40 dark:border-slate-700 dark:text-slate-300 dark:hover:bg-slate-800">
+                                Prev
+                            </button>
+                            <button type="button" id="pageNext"
+                                class="rounded border border-slate-200 px-3 py-1.5 text-xs font-semibold text-slate-600 hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-40 dark:border-slate-700 dark:text-slate-300 dark:hover:bg-slate-800">
+                                Next
+                            </button>
+                        </div>
+                    </div>
                 </section>
 
                 <section class="card mt-5 p-4">

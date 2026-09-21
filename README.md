@@ -75,6 +75,7 @@ php test-batch3-guards.php         # 13 checks: enums, dedupe, lifecycle guards
 php test-batch4-notifications.php  # 15 checks: notification forgery + dedupe
 php test-batch5-admin-alerts.php   # 10 checks: server-side admin alerts
 php test-batch6-guards.php         # 10 checks: admin user-sync guards
+php test-batch7-enrollment-guards.php  # 38 checks: enrolment-gate route coverage + roster scoping
 ```
 
 ### PHPUnit suite

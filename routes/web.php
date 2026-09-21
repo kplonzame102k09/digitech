@@ -20,6 +20,7 @@ use App\Http\Controllers\Student\ClassroomDetailController;
 use App\Http\Controllers\Student\ClassroomJoinController;
 use App\Http\Controllers\Student\ClassroomMeetingController as StudentClassroomMeetingController;
 use App\Http\Controllers\Student\ClassroomWorkController;
+use App\Http\Controllers\StorageFileController;
 use App\Http\Controllers\Teacher\AttendanceController as TeacherAttendanceController;
 use App\Http\Controllers\Teacher\AttendanceReviewController;
 use App\Http\Controllers\Teacher\ClassroomActivityController;
@@ -47,6 +48,10 @@ Route::get('/api/provinces/{regionCode}', [AddressController::class, 'provinces'
 Route::get('/api/regions', [AddressController::class, 'regions']);
 Route::get('/api/cities/{provinceCode}', [AddressController::class, 'cities']);
 Route::get('/api/barangays/{cityCode}', [AddressController::class, 'barangays']);
+
+Route::get('/storage/{path}', [StorageFileController::class, 'show'])
+    ->where('path', '.*')
+    ->name('storage.show');
 
 Route::middleware(['auth', 'password.updated'])->prefix('api/portal')->group(function () {
     Route::get('/', [PortalDataController::class, 'index']);

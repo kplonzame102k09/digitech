@@ -19,6 +19,9 @@
   let mapInstance = null;
   let mapLayer = null;
   let lastMapKey = "";
+  let pageSize = 10;
+  let currentPage = 1;
+  let lastRenderKey = "";
 
   const els = {
     pulse: document.getElementById("livePulse"),
@@ -31,6 +34,12 @@
     rows: document.getElementById("rows"),
     emptyState: document.getElementById("emptyState"),
     rowTemplate: document.getElementById("rowTemplate"),
+    tablePagination: document.getElementById("tablePagination"),
+    tableInfo: document.getElementById("tableInfo"),
+    pageLabel: document.getElementById("pageLabel"),
+    pagePrev: document.getElementById("pagePrev"),
+    pageNext: document.getElementById("pageNext"),
+    pageSize: document.getElementById("pageSize"),
     onlineList: document.getElementById("onlineList"),
     onlineEmpty: document.getElementById("onlineEmpty"),
     onlineCount: document.getElementById("onlineCount"),
@@ -189,15 +198,34 @@
       if (!seen.has(id)) rowsMap.delete(id);
     }
 
-    if (!freshIds.size && els.rows.children.length === rowsMap.size) {
-      // ordering and contents unchanged — no need to touch the DOM
-      return;
-    }
+    renderTable();
+    freshIds.clear();
+  }
+
+  function orderedRows() {
+    return Array.from(rowsMap.values()).sort(
+      (a, b) => (Number(b.id) || 0) - (Number(a.id) || 0),
+    );
+  }
+
+  function renderTable() {
+    const rows = orderedRows();
+    const total = rows.length;
+    const pages = Math.max(1, Math.ceil(total / pageSize));
+    if (currentPage > pages) currentPage = pages;
+    if (currentPage < 1) currentPage = 1;
+
+    const start = Math.min((currentPage - 1) * pageSize, total);
+    const pageRows = rows.slice(start, start + pageSize);
+
+    const key = `${pageSize}:${currentPage}:${total}:${pageRows.map((r) => r.id).join(",")}`;
+    if (key === lastRenderKey) return;
+    lastRenderKey = key;
 
     const tbody = els.rows;
     tbody.innerHTML = "";
 
-    for (const row of rowsMap.values()) {
+    for (const row of pageRows) {
       const clone = els.rowTemplate.content.cloneNode(true);
       const tr = clone.querySelector("tr");
       tr.dataset.id = row.id;
@@ -237,8 +265,15 @@
       tbody.appendChild(clone);
     }
 
-    els.emptyState.classList.toggle("hidden", rowsMap.size > 0);
-    freshIds.clear();
+    els.emptyState.classList.toggle("hidden", total > 0);
+    els.tablePagination.classList.toggle("hidden", total === 0);
+
+    els.tableInfo.textContent = total
+      ? `Showing ${start + 1}–${start + pageRows.length} of ${total}`
+      : "";
+    els.pageLabel.textContent = `Page ${currentPage} of ${pages}`;
+    els.pagePrev.disabled = currentPage <= 1;
+    els.pageNext.disabled = currentPage >= pages;
   }
 
   function renderOnline(online) {
@@ -619,6 +654,8 @@
   ["windowFilter", "typeFilter", "eventFilter", "roleFilter"].forEach((id) => {
     document.getElementById(id).addEventListener("change", () => {
       rowsMap.clear();
+      currentPage = 1;
+      lastRenderKey = "";
       poll();
     });
   });
@@ -628,9 +665,31 @@
     clearTimeout(searchTimer);
     searchTimer = setTimeout(() => {
       rowsMap.clear();
+      currentPage = 1;
+      lastRenderKey = "";
       poll();
     }, 400);
   }
+
+  els.pagePrev.addEventListener("click", () => {
+    if (currentPage <= 1) return;
+    currentPage--;
+    lastRenderKey = "";
+    renderTable();
+  });
+
+  els.pageNext.addEventListener("click", () => {
+    currentPage++;
+    lastRenderKey = "";
+    renderTable();
+  });
+
+  els.pageSize.addEventListener("change", () => {
+    pageSize = parseInt(els.pageSize.value, 10) || 20;
+    currentPage = 1;
+    lastRenderKey = "";
+    renderTable();
+  });
 
   document.querySelectorAll("[data-close-detail]").forEach((btn) => {
     btn.addEventListener("click", () => {

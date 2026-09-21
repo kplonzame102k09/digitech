@@ -7,6 +7,7 @@ use App\Models\Grade;
 use App\Services\PortalDataService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 
 class GradeAnalyticsController extends Controller
 {
@@ -123,6 +124,17 @@ class GradeAnalyticsController extends Controller
             $linked = collect([$user->childId])
                 ->concat($user->childIds ?? [])
                 ->filter(fn ($id) => is_string($id) && $id !== '')
+                ->concat(
+                    // Pivot-backed links resolve users.id back to the portal
+                    // user_id, matching AttendanceAnalyticsService::visibleStudentIds.
+                    DB::table('parent_student')
+                        ->join('users as linked', 'linked.id', '=', 'parent_student.student_id')
+                        ->where('parent_student.parent_id', $user->getKey())
+                        ->pluck('linked.user_id')
+                        ->all(),
+                )
+                ->unique()
+                ->values()
                 ->all();
 
             $id = $requested ?? ($linked[0] ?? null);
