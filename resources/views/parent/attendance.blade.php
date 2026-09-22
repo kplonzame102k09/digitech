@@ -17,7 +17,7 @@
         @include('parent.components.header', ['title' => 'Attendance', 'subtitle' => 'Child attendance'])
         <main class="p-4 sm:p-6 lg:p-8">
             <div class="mx-auto max-w-7xl">
-                <section class="mb-7 mb-7 p-6 sm:p-8">
+                <section class="mb-7 p-6 sm:p-8">
                     <p class="text-sm font-semibold text-blue-600 dark:text-blue-400">Student wellbeing</p>
                     <h2 class="mt-1 text-3xl font-bold tracking-tight">Attendance</h2>
                     <p class="mt-2 text-slate-500">

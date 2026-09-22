@@ -121,36 +121,44 @@
                                     <option>TVET</option>
                                 </select>
                             </label>
-                            <label class="text-sm font-semibold">
-                                Grade level
-                                <input id="gradeLevel" required
-                                    class="input mt-1.5 w-full rounded border px-3 py-2.5"
-                                    placeholder="e.g. Grade 12" />
-                            </label>
-                            <label class="text-sm font-semibold">
-                                Strand / program
-                                <select id="strand" required
-                                    class="input mt-1.5 w-full rounded border px-3 py-2.5">
-                                    <option value="">Select program</option>
-                                </select>
-                                <span id="strandHint" class="mt-1 block text-xs text-slate-500 dark:text-slate-400"></span>
-                            </label>
-                            <label class="text-sm font-semibold">
-                                Track / qualification
-                                <select id="track"
-                                    class="input mt-1.5 w-full rounded border px-3 py-2.5">
-                                    <option value="">Select track</option>
-                                </select>
-                                <span id="trackHint" class="mt-1 block text-xs text-slate-500 dark:text-slate-400"></span>
-                            </label>
-                            <label class="text-sm font-semibold">
-                                Training level
-                                <select id="training"
-                                    class="input mt-1.5 w-full rounded border px-3 py-2.5">
-                                    <option value="">Select level</option>
-                                </select>
-                                <span id="trainingHint" class="mt-1 block text-xs text-slate-500 dark:text-slate-400"></span>
-                            </label>
+                            <div id="gradeLevelField">
+                                <label class="text-sm font-semibold">
+                                    Grade level
+                                    <input id="gradeLevel"
+                                        class="input mt-1.5 w-full rounded border px-3 py-2.5"
+                                        placeholder="e.g. Grade 12" />
+                                </label>
+                            </div>
+                            <div id="strandField">
+                                <label class="text-sm font-semibold">
+                                    Strand / program
+                                    <select id="strand"
+                                        class="input mt-1.5 w-full rounded border px-3 py-2.5">
+                                        <option value="">Select program</option>
+                                    </select>
+                                    <span id="strandHint" class="mt-1 block text-xs text-slate-500 dark:text-slate-400"></span>
+                                </label>
+                            </div>
+                            <div id="trackField">
+                                <label class="text-sm font-semibold">
+                                    Track / qualification
+                                    <select id="track"
+                                        class="input mt-1.5 w-full rounded border px-3 py-2.5">
+                                        <option value="">Select track</option>
+                                    </select>
+                                    <span id="trackHint" class="mt-1 block text-xs text-slate-500 dark:text-slate-400"></span>
+                                </label>
+                            </div>
+                            <div id="trainingField">
+                                <label class="text-sm font-semibold">
+                                    Training level
+                                    <select id="training"
+                                        class="input mt-1.5 w-full rounded border px-3 py-2.5">
+                                        <option value="">Select level</option>
+                                    </select>
+                                    <span id="trainingHint" class="mt-1 block text-xs text-slate-500 dark:text-slate-400"></span>
+                                </label>
+                            </div>
                             <label class="text-sm font-semibold">
                                 School year
                                 <input id="schoolYear" required

@@ -32,7 +32,9 @@ class StoreEnrollmentRequest extends FormRequest
         return [
             'status' => ['nullable', 'string', 'in:Draft,Submitted'],
             'programType' => ['required', 'string', 'in:Senior High,TVET'],
-            'gradeLevel' => ['required', 'string', 'max:255'],
+            'gradeLevel' => $isTvet
+                ? ['nullable', 'string', 'max:255']
+                : ['required', 'string', 'max:255'],
             'strand' => $isTvet
                 ? ['nullable', 'string', 'max:255', $this->allowedCatalogue($programs, false)]
                 : ['required', 'string', 'max:255', $this->allowedCatalogue($programs, true)],

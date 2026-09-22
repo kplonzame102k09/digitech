@@ -41,16 +41,17 @@
                             CSV</button>
                     </div>
                     <div class="overflow-x-auto">
-                        <table class="w-full text-left text-sm">
+                        <table class="w-full text-left text-sm text-center">
                             <thead
                                 class="bg-slate-50 text-[11px] font-semibold uppercase tracking-wider text-slate-500 dark:bg-slate-800 dark:text-slate-400">
                                 <tr>
-                                    <th class="px-5 py-3.5">Student</th>
-                                    <th class="px-5 py-3.5">Date</th>
-                                    <th class="px-5 py-3.5">Subject / session</th>
-                                    <th class="px-5 py-3.5">Status</th>
-                                    <th class="px-5 py-3.5">Remarks</th>
-                                    <th class="px-5 py-3.5 text-right">Action</th>
+                                    <th class="px-5 py-3.5 text-center">Student</th>
+                                    <th class="px-5 py-3.5 text-center">Date</th>
+                                    <th class="px-5 py-3.5 text-center">Subject</th>
+                                    <th class="px-5 py-3.5 text-center">Session</th>
+                                    <th class="px-5 py-3.5 text-center">Status</th>
+                                    <th class="px-5 py-3.5 text-center">Remarks</th>
+                                    <th class="px-5 py-3.5 text-center">Action</th>
                                 </tr>
                             </thead>
                             <tbody id="rows"></tbody>

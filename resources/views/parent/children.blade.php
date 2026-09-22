@@ -75,13 +75,12 @@
                             class="absolute inset-0 hidden items-center justify-center rounded-2xl bg-green-100 text-sm font-bold text-green-700 dark:bg-green-950 dark:text-green-300">
                         </div>
                     </div>
+                    <div>
+                        <h3 data-child-name class="font-bold"></h3>
+                        <p data-child-id class="text-xs text-slate-400"></p>
+                    </div>
                 </div>
-                <div>
-                    <h3 data-child-name class="font-bold"></h3>
-                    <p data-child-id class="text-xs text-slate-400"></p>
-                </div>
-            </div>
-            <span data-child-status></span>
+                <span data-child-status></span>
             </div>
             <div class="mt-5 grid grid-cols-2 gap-3 text-sm">
                 <div class="rounded bg-slate-50 p-3 dark:bg-slate-800">
@@ -102,7 +101,7 @@
                 <a data-grade-link href="{{ route('parent.grades') }}" class="rounded bg-green-600 border border-slate-200  px-6 py-4 text-xs font-semibold text-white">
                     View grades
                 </a>
-                <a data-attendance-link href="{{ route('parent.attendance') }}" class="rounded bg-blue-500 border border-slate-200 px-6 py-4 text-xs font-semibold text-white-700">
+                <a data-attendance-link href="{{ route('parent.attendance') }}" class="rounded bg-blue-500 border border-slate-200 px-6 py-4 text-xs font-semibold text-white">
                     Attendance
                 </a>
             </div>

@@ -50,7 +50,8 @@ echo "==> [3/4] Loading FTP credentials"
 set -a; source "$FTP_INF"; set +a
 if [[ -z "${INF_FTP_HOST:-}" || "${INF_FTP_HOST:-}" == *XXXX* \
       || -z "${INF_FTP_USER:-}" || "${INF_FTP_USER:-}" == *XXXX* \
-      || -z "${INF_FTP_PASS:-}" || "${INF_FTP_PASS:-}" == *CHANGE_ME* ]]; then
+      || -z "${INF_FTP_PASS:-}" || "${INF_FTP_PASS:-}" == *CHANGE_ME* \
+      || -z "${INF_FTP_DIR:-}" ]]; then
     echo "ERROR: FTP credentials in $FTP_INF are still placeholders"; exit 1
 fi
 
@@ -64,18 +65,10 @@ EXCLUDES=(
 
 MIRROR_OPTS=(-R -n --continue -v)
 [ "$PRUNE" = 1 ] && MIRROR_OPTS+=(--delete)
+[ "$DRY" = 1 ] && MIRROR_OPTS+=(--dry-run)
 
 echo "==> [4/4] Mirroring $DEST -> ftp://$INF_FTP_HOST/$INF_FTP_DIR"
-DRY_FLAG=()
-if [ "$DRY" = 1 ]; then
-    lftp --help 2>&1 | grep -q -- '--dry-run' && DRY_FLAG=(--dry-run) || true
-    if [ "${#DRY_FLAG[@]}" -eq 0 ]; then
-        echo "ERROR: this lftp ($(lftp --version | head -1)) has no --dry-run support;"
-        echo "       upgrade lftp or run without --dry-run."
-        exit 2
-    fi
-fi
-lftp "${DRY_FLAG[@]}" -u "$INF_FTP_USER,$INF_FTP_PASS" "$INF_FTP_HOST" \
+lftp -u "$INF_FTP_USER,$INF_FTP_PASS" "$INF_FTP_HOST" \
     -e "set net:max-retries 3; set cmd:fail-exit yes; mirror ${MIRROR_OPTS[*]} ${EXCLUDES[*]} '$DEST' '$INF_FTP_DIR'; bye"
 
 echo ""

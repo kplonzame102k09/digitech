@@ -48,10 +48,8 @@ echo '*' > "$DEST/storage/framework/views/.gitignore"
 # Drop vite dev-server artifacts (a stale public/hot would break asset URLs on INF)
 rm -f "$DEST/public/hot" "$DEST/public/fonts-manifest.dev.json"
 
-# Web-root .htaccess: root index.php hands off to public/, deny dotfiles.
-# Public-disk uploads (/storage/*) are served by the app's GET /storage/{path}
-# route; a direct ^storage/ rewrite loops on INF's Apache (and local dev uses
-# the public/storage symlink), so do NOT reintroduce a storage RewriteRule here.
+# Web-root .htaccess: root index.php hands off to public/, alias /storage/*,
+# deny dotfiles
 cat > "$DEST/.htaccess" << 'EOF'
 DirectoryIndex index.php
 Options -Indexes
@@ -60,6 +58,9 @@ RewriteEngine On
 
 # Deny direct access to dotfiles (e.g. .env, .git, backups)
 RewriteRule (^\.|/\.) - [F,L]
+
+# Public-disk uploads -> storage/app/public (INF has no symlinks)
+RewriteRule ^storage/(.+)$ storage/app/public/$1 [L]
 
 # Static assets live under public/
 RewriteCond %{REQUEST_FILENAME} !-f
@@ -164,18 +165,17 @@ SETUP_TOKEN=$SETUP_TOKEN
 
 # --- InfinityFree MySQL: fill in the values from your INF control panel ---
 DB_CONNECTION=mysql
-DB_HOST=sqlXXX.infinityfree.com
+DB_HOST=sql213.infinityfree.com
 DB_PORT=3306
-DB_DATABASE=if0_XXXXXXX_digitech_db
-DB_USERNAME=if0_XXXXXXX
-DB_PASSWORD=CHANGE_ME
+DB_DATABASE=if0_42951315_digitech_db
+DB_USERNAME=if0_42951315
+DB_PASSWORD=WtRLbwoNF0t
 
 SESSION_DRIVER=database
 SESSION_LIFETIME=120
 SESSION_ENCRYPT=false
 SESSION_PATH=/
 SESSION_DOMAIN=null
-SESSION_SECURE_COOKIE=true
 
 BROADCAST_CONNECTION=log
 FILESYSTEM_DISK=local

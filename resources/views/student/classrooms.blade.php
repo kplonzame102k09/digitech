@@ -41,19 +41,6 @@
                         You have not joined any classroom yet.
                     </div>
                 </section>
-                
-                <section class="card p-5 sm:p-6 mt-6">
-                    <div class="flex items-center justify-between gap-4">
-                        <div>
-                            <h3 class="font-extrabold">Recent Session History</h3>
-                            <p class="text-xs text-slate-400">View recent live class sessions across your classrooms.</p>
-                        </div>
-                    </div>
-                    <div id="sessionHistoryGrid" class="mt-4 grid gap-4 md:grid-cols-2 lg:grid-cols-3"></div>
-                    <div id="sessionHistoryEmpty" class="hidden py-10 text-center text-sm text-slate-500 dark:text-slate-400">
-                        No session history yet.
-                    </div>
-                </section>
             </div>
         </main>
     </div>

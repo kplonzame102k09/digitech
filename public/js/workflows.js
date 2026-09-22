@@ -19,6 +19,12 @@
       button.dataset.themeBound = "1";
       button.addEventListener("click", () => APP.toggleTheme());
     });
+    if (document.body.dataset.role === "parent") {
+      const nameEl = document.querySelector("[data-parent-full-name]");
+      const idEl = document.querySelector("[data-parent-id]");
+      if (nameEl) nameEl.textContent = `${U.firstName || ""} ${U.lastName || ""}`.trim();
+      if (idEl) idEl.textContent = U.id;
+    }
   };
   const users = F.users();
   const renderRows = (rows, empty = "No records yet") => {

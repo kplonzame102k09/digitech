@@ -169,6 +169,15 @@
     const programs = programmeRows();
     const quals = qualificationRows();
 
+    ["#gradeLevelField", "#strandField"].forEach((id) => {
+      const field = $(id);
+      if (field) field.classList.toggle("hidden", isTvet);
+    });
+    ["#trackField", "#trainingField"].forEach((id) => {
+      const field = $(id);
+      if (field) field.classList.toggle("hidden", !isTvet);
+    });
+
     fillSelect(
       "strand",
       programs.map((r) => ({ value: r.name, label: r.name, title: r.description })),
@@ -196,9 +205,22 @@
     );
     refreshTrainingHint(isTvet);
 
+    setRequired("#gradeLevel", !isTvet);
     setRequired("#strand", !isTvet);
     setRequired("#track", isTvet);
     setRequired("#training", isTvet);
+
+    if (isTvet) {
+      const gradeLevel = $("#gradeLevel");
+      if (gradeLevel) gradeLevel.value = "";
+      const strand = $("#strand");
+      if (strand) strand.value = "";
+    } else {
+      const track = $("#track");
+      if (track) track.value = "";
+      const training = $("#training");
+      if (training) training.value = "";
+    }
   };
 
   async function renderDashboard() {
@@ -441,7 +463,7 @@
 
       const isTvet = payload.programType === "TVET";
       const missing = [];
-      if (!payload.gradeLevel) missing.push("grade level");
+      if (!isTvet && !payload.gradeLevel) missing.push("grade level");
       if (!payload.guardianName) missing.push("guardian name");
       if (isTvet) {
         if (!payload.track) missing.push("qualification");
@@ -841,85 +863,6 @@
     });
   }
 
-  async function renderProfile() {
-    try {
-      // Load current profile from API
-      const profileResponse = await API.student.profile.get();
-      if (profileResponse.ok && profileResponse.user) {
-        // Update local user object with latest data
-        Object.assign(U, profileResponse.user);
-        DG.setCurrentUser(U);
-      }
-    } catch (error) {
-      showError("Failed to load profile data");
-    }
-
-    text("#profileName", fullName());
-    text("#profileId", U.user_id || U.id);
-    text("#profileRole", "Student");
-    const email = $("#email");
-    if (email) email.value = U.email || "";
-    ["contact", "guardianName", "guardianContact", "address"].forEach((id) => {
-      const el = $(`#${id}`);
-      if (el) el.value = U[id] || "";
-    });
-
-    $("#profilePhotoInput")?.addEventListener("change", async (event) => {
-      const file = event.target.files?.[0];
-      if (!file) return;
-      if (file.size > 2 * 1024 * 1024) {
-        APP?.toast?.("Photo must be 2 MB or smaller");
-        return;
-      }
-
-      try {
-        await DG.uploadProfilePhoto(file);
-        DG.loadProfileElements();
-        APP?.toast?.("Profile photo updated");
-      } catch (error) {
-        showError("Failed to upload photo: " + error.message);
-      } finally {
-        event.target.value = "";
-      }
-    });
-
-    $("#profileForm")?.addEventListener("submit", async (event) => {
-      event.preventDefault();
-      const submitButton = event.target.querySelector('button[type="submit"]');
-      showLoading(submitButton);
-
-      try {
-        const payload = {
-          firstName: $("#firstName")?.value || U.firstName,
-          lastName: $("#lastName")?.value || U.lastName,
-          middleName: $("#middleName")?.value || U.middleName,
-          contact: $("#contact")?.value || U.contact,
-          email: $("#email")?.value || U.email,
-          address: $("#address")?.value || U.address,
-          guardianName: $("#guardianName")?.value || U.guardianName,
-          guardianContact: $("#guardianContact")?.value || U.guardianContact,
-        };
-
-        const response = await API.student.profile.update(payload);
-
-        if (response.ok) {
-          // Update local user object
-          Object.assign(U, response.user);
-          DG.setCurrentUser(U);
-          APP?.toast?.("Profile saved");
-          text("#profileName", fullName());
-          DG.loadProfileElements();
-        } else {
-          showError(response.error || "Failed to save profile");
-        }
-      } catch (error) {
-        showError("Failed to save profile: " + error.message);
-      } finally {
-        hideLoading(submitButton);
-      }
-    });
-  }
-
   APP?.applyTheme?.();
   APP?.updateNotif?.();
   DG.loadProfileElements();
@@ -944,7 +887,6 @@
     if (current === "documents") await renderDocuments();
     if (current === "competencies") renderCompetencies();
     if (current === "requirements") renderRequirements();
-    if (current === "profile") await renderProfile();
     lucide.createIcons();
   }
 
