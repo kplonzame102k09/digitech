@@ -97,7 +97,7 @@
                 <span class="font-semibold text-cyan-800 dark:text-cyan-200">Competency progress</span>
                 <b data-child-competency class="text-cyan-700 dark:text-cyan-300"></b>
             </div>
-            <div class="mt-5 flex gap-2 justify-end">
+            <div class="mt-5 flex flex-wrap justify-end gap-2">
                 <a data-grade-link href="{{ route('parent.grades') }}" class="rounded bg-green-600 border border-slate-200  px-6 py-4 text-xs font-semibold text-white">
                     View grades
                 </a>

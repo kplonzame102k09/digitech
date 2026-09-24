@@ -194,7 +194,14 @@
   };
 
   const returnPackage = async (pkg, close) => {
-    const reason = window.prompt('Return this package to the adviser with the reason it needs correction (shown to the adviser):');
+    const reason = await APP?.prompt?.({
+      title: 'Return package',
+      message: 'Reason it needs correction (shown to the adviser):',
+      inputLabel: 'Reason',
+      multiline: true,
+      required: true,
+      confirmLabel: 'Return',
+    });
     if (reason === null) return;
     if (!reason.trim()) {
       showError('A reason is required when returning a package.');
@@ -214,7 +221,12 @@
   };
 
   const finalize = async (id, close) => {
-    if (!window.confirm('Finalize this attendance package? Its official marks will be locked and will count in analytics, student, and parent views.')) return;
+    if (!(await APP?.confirm?.({
+      title: 'Finalize package',
+      message: 'Finalize this attendance package? Its official marks will be locked and will count in analytics, student, and parent views.',
+      confirmLabel: 'Finalize',
+      tone: 'danger',
+    }))) return;
     try {
       await API.request(`${API_BASE}/${encodeURIComponent(id)}`, { method: 'POST' });
       close();

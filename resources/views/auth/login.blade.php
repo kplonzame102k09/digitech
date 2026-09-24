@@ -26,7 +26,7 @@
 
 <body class="min-h-screen bg-slate-50 text-slate-800 dark:bg-slate-950 dark:text-slate-100">
     <button type="button" data-theme-toggle title="Toggle dark / light mode" aria-label="Toggle dark / light mode"
-        class="fixed right-4 top-4 z-50 inline-flex items-center justify-center p-2.5 rounded-xl hover:bg-green-500 hover:text-white dark:hover:bg-green-500">
+        class="fixed right-4 top-4 z-50 inline-flex items-center justify-center rounded-xl border border-slate-200 bg-white/90 p-2.5 shadow-sm backdrop-blur hover:bg-green-500 hover:text-white dark:border-slate-700 dark:bg-slate-900/90 dark:hover:bg-green-500">
         <i data-lucide="moon" data-theme-icon class="h-4 w-4"></i>
     </button>
     <div class="min-h-screen grid lg:grid-cols-2">
@@ -89,10 +89,11 @@
             </div>
         </div>
 
-        <div class="flex items-center justify-center p-5">
+        <div class="flex items-start sm:items-center justify-center p-5">
             <div class="w-full max-w-2xl">
-                <a href="{{ route('index') }}" title="Back" class="fixed inline-flex top-4 p-2.5 text-green-500 hover:text-blue-500  dark:hover:text-blue-500 dark:text-white">
-                    
+                <a href="{{ route('index') }}" title="Back"
+                    class="mb-4 inline-flex items-center gap-1.5 text-sm font-semibold text-green-600 hover:underline hover:text-blue-500 dark:hover:text-blue-400 dark:text-green-400">
+                    <i data-lucide="arrow-left" class="w-4 h-4"></i>
                     Back to Home
                 </a>
                 <div class="p-7 sm:p-9">
@@ -104,21 +105,9 @@
                         @csrf
 
                         <label class="block text-sm font-medium">
-                            Role
-                            <select id="role" name="role"
-                                class="input mt-1 w-full rounded border px-3 py-3 cursor-pointer">
-                                <option value="student" @selected(old('role') === 'student')>Student</option>
-                                <option value="teacher" @selected(old('role') === 'teacher')>Teacher</option>
-                                <option value="admin" @selected(old('role') === 'admin')>Admin</option>
-                                <option value="parent" @selected(old('role') === 'parent')>Parent</option>
-                                <option value="guest" @selected(old('role') === 'guest')>Guest</option>
-                            </select>
-                        </label>
-
-                        <label class="block text-sm font-medium">
                             User ID
                             <input id="value" name="user_id" required value="{{ old('user_id') }}"
-                                class="input mt-1 w-full rounded border px-3 py-3" placeholder="STU-2026-XXXXXX">
+                                class="input mt-1 w-full rounded border px-3 py-3" placeholder="Enter your User ID">
                         </label>
 
                         <label class="block text-sm font-medium">
@@ -148,12 +137,15 @@
                         </button>
                     </form>
                     <p class="text-center text-sm text-slate-500 dark:text-slate-400 mt-6">
-                        No account? 
-                        <br>
-                        <a href="{{ route('account.request') }}" class="text-green-500 hover:underline hover:text-blue-500 dark:hover:text-blue-500"><strong>Request account</strong></a> 
-                        <br>
-                        <span>----------------------------Or----------------------------</span>
-                        <br>
+                        No account?
+                        <a href="{{ route('account.request') }}" class="text-green-500 hover:underline hover:text-blue-500 dark:hover:text-blue-500"><strong>Request account</strong></a>
+                    </p>
+                    <div class="my-4 flex items-center gap-3 text-xs uppercase tracking-widest text-slate-400">
+                        <span class="h-px flex-1 bg-slate-200 dark:bg-slate-700"></span>
+                        <span>or</span>
+                        <span class="h-px flex-1 bg-slate-200 dark:bg-slate-700"></span>
+                    </div>
+                    <p class="text-center text-sm text-slate-500 dark:text-slate-400">
                         Visit the nearest Digitech College branch.
                     </p>
                 </div>
@@ -194,24 +186,6 @@
             document.querySelectorAll("[data-theme-toggle]").forEach(function (btn) {
                 btn.addEventListener("click", togglePublicTheme);
             });
-            const roleSelect = document.getElementById('role');
-            const userIdInput = document.getElementById('value');
-
-            const placeholders = {
-                student: 'STU-2026-XXXXXX',
-                teacher: 'TCH-2026-XXXXXX',
-                admin: 'ADMIN-2026-XXXXXX',
-                parent: 'PRT-2026-XXXXXX',
-                guest: 'GST-2026-XXXXXX'
-            };
-
-            function updateUserIdPlaceholder() {
-                userIdInput.placeholder = placeholders[roleSelect.value];
-                userIdInput.value = '';
-            }
-
-            roleSelect.addEventListener('change', updateUserIdPlaceholder);
-            updateUserIdPlaceholder();
 });
     </script>
     @include('partials.password-toggle')

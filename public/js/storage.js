@@ -172,7 +172,13 @@ function getProfilePhoto(user = getCurrentUser()) {
 
 function normalizePhotoUrl(photo) {
   if (!photo) return DEFAULT_AVATAR;
-  if (/^(?:https?:|data:)/.test(photo)) return photo;
+  if (/^(?:data:)/.test(photo)) return photo;
+  // Re-base absolute /storage URLs onto the current origin so a mismatched
+  // APP_URL host recorded at upload time cannot produce a broken <img>
+  // (also heals values already persisted with the wrong host).
+  const match = /^https?:\/\/[^/]+(\/storage\/.+)$/i.exec(photo);
+  if (match) return match[1];
+  if (/^(?:https?:)/.test(photo)) return photo;
   if (photo.startsWith('/')) return photo;
   return `/storage/${photo.replace(/^\/+/, "")}`;
 }

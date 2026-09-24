@@ -608,11 +608,16 @@
     APP.toast(`${fullName(user)} is now ${statusLabel(user).toLowerCase()}`);
     render();
   }
-  function resetPassword(user) {
+  async function resetPassword(user) {
     if (user.id === currentUser.id) return;
-    const password = window.prompt(
-      `Enter a new temporary password for ${fullName(user)}:`,
-    );
+    const password = await APP.prompt({
+      title: "Reset password",
+      message: `Set a new temporary password for ${fullName(user)}.`,
+      inputLabel: "Temporary password (12+ characters)",
+      required: true,
+      placeholder: "Minimum 12 characters",
+      confirmLabel: "Save password",
+    });
     if (!password) return;
     if (password.length < 12) {
       APP.toast("Password must be at least 12 characters", "error");
@@ -623,23 +628,28 @@
     save(usersKey, users);
     APP.toast("Temporary password saved");
   }
-  function deleteUser(user) {
+  async function deleteUser(user) {
     if (user.id === currentUser.id) {
       APP.toast("You cannot delete your own admin account", "error");
       return;
     }
     const relationships = relatedCount(user);
     if (relationships) {
-      const archive = window.confirm(
-        `${fullName(user)} has ${relationships} related records. Deactivate this account instead of deleting it?`,
-      );
+      const archive = await APP.confirm({
+        title: "Deactivate instead?",
+        message: `${fullName(user)} has ${relationships} related records. Deactivate this account instead of deleting it?`,
+        confirmLabel: "Deactivate",
+      });
       if (archive) toggleStatus(user);
       return;
     }
     if (
-      !window.confirm(
-        `Delete ${fullName(user)}? This account has no related records.`,
-      )
+      !(await APP.confirm({
+        title: "Delete account",
+        message: `Delete ${fullName(user)}? This account has no related records.`,
+        confirmLabel: "Delete",
+        tone: "danger",
+      }))
     )
       return;
     users = users.filter((item) => item.id !== user.id);
@@ -699,7 +709,7 @@
     render();
   }
 
-  function bulkDelete() {
+  async function bulkDelete() {
     const selectedUsers = users.filter(user => selected.has(user.id) && user.id !== currentUser.id);
     
     // Check for users with related records
@@ -718,9 +728,12 @@
       return;
     }
     
-    if (!window.confirm(
-      `Delete ${selectedUsers.length} account${selectedUsers.length !== 1 ? 's' : ''}? This action cannot be undone.`
-    )) {
+    if (!(await APP.confirm({
+      title: "Bulk delete accounts",
+      message: `Delete ${selectedUsers.length} account${selectedUsers.length !== 1 ? 's' : ''}? This action cannot be undone.`,
+      confirmLabel: "Delete",
+      tone: "danger",
+    }))) {
       return;
     }
     

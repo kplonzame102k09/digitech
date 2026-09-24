@@ -134,7 +134,7 @@ class ProfileController extends Controller
 
         return response()->json([
             'ok' => true,
-            'photo' => Storage::url($path),
+            'photo' => '/storage/'.ltrim($path, '/'),
         ]);
     }
 

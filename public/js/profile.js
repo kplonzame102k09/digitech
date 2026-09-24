@@ -25,6 +25,7 @@
     })[role] || "Member";
   const toast = (message, type = "success") => {
     if (APP?.toast) APP.toast(message, type);
+    else if (APP?.notice) APP.notice({ message });
     else alert(message);
   };
 

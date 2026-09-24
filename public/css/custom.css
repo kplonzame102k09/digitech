@@ -857,6 +857,65 @@ body[data-parent-page] main > div > section:first-child:not(.family-hero) h2 {
   color: white;
 }
 
+/* --- Mobile behavior: shared guards for every role page --- */
+
+/* Prevent off-canvas glows/shadows from creating a horizontal scrollbar,
+   without breaking position: sticky ancestors (unlike overflow-x: hidden). */
+html,
+body {
+  overflow-x: clip;
+}
+
+/* Keep modal backdrops fully reachable and scrollable on short screens:
+   center when content fits, scroll from the top when it doesn't
+   (flex auto margins avoid the "unreachable clipped top" bug). */
+.modal-backdrop,
+.teacher-modal-backdrop {
+  align-items: flex-start;
+  overflow-y: auto;
+}
+.modal-backdrop > *,
+.teacher-modal-backdrop > * {
+  margin-block: auto;
+}
+.modal-backdrop > *:not([class*="max-h"]),
+.teacher-modal-backdrop > *:not([class*="max-h"]) {
+  max-height: calc(100vh - 2rem);
+  max-height: calc(100svh - 2rem);
+  overflow-y: auto;
+}
+
+/* Native <dialog> panels: cap height to the short viewport so tall content
+   scrolls inside the dialog instead of clipping off-screen. */
+dialog {
+  max-height: calc(100vh - 2rem);
+  max-height: calc(100svh - 2rem);
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+
+/* Mobile drawer backdrop (shared by all roles). The #open button toggles
+   #side's off-canvas state; the element itself is created by portal-scripts. */
+#sidebar-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 35;
+  background: rgba(15, 23, 42, 0.5);
+  backdrop-filter: blur(3px);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.25s ease;
+}
+#sidebar-backdrop.open {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+/* Lock page scroll while the mobile drawer is open. */
+html.drawer-open {
+  overflow: hidden;
+}
+
 /* Keep student services visually consistent with the parent family portal. */
 .student-portal .student-hero {
   background:

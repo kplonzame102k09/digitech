@@ -54,8 +54,8 @@
         </form>
     @endif
     <div data-video-overlay class="video-stage mt-5 hidden p-4 sm:p-5">
-        <div class="flex items-center justify-between gap-3">
-            <div class="flex items-center gap-2.5">
+        <div class="flex flex-wrap items-center justify-between gap-3">
+            <div class="flex min-w-0 items-center gap-2.5">
                 <span class="video-live-dot relative flex h-2.5 w-2.5">
                     <span class="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-75"></span>
                     <span class="relative inline-flex h-2.5 w-2.5 rounded-full bg-emerald-500"></span>

@@ -36,11 +36,76 @@
         if (window.lucide) {
             lucide.createIcons();
         }
+        if (window.APP && APP.applyTheme) {
+            APP.applyTheme();
+        }
+        // Central theme toggle: capture-phase so exactly one toggle fires per
+        // click even on pages whose role script also binds the button (or
+        // doesn't bind it at all, e.g. live-monitoring / classroom pages).
+        document.addEventListener('click', (event) => {
+            const toggle = event.target.closest('[data-theme-toggle]');
+            if (!toggle) return;
+            if (!window.APP || typeof APP.toggleTheme !== 'function') return;
+            event.preventDefault();
+            event.stopPropagation();
+            APP.toggleTheme();
+        }, true);
         const menuButton = document.getElementById('open');
         const sidebar = document.getElementById('side');
-        if (menuButton && sidebar && !menuButton.dataset.menuBound) {
-            menuButton.dataset.menuBound = '1';
-            menuButton.addEventListener('click', () => sidebar.classList.toggle('-translate-x-full'));
+        if (menuButton && sidebar) {
+            let backdrop = document.getElementById('sidebar-backdrop');
+            if (!backdrop) {
+                backdrop = document.createElement('div');
+                backdrop.id = 'sidebar-backdrop';
+                backdrop.setAttribute('aria-hidden', 'true');
+                document.body.appendChild(backdrop);
+            }
+
+            const isMobile = () => window.innerWidth < 1024;
+
+            const syncDrawer = () => {
+                const open = isMobile() && !sidebar.classList.contains('-translate-x-full');
+                backdrop.classList.toggle('open', open);
+                document.documentElement.classList.toggle('drawer-open', open);
+                menuButton.setAttribute('aria-expanded', open ? 'true' : 'false');
+            };
+
+            const closeDrawer = () => {
+                sidebar.classList.add('-translate-x-full');
+                backdrop.classList.remove('open');
+                document.documentElement.classList.remove('drawer-open');
+                menuButton.setAttribute('aria-expanded', 'false');
+            };
+
+            // Fallback toggle for roles that don't bind their own #open handler.
+            // (Per-role scripts bind first and set data-menu-bound, so this
+            // only runs where no other toggle exists -- no double-toggle.)
+            if (!menuButton.dataset.menuBound) {
+                menuButton.dataset.menuBound = '1';
+                menuButton.addEventListener('click', () => sidebar.classList.toggle('-translate-x-full'));
+            }
+
+            // Decorate whichever toggle opened the drawer with a backdrop,
+            // scroll lock, and Esc / outside-click / nav-click closing.
+            document.addEventListener('click', (event) => {
+                if (event.target.closest('#open')) {
+                    setTimeout(syncDrawer, 0);
+                } else if (event.target.closest('#sidebar-backdrop')) {
+                    closeDrawer();
+                } else if (event.target.closest('#side')) {
+                    if (event.target.closest('a, button')) setTimeout(closeDrawer, 0);
+                }
+            }, true);
+
+            document.addEventListener('keydown', (event) => {
+                if (event.key === 'Escape') closeDrawer();
+            });
+
+            window.addEventListener('resize', () => {
+                if (window.innerWidth >= 1024) closeDrawer();
+            });
+
+            menuButton.setAttribute('aria-expanded', 'false');
         }
         document.querySelectorAll('[data-logout]').forEach((button) => {
             if (button.dataset.boundLogout) return;

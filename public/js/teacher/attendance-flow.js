@@ -587,7 +587,12 @@
   };
 
   const submitSession = async () => {
-    if (!window.confirm('Submit and lock this attendance session? Classroom marks will be locked and the session closed.')) return;
+    if (!(await APP.confirm({
+      title: 'Submit & lock session',
+      message: 'Submit and lock this attendance session? Classroom marks will be locked and the session closed.',
+      confirmLabel: 'Submit & lock',
+      tone: 'danger',
+    }))) return;
     const payload = await API.request(`${API_BASE}/sessions/${state.session.session.id}/submit`, { method: 'POST' });
     stopPolling();
     state.session = payload;
@@ -595,7 +600,12 @@
   };
 
   const cancelSession = async () => {
-    if (!window.confirm('Cancel this attendance session? The session will be closed and no attendance recorded.')) return;
+    if (!(await APP.confirm({
+      title: 'Cancel session',
+      message: 'Cancel this attendance session? The session will be closed and no attendance recorded.',
+      confirmLabel: 'Cancel session',
+      tone: 'danger',
+    }))) return;
     try {
       const payload = await API.request(`${API_BASE}/sessions/${state.session.session.id}/cancel`, { method: 'POST' });
       stopPolling();

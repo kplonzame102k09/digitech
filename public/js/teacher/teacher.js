@@ -190,9 +190,13 @@
     APP.updateNotif();
     lucide.createIcons();
 
-    $("open")?.addEventListener("click", () => {
-      $("side")?.classList.toggle("-translate-x-full");
-    });
+    const openButton = $("open");
+    if (openButton && !openButton.dataset.menuBound) {
+      openButton.dataset.menuBound = "1";
+      openButton.addEventListener("click", () => {
+        $("side")?.classList.toggle("-translate-x-full");
+      });
+    }
 
     $("side")?.querySelectorAll("a").forEach((link) =>
       link.addEventListener("click", () => {
@@ -844,15 +848,27 @@
     lucide.createIcons();
   }
 
-  function bulkCompetencies() {
+  async function bulkCompetencies() {
     const list = visibleCompetencies();
     if (!list.length) {
       APP.toast("There are no visible competency records to update", "error");
       return;
     }
-    const status = window.prompt(`Set visible records to: ${statuses.join(", ")}`, "In Progress");
+    const status = await APP.prompt({
+      title: "Bulk update status",
+      message: `Set visible records to: ${statuses.join(", ")}`,
+      inputLabel: "Status",
+      defaultValue: "In Progress",
+      placeholder: statuses.join(", "),
+      required: true,
+      confirmLabel: "Continue",
+    });
     if (!statuses.includes(status)) return;
-    if (!window.confirm(`Update ${list.length} visible competency record${list.length === 1 ? "" : "s"} to ${status}?`)) return;
+    if (!(await APP.confirm({
+      title: "Confirm bulk update",
+      message: `Update ${list.length} visible competency record${list.length === 1 ? "" : "s"} to ${status}?`,
+      confirmLabel: "Update all",
+    }))) return;
     const all = get("competencies", []);
     list.forEach((item) => {
       const record = all.find((candidate) => candidate.id === item.id);

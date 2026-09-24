@@ -24,12 +24,15 @@ class LoginController extends Controller
     {
         $validated = $request->validated();
 
+        // Determine role from user_id prefix
+        $role = $this->determineRoleFromUserId($validated['user_id']);
+
         $user = User::query()
             ->where(function ($query) use ($validated): void {
                 $query->where('user_id', $validated['user_id'])
                     ->orWhere('email', $validated['user_id']);
             })
-            ->where('role', $validated['role'])
+            ->where('role', $role)
             ->first();
 
         if (! $user || ! Hash::check($validated['password'], $user->password)) {
@@ -94,5 +97,29 @@ class LoginController extends Controller
         $request->session()->regenerateToken();
 
         return redirect('/login');
+    }
+
+    /**
+     * Determine role from user_id prefix
+     */
+    private function determineRoleFromUserId(string $userId): string
+    {
+        $userIdUpper = strtoupper($userId);
+
+        // Check for admin first since it has a longer prefix
+        if (str_starts_with($userIdUpper, 'ADMIN')) {
+            return 'admin';
+        }
+
+        // Check other 3-character prefixes
+        $prefix = substr($userIdUpper, 0, 3);
+
+        return match($prefix) {
+            'STU' => 'student',
+            'TCH' => 'teacher',
+            'PRT' => 'parent',
+            'GST' => 'guest',
+            default => 'student', // Default fallback
+        };
     }
 }

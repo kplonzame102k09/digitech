@@ -31,7 +31,7 @@
                     </div>
                 </section>
                 <section class="card overflow-hidden">
-                    <div class="flex items-center justify-between border-b border-slate-200 p-5 dark:border-slate-800">
+                    <div class="flex flex-wrap items-center justify-between gap-3 border-b border-slate-200 p-5 dark:border-slate-800">
                         <div>
                             <h3 class="font-bold">Attendance history</h3>
                             <p class="mt-1 text-xs text-slate-400">Only attendance records shared by the college are

@@ -99,13 +99,13 @@
                         </div>
                     </div>
                     <div class="overflow-x-auto">
-                        <table class="w-full text-sm">
+                        <table class="w-full text-sm text-center">
                             <thead class="bg-slate-50 dark:bg-slate-800">
                                 <tr>
-                                    <th class="p-4 text-left">Document</th>
-                                    <th class="p-4 text-left">Purpose</th>
-                                    <th class="p-4 text-left">Date</th>
-                                    <th class="p-4 text-left">Status</th>
+                                    <th class="p-4 text-center">Document</th>
+                                    <th class="p-4 text-center">Purpose</th>
+                                    <th class="p-4 text-center">Date</th>
+                                    <th class="p-4 text-center">Status</th>
                                 </tr>
                             </thead>
                             <tbody id="rows"></tbody>

@@ -25,7 +25,7 @@
                     <p class="text-sm font-semibold text-purple-600 dark:text-purple-400">
                         Administration
                     </p>
-                    <div class="mt-1 flex items-center justify-between gap-4">
+                    <div class="mt-1 flex flex-wrap items-center justify-between gap-4">
                         <div>
                             <h2 class="text-3xl font-bold tracking-tight">
                                 Live Monitoring
@@ -209,6 +209,32 @@
                         No signed-in users active in the last 5 minutes.
                     </p>
                 </section>
+
+                <section class="card mt-5 overflow-hidden">
+                    <div class="flex items-center justify-between border-b border-slate-100 px-4 py-3 dark:border-slate-800">
+                        <h3 class="text-sm font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">
+                            Locked accounts
+                        </h3>
+                        <span id="lockedCount" class="rounded-full bg-red-100 px-2.5 py-0.5 text-xs font-semibold text-red-700 dark:bg-red-950/40 dark:text-red-300">0</span>
+                    </div>
+                    <div id="lockedTableContainer" class="overflow-x-auto hidden">
+                        <table class="w-full text-left text-sm">
+                            <thead class="bg-slate-50 dark:bg-slate-800">
+                                <tr>
+                                    <th class="p-4">Account/IP</th>
+                                    <th class="p-4">Role</th>
+                                    <th class="p-4">Locked at</th>
+                                    <th class="p-4">Time remaining</th>
+                                    <th class="p-4">Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody id="lockedAccountsList"></tbody>
+                        </table>
+                    </div>
+                    <p id="lockedEmpty" class="p-6 text-center text-sm text-slate-400">
+                        No accounts are currently locked.
+                    </p>
+                </section>
             </div>
         </main>
     </div>
@@ -285,6 +311,28 @@
             </div>
             <p class="shrink-0 text-xs text-slate-400"><span data-online-ago></span></p>
         </li>
+    </template>
+
+    <template id="lockedAccountTemplate">
+        <tr class="border-t border-slate-100 transition-colors dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-800/40">
+            <td class="p-4">
+                <span data-locked-identifier class="font-mono text-xs font-medium"></span>
+            </td>
+            <td class="p-4">
+                <span data-locked-role class="rounded-full bg-slate-100 px-2.5 py-0.5 text-xs font-semibold text-slate-700 dark:bg-slate-800 dark:text-slate-300"></span>
+            </td>
+            <td class="p-4">
+                <span data-locked-time class="font-mono text-xs text-slate-500 dark:text-slate-400"></span>
+            </td>
+            <td class="p-4">
+                <span data-locked-countdown class="font-mono text-xs font-bold text-red-600 dark:text-red-400"></span>
+            </td>
+            <td class="p-4">
+                <button type="button" data-locked-unlock class="rounded bg-red-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-red-700">
+                    Unlock
+                </button>
+            </td>
+        </tr>
     </template>
     <div id="modalRoot"></div>
     @include('partials.portal-scripts', ['portalPage' => 'admin/live-monitoring.js'])

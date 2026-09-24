@@ -219,8 +219,11 @@
     records.forEach((record) => {
       const row = clone("enrollmentRowTemplate");
       if (!row) return;
+      const enrolled = record.status === "Enrolled";
       const checkbox = $("[data-select-record]", row);
       checkbox.checked = selected.has(record.id);
+      checkbox.disabled = enrolled;
+      checkbox.title = enrolled ? "Enrolled records cannot be processed" : "";
       checkbox.addEventListener("change", () => {
         if (checkbox.checked) selected.add(record.id);
         else selected.delete(record.id);
@@ -254,6 +257,8 @@
           "text-slate-400",
           !record.assignedTeacherId,
         );
+        adviser.disabled = enrolled;
+        if (enrolled) adviser.classList.add("opacity-50", "cursor-not-allowed");
         adviser.addEventListener("change", () =>
           assignAdviser(record, adviser.value),
         );
@@ -261,12 +266,19 @@
       const inline = $("[data-inline-status]", row);
       if (inline) {
         inline.value = record.status || "Draft";
+        inline.disabled = enrolled;
+        if (enrolled) inline.classList.add("opacity-50");
         inline.addEventListener("change", () => {
           if (inline.value === record.status) return;
           updateRecord(record, inline.value, "Inline status update", "");
         });
       }
-      $$("[data-action]", row).forEach((button) =>
+      $$("[data-action]", row).forEach((button) => {
+        if (button.dataset.action === "save") {
+          button.disabled = enrolled;
+          if (enrolled)
+            button.classList.add("opacity-50", "pointer-events-none");
+        }
         button.addEventListener("click", () => {
           if (button.dataset.action === "review") openReview(record);
           if (button.dataset.action === "save")
@@ -276,8 +288,8 @@
               "Inline status update",
               "",
             );
-        }),
-      );
+        });
+      });
       container?.append(row);
     });
     const visibleIds = new Set(records.map((record) => record.id));
@@ -415,6 +427,21 @@
       "No adviser assigned",
     );
     $("#assignedTeacher").value = record.assignedTeacherId || "";
+    const enrolled = record.status === "Enrolled";
+    const readOnly = $("#reviewStatus").closest("label").parentElement;
+    $$("#reviewStatus, #assignedTeacher, #assignedSection", readOnly).forEach(
+      (input) => {
+        input.disabled = enrolled;
+      },
+    );
+    $("#reviewForm")
+      .querySelector('button[type="submit"]')
+      ?.toggleAttribute("disabled", enrolled);
+    if (enrolled) {
+      $("#reviewForm")
+        .querySelector('button[type="submit"]')
+        ?.classList.add("opacity-50", "cursor-not-allowed");
+    }
     toggleReasonField();
     $("#reviewFeedback").textContent = "";
     dialog.showModal();
@@ -625,33 +652,63 @@
     render();
   }
 
-  function bulkAction() {
+  function openBulkDialog() {
     if (!selected.size) return;
-    const value = window.prompt(
-      `Type one status: ${statuses.join(", ")}`,
-      "Under Review",
+    const count = selected.size;
+    setText("#bulkCount", `${count} record${count === 1 ? "" : "s"} selected`);
+    $("#bulkStatus").value = "Under Review";
+    $("#bulkReason").value = "";
+    toggleBulkReasonField();
+    $("#bulkFeedback").textContent = "";
+    $("#bulkSubmit").textContent = `Apply to ${count} record${count === 1 ? "" : "s"}`;
+    $("#bulkDialog")?.showModal();
+    lucide.createIcons();
+  }
+
+  function toggleBulkReasonField() {
+    const needsReason = ["Rejected", "Needs Correction"].includes(
+      $("#bulkStatus")?.value,
     );
+    $("#bulkReasonField")?.classList.toggle("hidden", !needsReason);
+    $("#bulkReason")?.toggleAttribute("required", needsReason);
+  }
+
+  function applyBulkAction(event) {
+    event.preventDefault();
+    const value = $("#bulkStatus").value;
     if (!statuses.includes(value)) return;
     const reason = ["Rejected", "Needs Correction"].includes(value)
-      ? window.prompt(
-          `Enter a reason for ${value.toLowerCase()} (required):`,
-          "",
-        )?.trim() || ""
+      ? $("#bulkReason").value.trim()
       : "";
     if (["Rejected", "Needs Correction"].includes(value) && !reason) {
-      APP.toast("A reason is required for this bulk action", "error");
+      setText("#bulkFeedback", "A reason is required for this action.");
+      $("#bulkReason")?.classList.add("border-red-500");
+      $("#bulkReason")?.focus();
       return;
     }
     let updated = 0;
+    let skipped = 0;
     selected.forEach((id) => {
       const record = enrollments.find((item) => item.id === id);
-      if (record && updateRecord(record, value, "Bulk status update", reason))
+      if (!record) return;
+      if (record.status === "Enrolled") {
+        skipped += 1;
+        selected.delete(record.id);
+        return;
+      }
+      if (updateRecord(record, value, "Bulk status update", reason))
         updated += 1;
     });
     selected.clear();
+    $("#bulkDialog")?.close();
     APP.toast(
       `${updated} enrollment record${updated === 1 ? "" : "s"} updated`,
     );
+    if (skipped)
+      APP.toast(
+        `${skipped} enrolled record${skipped === 1 ? "" : "s"} skipped`,
+        "error",
+      );
     render();
   }
 
@@ -770,12 +827,18 @@
     );
     $("#selectAll")?.addEventListener("change", (event) => {
       visibleRecords().forEach((record) => {
+        if (record.status === "Enrolled") return;
         if (event.target.checked) selected.add(record.id);
         else selected.delete(record.id);
       });
       render();
     });
-    $("[data-bulk-action]")?.addEventListener("click", bulkAction);
+    $("[data-bulk-action]")?.addEventListener("click", openBulkDialog);
+    $("#bulkForm")?.addEventListener("submit", applyBulkAction);
+    $("#bulkStatus")?.addEventListener("change", toggleBulkReasonField);
+    $$("[data-close-bulk]").forEach((button) =>
+      button.addEventListener("click", () => $("#bulkDialog")?.close()),
+    );
     $("[data-export-enrollments]")?.addEventListener(
       "click",
       exportEnrollments,

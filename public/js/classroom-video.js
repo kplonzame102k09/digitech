@@ -254,14 +254,24 @@
         btn.addEventListener("click", () => meetingAction(btn.dataset.endMeeting, "end")),
       );
       listEl.querySelectorAll("[data-cancel-meeting]").forEach((btn) =>
-        btn.addEventListener("click", () => {
-          if (!confirm("Cancel this session?")) return;
+        btn.addEventListener("click", async () => {
+          if (!(await APP?.confirm?.({
+            title: "Cancel session",
+            message: "Cancel this session?",
+            confirmLabel: "Cancel",
+            tone: "danger",
+          }))) return;
           meetingAction(btn.dataset.cancelMeeting, "cancel");
         }),
       );
       listEl.querySelectorAll("[data-delete-meeting]").forEach((btn) =>
         btn.addEventListener("click", async () => {
-          if (!confirm("Delete this session?")) return;
+          if (!(await APP?.confirm?.({
+            title: "Delete session",
+            message: "Delete this session?",
+            confirmLabel: "Delete",
+            tone: "danger",
+          }))) return;
           try {
             await api(`${meetingsUrl}/${encodeURIComponent(btn.dataset.deleteMeeting)}`, { method: "DELETE" });
             loadMeetings();

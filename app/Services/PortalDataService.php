@@ -461,7 +461,7 @@ class PortalDataService
             $this->skippedDuplicateEmails = 0;
 
             if ($skipped > 0) {
-                AuditLog::record([
+                $this->recordAuditSilently([
                     'entity' => AuditLog::ENTITY_USER,
                     'action' => 'import.skipped',
                     'notes' => "{$skipped} user(s) skipped because their email address was already in use.",
@@ -911,7 +911,7 @@ class PortalDataService
         $changed = array_unique(array_merge($columnChanges, $extraChanges));
 
         if ($changed !== []) {
-            AuditLog::record([
+            $this->recordAuditSilently([
                 'entity' => AuditLog::ENTITY_USER,
                 'recordId' => $actor->user_id,
                 'action' => 'profile.updated',
@@ -2065,21 +2065,17 @@ class PortalDataService
             return;
         }
 
-        $alreadyRecorded = AuditLog::query()
-            ->where('recordId', (string) ($data['id'] ?? ''))
-            ->where('action', $action)
-            ->where('actorId', $actor->user_id)
-            ->exists();
-
-        if (! $alreadyRecorded) {
-            AuditLog::record([
-                'entity' => AuditLog::ENTITY_ENROLLMENT,
-                'recordId' => (string) ($data['id'] ?? ''),
-                'action' => (string) $action,
-                'notes' => (string) $notes,
-                'actorId' => $actor->user_id,
-            ]);
-        }
+        $this->recordAuditDeduplicatedSilently([
+            'entity' => AuditLog::ENTITY_ENROLLMENT,
+            'recordId' => (string) ($data['id'] ?? ''),
+            'action' => (string) $action,
+            'notes' => (string) $notes,
+            'actorId' => $actor->user_id,
+        ], [
+            'recordId' => (string) ($data['id'] ?? ''),
+            'action' => (string) $action,
+            'actorId' => $actor->user_id,
+        ]);
     }
 
     /**
@@ -2174,6 +2170,42 @@ class PortalDataService
      * @param  array<int, string>  $createdIds
      * @param  array<int, string>  $deletedIds
      */
+    /**
+     * Persist an audit row without ever surfacing a failure to the caller.
+     *
+     * The audit_logs table is an observability sink, never a requirement of
+     * a business write (e.g. saving a profile or uploading a photo). If the
+     * table is missing or out of sync with the current migrations on the
+     * deployed database, the write must be dropped rather than 500 the
+     * request that triggered it.
+     */
+    protected function recordAuditSilently(array $data): void
+    {
+        try {
+            AuditLog::record($data);
+        } catch (\Throwable $e) {
+            // Auditing must never break a request.
+        }
+    }
+
+    /**
+     * Write an audit row with a dedupe pre-check, both inside one guard so a
+     * missing audit_logs table can't 500 the surrounding business write.
+     */
+    protected function recordAuditDeduplicatedSilently(array $data, array $dedupe): void
+    {
+        try {
+            $alreadyRecorded = AuditLog::query()->where($dedupe)->exists();
+
+            if (! $alreadyRecorded) {
+                AuditLog::record($data);
+            }
+        } catch (\Throwable $e) {
+            // Auditing must never break a request.
+        }
+    
+    }
+
     protected function auditUserManagement(?User $actor, array $createdIds, array $deletedIds): void
     {
         if ($actor === null) {
@@ -2188,21 +2220,17 @@ class PortalDataService
         }
 
         $write = function (string $recordId, string $action, string $notes) use ($actor): void {
-            $alreadyRecorded = AuditLog::query()
-                ->where('recordId', $recordId)
-                ->where('action', $action)
-                ->where('actorId', $actor->user_id)
-                ->exists();
-
-            if (! $alreadyRecorded) {
-                AuditLog::record([
-                    'entity' => AuditLog::ENTITY_USER,
-                    'recordId' => $recordId,
-                    'action' => $action,
-                    'notes' => $notes,
-                    'actorId' => $actor->user_id,
-                ]);
-            }
+            $this->recordAuditDeduplicatedSilently([
+                'entity' => AuditLog::ENTITY_USER,
+                'recordId' => $recordId,
+                'action' => $action,
+                'notes' => $notes,
+                'actorId' => $actor->user_id,
+            ], [
+                'recordId' => $recordId,
+                'action' => $action,
+                'actorId' => $actor->user_id,
+            ]);
         };
 
         if (count($createdIds) + count($deletedIds) > 10) {
@@ -2675,6 +2703,13 @@ class PortalDataService
 
     protected function publicPhotoUrl(string $path): string
     {
+        // Re-base any absolute /storage URL onto the current host so a
+        // mismatched APP_URL recorded at upload time never yields a broken
+        // <img>. Genuine external URLs and data: URIs pass through.
+        if (is_string($path) && preg_match('#^https?://[^/]+(/storage/.+)$#i', $path, $m) === 1) {
+            $path = $m[1];
+        }
+
         if (Str::startsWith($path, ['http://', 'https://', '/', 'data:'])) {
             return $path;
         }
@@ -2686,6 +2721,13 @@ class PortalDataService
     {
         if (! is_string($photo) || trim($photo) === '') {
             return null;
+        }
+
+        // Scale an absolute /storage URL (possibly from a mismatched APP_URL)
+        // back to the bare relative path before it is persisted. External
+        // http(s) URLs and data: URIs are left untouched.
+        if (preg_match('#^https?://[^/]+/storage/(.+)$#i', $photo, $m) === 1) {
+            $photo = $m[1];
         }
 
         if (Str::startsWith($photo, ['http://', 'https://', 'data:'])) {

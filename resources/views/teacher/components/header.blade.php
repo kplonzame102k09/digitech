@@ -1,15 +1,15 @@
 <header class="sticky top-0 z-30 h-16 border-b bg-white/90 dark:bg-slate-950/90 dark:border-slate-800 backdrop-blur flex items-center justify-between px-4 sm:px-6">
-    <div class="flex items-center gap-3">
+    <div class="flex min-w-0 items-center gap-3">
         <button id="open" class="lg:hidden p-2">
             <i data-lucide="menu"></i>
         </button>
-        <div>
-            <p class="text-xs text-slate-400"> {{ $subtitle ?? 'Teacher Portal' }} </p>
-            <h1 class="font-bold"> {{ $title ?? 'Teacher Dashboard' }} </h1>
+        <div class="min-w-0">
+            <p class="truncate text-xs text-slate-400"> {{ $subtitle ?? 'Teacher Portal' }} </p>
+            <h1 class="truncate font-bold"> {{ $title ?? 'Teacher Dashboard' }} </h1>
         </div>
     </div>
     <div class="flex items-center gap-2">
-        <button onclick="APP.toggleTheme()" class="p-2.5 rounded-xl hover:bg-green-500 hover:text-white dark:hover:bg-green-500">
+        <button type="button" data-theme-toggle class="p-2.5 rounded-xl hover:bg-green-500 hover:text-white dark:hover:bg-green-500">
             <i data-lucide="moon" data-theme-icon class="h-4 w-4"></i>
         </button>
         <button type="button" data-notifications

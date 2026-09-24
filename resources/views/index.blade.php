@@ -126,7 +126,7 @@
                     </div>
                 </div>
                 <div class="relative">
-                    <div class="absolute -inset-6 bg-green-100/70 rounded-[2rem] blur-2xl dark:bg-emerald-950/40"></div>
+                    <div class="absolute -inset-3 sm:-inset-6 bg-green-100/70 rounded-[2rem] blur-2xl dark:bg-emerald-950/40"></div>
                     <div class="relative bg-white rounded-2xl shadow p-5 dark:bg-slate-900 dark:border dark:border-slate-800">
                         <div class="flex justify-between border-b pb-4">
                             <div class="flex gap-3">
@@ -296,7 +296,7 @@
                         <!-- Icon -->
                         <div
                             class="mx-auto w-20 h-20 flex items-center justify-center rounded-2xl bg-white/10 backdrop-blur-sm shadow-lg">
-                            <img src="{{ asset('images/16432.png') }}" class="w-15 h-15">
+                            <img src="{{ asset('images/16432.png') }}" class="w-12 h-12">
                         </div>
 
                         <!-- Label -->
@@ -439,7 +439,33 @@
             }
         });   
     </script>
-    <script>lucide.createIcons(); menu.onclick = () => mobile.classList.toggle('hidden')</script>
+    <script>
+        lucide.createIcons();
+        const menuBtn = document.getElementById('menu');
+        const mobileMenu = document.getElementById('mobile');
+        if (menuBtn && mobileMenu) {
+            menuBtn.setAttribute('aria-expanded', 'false');
+            const closeMobileMenu = () => {
+                mobileMenu.classList.add('hidden');
+                menuBtn.setAttribute('aria-expanded', 'false');
+            };
+            menuBtn.addEventListener('click', () => {
+                const opening = mobileMenu.classList.contains('hidden');
+                mobileMenu.classList.toggle('hidden', !opening);
+                menuBtn.setAttribute('aria-expanded', opening ? 'true' : 'false');
+            });
+            mobileMenu.querySelectorAll('a').forEach((link) =>
+                link.addEventListener('click', closeMobileMenu)
+            );
+            document.addEventListener('click', (event) => {
+                if (menuBtn.contains(event.target) || mobileMenu.contains(event.target)) return;
+                closeMobileMenu();
+            });
+            document.addEventListener('keydown', (event) => {
+                if (event.key === 'Escape') closeMobileMenu();
+            });
+        }
+    </script>
     <script>
         function updatePublicThemeIcon(isDark) {
             document.querySelectorAll("[data-theme-icon]").forEach(function (icon) {

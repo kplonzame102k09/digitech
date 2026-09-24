@@ -9,7 +9,7 @@
                 </small>
             </div>
         </div>
-        <nav class="p-3 space-y-1 flex-1">
+        <nav class="flex-1 space-y-1 overflow-y-auto p-3">
             @php
             $inClassroom = request()->routeIs('teacher.classrooms', 'teacher.attendance', 'teacher.grades', 'teacher.competencies');
             @endphp

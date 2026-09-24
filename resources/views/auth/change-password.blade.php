@@ -12,7 +12,7 @@
 </head>
 
 <body class="min-h-screen bg-slate-50 text-slate-800 dark:bg-slate-950 dark:text-slate-100">
-    <div class="min-h-screen flex items-center justify-center p-5">
+    <div class="min-h-screen flex items-start sm:items-center justify-center p-5">
         <div class="w-full max-w-md">
             <div class="card p-7 sm:p-9 shadow-xl">
                 <div class="flex items-center gap-3">

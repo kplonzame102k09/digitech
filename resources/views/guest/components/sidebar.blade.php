@@ -6,7 +6,7 @@
           <b>DIGITECH</b><small class="block text-[10px] tracking-widest text-slate-400">GUEST PORTAL</small>
         </div>
       </div>
-      <nav class="p-3 space-y-1 flex-1">
+      <nav class="flex-1 space-y-1 overflow-y-auto p-3">
         <a href="{{ route('guest.announcements') }}"
           class="flex items-center gap-3 rounded px-3 py-2.5 text-sm font-medium
           {{ request()->routeIs('guest.announcements') ? 'nav-active' : 'text-slate-600 hover:bg-slate-100 dark:text-slate-300 dark:hover:bg-slate-800'}}">

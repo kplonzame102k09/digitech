@@ -180,24 +180,31 @@
                             <option>Rejected</option>
                             <option>Needs Correction</option>
                             <option>Enrolled</option>
-                        </select></label><label class="mt-4 block text-sm font-semibold">Review notes<textarea
-                            id="reviewNotes" rows="5" maxlength="500"
-                            class="input mt-1.5 w-full rounded border px-3 py-2.5"
-                            placeholder="Add context for the applicant or the next reviewer..."></textarea></label><label
-                        id="rejectionReasonField" class="mt-4 hidden text-sm font-semibold">Reason for rejection /
-                        correction<textarea id="rejectionReason" rows="3" maxlength="300"
-                            class="input mt-1.5 w-full rounded border px-3 py-2.5"></textarea></label><label
-                        class="mt-4 block text-sm font-semibold">Assign adviser<select id="assignedTeacher"
-                            class="input mt-1.5 w-full rounded border px-3 py-2.5">
+                        </select>
+                    </label>
+                    <label class="mt-4 block text-sm font-semibold">
+                        Review notes
+                        <textarea id="reviewNotes" rows="5" maxlength="500" class="input mt-1.5 w-full rounded border px-3 py-2.5" placeholder="Add context for the applicant or the next reviewer..."></textarea>
+                    </label>
+                    <label id="rejectionReasonField" class="mt-4 hidden text-sm font-semibold">
+                        Reason for rejection / correction
+                        <textarea id="rejectionReason" rows="3" maxlength="300" class="input mt-1.5 w-full rounded border px-3 py-2.5"></textarea>
+                    </label>
+                    <label class="mt-4 block text-sm font-semibold">
+                        Assign adviser
+                        <select id="assignedTeacher" class="input mt-1.5 w-full rounded border px-3 py-2.5">
                             <option value="">No adviser assigned</option>
-                        </select></label><label class="mt-4 block text-sm font-semibold">Section / class<input
-                            id="assignedSection" class="input mt-1.5 w-full rounded border px-3 py-2.5"
-                            placeholder="e.g. ICT-1A" /></label>
+                        </select>
+                    </label>
+                    <label class="mt-4 block text-sm font-semibold">
+                        Section / class
+                        <input id="assignedSection" class="input mt-1.5 w-full rounded border px-3 py-2.5" placeholder="e.g. ICT-1A" />
+                    </label>
                     <div class="mt-5 flex flex-wrap gap-3">
-                        <button type="submit"
-                            class="rounded bg-green-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-green-700">
-                            Save review decision</button><button type="button" data-close-review
-                            class="rounded border border-slate-200 px-4 py-2.5 text-sm font-semibold dark:border-slate-700">
+                        <button type="submit" class="rounded bg-green-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-green-700">
+                            Save review decision
+                        </button>
+                        <button type="button" data-close-review class="rounded border border-slate-200 px-4 py-2.5 text-sm font-semibold dark:border-slate-700">
                             Cancel
                         </button>
                     </div>
@@ -206,8 +213,7 @@
             </div>
         </section>
     </dialog>
-    <dialog id="createDialog"
-        class="w-[min(680px,calc(100%-2rem))] rounded-2xl border-0 p-0 shadow-2xl backdrop:bg-slate-950/50">
+    <dialog id="createDialog" class="w-[min(680px,calc(100%-2rem))] rounded-2xl border-0 p-0 shadow-2xl backdrop:bg-slate-950/50">
         <form id="createForm" class="card max-h-[90vh] overflow-y-auto p-6 dark:text-white">
             <div class="flex items-start justify-between">
                 <div>
@@ -221,35 +227,93 @@
                 </button>
             </div>
             <div class="mt-6 grid gap-4 sm:grid-cols-2">
-                <label class="text-sm font-semibold sm:col-span-2">Student<select id="createStudent" required
-                        class="input mt-1.5 w-full rounded border px-3 py-2.5">
+                <label class="text-sm font-semibold sm:col-span-2">
+                    Student
+                    <select id="createStudent" required class="input mt-1.5 w-full rounded border px-3 py-2.5">
                         <option value="">Choose a student</option>
-                    </select></label><label class="text-sm font-semibold">Program type<input id="createProgram" required
-                        class="input mt-1.5 w-full rounded border px-3 py-2.5" /></label><label
-                    class="text-sm font-semibold">Grade level<input id="createGrade"
-                        class="input mt-1.5 w-full rounded border px-3 py-2.5" /></label><label
-                    class="text-sm font-semibold">Strand<input id="createStrand"
-                        class="input mt-1.5 w-full rounded border px-3 py-2.5" /></label><label
-                    class="text-sm font-semibold">Track<input id="createTrack"
-                        class="input mt-1.5 w-full rounded border px-3 py-2.5" /></label><label
-                    class="text-sm font-semibold">School year<input id="createYear" required value="2026-2027"
-                        class="input mt-1.5 w-full rounded border px-3 py-2.5" /></label><label
-                    class="text-sm font-semibold">Initial status<select id="createStatus"
-                        class="input mt-1.5 w-full rounded border px-3 py-2.5">
+                    </select>
+                </label>
+                <label class="text-sm font-semibold">
+                    Program type
+                    <input id="createProgram" required class="input mt-1.5 w-full rounded border px-3 py-2.5" />
+                </label>
+                <label class="text-sm font-semibold">
+                    Grade level
+                    <input id="createGrade" class="input mt-1.5 w-full rounded border px-3 py-2.5" />
+                </label>
+                <label class="text-sm font-semibold">
+                    Strand
+                    <input id="createStrand" class="input mt-1.5 w-full rounded border px-3 py-2.5" />
+                </label>
+                <label class="text-sm font-semibold">
+                    Track
+                    <input id="createTrack" class="input mt-1.5 w-full rounded border px-3 py-2.5" />
+                </label>
+                <label class="text-sm font-semibold">
+                    School year
+                    <input id="createYear" required value="2026-2027" class="input mt-1.5 w-full rounded border px-3 py-2.5" />
+                </label>
+                <label class="text-sm font-semibold">
+                    Initial status
+                    <select id="createStatus" class="input mt-1.5 w-full rounded border px-3 py-2.5">
                         <option>Draft</option>
                         <option>Submitted</option>
                         <option>Under Review</option>
-                    </select></label>
+                    </select>
+                </label>
             </div>
             <div class="mt-6 flex justify-end gap-3">
-                <button type="button" data-close-create
-                    class="rounded border border-slate-200 px-4 py-2.5 text-sm font-semibold dark:border-slate-700">
-                    Cancel</button><button type="submit"
-                    class="rounded bg-green-600 px-5 py-2.5 text-sm font-semibold text-white">
+                <button type="button" data-close-create class="rounded border border-slate-200 px-4 py-2.5 text-sm font-semibold dark:border-slate-700">
+                    Cancel
+                </button>
+                <button type="submit" class="rounded bg-green-600 px-5 py-2.5 text-sm font-semibold text-white">
                     Create record
                 </button>
             </div>
             <p id="createFeedback" class="mt-3 text-right text-xs text-slate-500 dark:text-slate-400"></p>
+        </form>
+    </dialog>
+    <dialog id="bulkDialog"
+        class="w-[min(560px,calc(100%-2rem))] rounded-2xl border-0 p-0 shadow-2xl backdrop:bg-slate-950/50">
+        <form id="bulkForm" class="card max-h-[90vh] overflow-y-auto p-6 dark:text-white">
+            <div class="flex items-start justify-between">
+                <div>
+                    <p class="text-sm font-semibold text-green-600 dark:text-green-400">Bulk update</p>
+                    <h3 class="mt-1 text-xl font-bold">Process selected records</h3>
+                    <p id="bulkCount" class="mt-1 text-xs text-slate-400"></p>
+                </div>
+                <button type="button" data-close-bulk class="rounded p-2 text-slate-400">
+                    <i data-lucide="x" class="h-5 w-5"></i>
+                </button>
+            </div>
+            <div class="mt-6 space-y-4">
+                <label class="block text-sm font-semibold">Status
+                    <select id="bulkStatus" class="input mt-1.5 w-full rounded border px-3 py-2.5">
+                        <option>Draft</option>
+                        <option>Submitted</option>
+                        <option selected>Under Review</option>
+                        <option>Approved</option>
+                        <option>Rejected</option>
+                        <option>Needs Correction</option>
+                        <option>Enrolled</option>
+                    </select>
+                </label>
+                <label id="bulkReasonField" class="hidden block text-sm font-semibold">Reason (required)
+                    <textarea id="bulkReason" rows="3" maxlength="300"
+                        class="input mt-1.5 w-full rounded border px-3 py-2.5"
+                        placeholder="Explain why the record is being returned..."></textarea>
+                </label>
+            </div>
+            <div class="mt-6 flex justify-end gap-3">
+                <button type="button" data-close-bulk
+                    class="rounded border border-slate-200 px-4 py-2.5 text-sm font-semibold dark:border-slate-700">
+                    Cancel</button>
+                <button type="submit" id="bulkSubmit"
+                    class="rounded bg-green-600 px-5 py-2.5 text-sm font-semibold text-white">
+                    Apply update
+                </button>
+            </div>
+            <p id="bulkFeedback" class="mt-3 text-right text-xs text-slate-500 dark:text-slate-400"></p>
         </form>
     </dialog>
     <template id="enrollmentRowTemplate">
@@ -260,15 +324,14 @@
             <td class="p-4">
                 <div class="flex items-center gap-3">
                     <span class="relative flex h-9 w-9 shrink-0 items-center justify-center">
-                        <img data-student-photo src="{{ asset('images/16432.png') }}"
-                            class="absolute inset-0 h-9 w-9 rounded-full object-cover"
+                        <img data-student-photo src="{{ asset('images/16432.png') }}" class="absolute inset-0 h-9 w-9 rounded-full object-cover"
                             alt="Student profile photo" onerror="this.onerror=null;this.src='{{ asset('images/16432.png') }}'" />
                         <span data-student-initials
                             class="hidden h-9 w-9 items-center justify-center rounded-full bg-green-50 text-xs font-bold text-green-700 dark:text-green-300 dark:bg-emerald-950/40"></span>
                     </span>
                     <div>
-                        <b data-student-name class="block"></b><small data-student-id
-                            class="text-xs text-slate-400"></small>
+                        <b data-student-name class="block"></b>
+                        <small data-student-id class="text-xs text-slate-400"></small>
                     </div>
                 </div>
             </td>

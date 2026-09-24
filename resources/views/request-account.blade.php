@@ -27,7 +27,7 @@
 
 <body class="min-h-screen bg-slate-50 text-slate-800 dark:bg-slate-950 dark:text-slate-100">
     <button type="button" data-theme-toggle title="Toggle dark / light mode" aria-label="Toggle dark / light mode"
-        class="fixed right-4 top-4 z-50 inline-flex items-center justify-center p-2.5 rounded-xl hover:bg-green-500 hover:text-white dark:hover:bg-green-500">
+        class="fixed right-4 top-4 z-50 inline-flex items-center justify-center rounded-xl border border-slate-200 bg-white/90 p-2.5 shadow-sm backdrop-blur hover:bg-green-500 hover:text-white dark:border-slate-700 dark:bg-slate-900/90 dark:hover:bg-green-500">
         <i data-lucide="moon" data-theme-icon class="h-4 w-4"></i>
     </button>
     <div class="min-h-screen grid lg:grid-cols-2">
@@ -80,9 +80,10 @@
             </div>
         </div>
 
-        <div class="flex items-center justify-center p-5">
+        <div class="flex items-start sm:items-center justify-center p-5">
             <div class="w-full max-w-2xl">
-                <a href="{{ route('index') }}" title="Back" class="fixed p-2.5 rounded-xl text-xl text-black hover:bg-green-500 hover:text-white dark:hover:bg-green-500 dark:hover:text-white dark:text-white">
+                <a href="{{ route('index') }}" title="Back"
+                    class="mb-2 inline-flex items-center justify-center rounded-xl p-2.5 text-xl text-black hover:bg-green-500 hover:text-white dark:hover:bg-green-500 dark:hover:text-white dark:text-white">
                     <i data-lucide="arrow-left" class="w-4 h-4"></i>
                 </a>
                 <div class="p-7 sm:p-9">
@@ -101,7 +102,7 @@
                             </select>
                         </label>
 
-                        <div class="grid grid-cols-2 gap-3">
+                        <div class="grid grid-cols-1 gap-3 sm:grid-cols-2">
                             <label class="block text-sm font-medium">
                                 First name *
                                 <input id="raFirstName" required maxlength="100"

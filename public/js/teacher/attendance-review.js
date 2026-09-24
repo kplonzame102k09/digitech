@@ -214,7 +214,11 @@
 
   const submit = async () => {
     if (state.busy) return;
-    if (!window.confirm('Submit this day to the admin for finalization? You will no longer be able to edit these marks.')) return;
+    if (!(await APP.confirm({
+      title: "Submit for finalization",
+      message: "Submit this day to the admin for finalization? You will no longer be able to edit these marks.",
+      confirmLabel: "Submit",
+    }))) return;
     state.busy = true;
     $('submitBtn').setAttribute('disabled', 'disabled');
     try {

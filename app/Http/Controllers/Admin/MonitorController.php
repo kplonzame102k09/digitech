@@ -9,6 +9,8 @@ use App\Models\User;
 use App\Support\LoginAttemptGuard;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\RateLimiter;
 
 class MonitorController extends Controller
 {
@@ -19,6 +21,9 @@ class MonitorController extends Controller
     private const ACTIVITY_LIMIT = 100;
 
     private const ALLOWED_ROLES = ['student', 'teacher', 'admin', 'parent', 'guest'];
+
+    /** Cache key prefix for login attempts */
+    private const LOGIN_KEY_PREFIX = 'login:';
 
     public function index()
     {
@@ -101,12 +106,14 @@ class MonitorController extends Controller
 
         $activityIds = $activity->pluck('id');
         $online = $this->onlineSessions();
+        $lockedAccounts = $this->getLockedAccounts();
 
         return response()->json([
             'ok' => true,
             'now' => now()->toIso8601String(),
             'activity' => $activity,
             'online' => $online,
+            'lockedAccounts' => $lockedAccounts,
             'stats' => $this->stats($window, count($online)),
         ]);
     }
@@ -171,6 +178,7 @@ class MonitorController extends Controller
     {
         $cutoff = now()->subSeconds(self::ONLINE_WINDOW)->getTimestamp();
 
+        // Get the most recent session for each user to avoid duplicates
         return \Illuminate\Support\Facades\DB::table('sessions')
             ->join('users', 'users.id', '=', 'sessions.user_id')
             ->where('sessions.last_activity', '>=', $cutoff)
@@ -186,6 +194,8 @@ class MonitorController extends Controller
                 'sessions.user_agent',
                 'sessions.last_activity',
             ])
+            ->unique('user_id')
+            ->values()
             ->map(function ($row): array {
                 return [
                     'userId' => $row->user_id,
@@ -237,5 +247,72 @@ class MonitorController extends Controller
                 'hits' => (int) $row->hits,
             ]),
         ];
+    }
+
+    /**
+     * Get currently locked accounts from cache/limiter
+     * Returns list of locked accounts with their identifiers, roles, and lock expiry times
+     */
+    protected function getLockedAccounts(): array
+    {
+        $lockedAccounts = [];
+
+        // Get recent login lockout audit logs to identify potentially locked accounts
+        $recentLockouts = AuditLog::query()
+            ->where('action', 'login_lockout')
+            ->where('createdAt', '>=', now()->subMinutes(LoginAttemptGuard::LOCK_MINUTES))
+            ->get();
+
+        foreach ($recentLockouts as $lockout) {
+            $identifier = $lockout->recordId;
+            
+            // Parse the notes to extract role if available
+            $lockoutRole = 'unknown';
+            if (preg_match('/(\w+) account/i', $lockout->notes, $matches)) {
+                $lockoutRole = strtolower($matches[1]);
+            }
+
+            // Check if this is an IP lock (contains dots and no valid role)
+            $isIpLock = (strpos($identifier, '.') !== false && !in_array($lockoutRole, self::ALLOWED_ROLES));
+            
+            if ($isIpLock) {
+                $key = self::LOGIN_KEY_PREFIX . 'ip|' . $identifier;
+            } else {
+                $key = self::LOGIN_KEY_PREFIX . strtolower($identifier) . '|' . $lockoutRole;
+            }
+
+            // Check if this account is still locked by checking rate limiter
+            $attempts = RateLimiter::attempts($key);
+
+            if ($attempts >= LoginAttemptGuard::MAX_ATTEMPTS) {
+                // Calculate remaining lock time
+                $availableIn = RateLimiter::availableIn($key);
+                
+                if ($availableIn > 0) {
+                    $lockedAccounts[] = [
+                        'identifier' => $identifier,
+                        'role' => $isIpLock ? 'ip' : $lockoutRole,
+                        'lockedAt' => $lockout->createdAt,
+                        'unlockAt' => now()->addSeconds($availableIn)->toIso8601String(),
+                        'remainingSeconds' => $availableIn,
+                    ];
+                }
+            }
+        }
+
+        // Remove duplicates and sort by remaining time (shortest first)
+        $uniqueAccounts = [];
+        $seen = [];
+        foreach ($lockedAccounts as $account) {
+            $key = $account['identifier'] . '|' . $account['role'];
+            if (!isset($seen[$key])) {
+                $seen[$key] = true;
+                $uniqueAccounts[] = $account;
+            }
+        }
+
+        usort($uniqueAccounts, fn($a, $b) => $a['remainingSeconds'] <=> $b['remainingSeconds']);
+
+        return $uniqueAccounts;
     }
 }

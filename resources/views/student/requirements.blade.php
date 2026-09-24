@@ -66,13 +66,13 @@
                         </div>
                     </div>
                     <div class="overflow-x-auto">
-                        <table class="w-full text-sm">
+                        <table class="w-full text-sm text-center">
                             <thead class="bg-slate-50 dark:bg-slate-800">
                                 <tr>
-                                    <th class="p-4 text-left">Requirement</th>
-                                    <th class="p-4 text-left">Status</th>
-                                    <th class="p-4 text-left">Date submitted</th>
-                                    <th class="p-4 text-right">Action</th>
+                                    <th class="p-4 text-center">Requirement</th>
+                                    <th class="p-4 text-center">Status</th>
+                                    <th class="p-4 text-center">Date submitted</th>
+                                    <th class="p-4 text-center">Action</th>
                                 </tr>
                             </thead>
                             <tbody id="rows"></tbody>

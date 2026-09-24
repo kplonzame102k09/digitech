@@ -907,19 +907,19 @@
       const file = input.files?.[0];
       if (!file) return;
       if (!["image/jpeg", "image/png", "image/webp"].includes(file.type)) {
-        alert("Please select a JPG, PNG, or WebP image.");
+        APP?.notice?.({ title: "Invalid image", message: "Please select a JPG, PNG, or WebP image." });
         input.value = "";
         return;
       }
       if (file.size > 2 * 1024 * 1024) {
-        alert("Profile picture must be 2 MB or smaller.");
+        APP?.notice?.({ title: "File too large", message: "Profile picture must be 2 MB or smaller." });
         input.value = "";
         return;
       }
       try {
         await DG.uploadProfilePhoto(file);
       } catch (error) {
-        alert(error.message || "Failed to update photo.");
+        APP?.notice?.({ title: "Upload failed", message: error.message || "Failed to update photo." });
         return;
       } finally {
         input.value = "";

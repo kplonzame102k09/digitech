@@ -135,7 +135,12 @@
     }).join("");
     body.querySelectorAll("[data-remove]").forEach((btn) =>
       btn.addEventListener("click", async () => {
-        if (!confirm("Remove this student from the classroom?")) return;
+        if (!(await APP.confirm({
+          title: "Remove student",
+          message: "Remove this student from the classroom?",
+          confirmLabel: "Remove",
+          tone: "danger",
+        }))) return;
         try {
           await api(`/teacher/api/classrooms/${encodeURIComponent(classroomId)}/students/${encodeURIComponent(btn.dataset.remove)}`, { method: "DELETE" });
           loadClassroom();
@@ -179,7 +184,12 @@
       : `<div class="card p-8 text-center text-sm text-slate-500 md:col-span-2 dark:text-slate-400">No activities yet. Add the first one above.</div>`;
     list.querySelectorAll("[data-del-activity]").forEach((btn) =>
       btn.addEventListener("click", async () => {
-        if (!confirm("Delete this activity and all its submissions?")) return;
+        if (!(await APP.confirm({
+          title: "Delete activity",
+          message: "Delete this activity and all its submissions?",
+          confirmLabel: "Delete",
+          tone: "danger",
+        }))) return;
         try {
           await api(`/teacher/api/classrooms/${encodeURIComponent(classroomId)}/activities/${encodeURIComponent(btn.dataset.delActivity)}`, { method: "DELETE" });
           loadActivities();

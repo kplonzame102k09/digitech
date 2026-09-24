@@ -391,12 +391,17 @@
     APP.toast("Document request created");
     render();
   }
-  function bulkAction() {
+  async function bulkAction() {
     if (!selected.size) return;
-    const status = window.prompt(
-      `Type one status: ${statuses.join(", ")}`,
-      "Processing",
-    );
+    const status = await APP.prompt({
+      title: "Bulk update status",
+      message: `Type one status: ${statuses.join(", ")}`,
+      inputLabel: "Status",
+      defaultValue: "Processing",
+      placeholder: statuses.join(", "),
+      required: true,
+      confirmLabel: "Apply",
+    });
     if (!statuses.includes(status)) return;
     let updated = 0;
     [...selected].forEach((id) => {

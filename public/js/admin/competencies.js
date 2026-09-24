@@ -364,12 +364,17 @@
     APP.toast("Competency assessment saved");
     render();
   }
-  function bulkAction() {
+  async function bulkAction() {
     if (!selected.size) return;
-    const status = window.prompt(
-      `Type one status: ${statuses.join(", ")}`,
-      "In Progress",
-    );
+    const status = await APP.prompt({
+      title: "Bulk update status",
+      message: `Type one status: ${statuses.join(", ")}`,
+      inputLabel: "Status",
+      defaultValue: "In Progress",
+      placeholder: statuses.join(", "),
+      required: true,
+      confirmLabel: "Apply",
+    });
     if (!statuses.includes(status)) return;
     let updated = 0;
     [...selected].forEach((id) => {

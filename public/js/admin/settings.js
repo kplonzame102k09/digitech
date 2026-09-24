@@ -163,9 +163,13 @@
         if (!backup?.collections || typeof backup.collections !== "object")
           throw new Error("Invalid backup");
         if (
-          !window.confirm(
-            "Restore this backup? Current database collections will be replaced.",
-          )
+          !(await APP.confirm({
+            title: "Restore backup",
+            message:
+              "Restore this backup? Current database collections will be replaced.",
+            confirmLabel: "Restore",
+            tone: "danger",
+          }))
         )
           return;
         const restoredUsers = backup.collections.users;
@@ -272,7 +276,15 @@
     const message = includesUsers
       ? `Reset ${labels}? The ${get("users").length} account(s) will be deleted except the primary admin. Create a backup first if you may need them.`
       : `Reset ${labels}? Create a backup first if you may need the current records.`;
-    if (!window.confirm(message)) return;
+    if (
+      !(await APP.confirm({
+        title: "Reset collections",
+        message,
+        confirmLabel: "Reset",
+        tone: "danger",
+      }))
+    )
+      return;
     const button = $("#resetSelectedBtn");
     if (button) button.disabled = true;
     setText("#resetFeedback", "Resetting on the server...");

@@ -64,6 +64,11 @@
     mapCard: document.getElementById("mapCard"),
     trafficMap: document.getElementById("trafficMap"),
     mapEmpty: document.getElementById("mapEmpty"),
+    lockedAccountsList: document.getElementById("lockedAccountsList"),
+    lockedEmpty: document.getElementById("lockedEmpty"),
+    lockedCount: document.getElementById("lockedCount"),
+    lockedTableContainer: document.getElementById("lockedTableContainer"),
+    lockedAccountTemplate: document.getElementById("lockedAccountTemplate"),
   };
 
   const style = document.createElement("style");
@@ -176,6 +181,7 @@
 
       renderActivity(data.activity || []);
       renderOnline(data.online || []);
+      renderLockedAccounts(data.lockedAccounts || []);
       renderStats(data.stats || {});
       resolveGeoQueue();
     } catch (err) {
@@ -298,6 +304,103 @@
     }
   }
 
+  let lockedAccounts = [];
+  let countdownInterval = null;
+
+  function renderLockedAccounts(accounts) {
+    lockedAccounts = Array.isArray(accounts) ? accounts : [];
+    console.log("renderLockedAccounts called with:", lockedAccounts);
+    els.lockedCount.textContent = lockedAccounts.length;
+    const empty = lockedAccounts.length === 0;
+    els.lockedEmpty.classList.toggle("hidden", !empty);
+    els.lockedTableContainer.classList.toggle("hidden", empty);
+    els.lockedAccountsList.innerHTML = "";
+
+    for (const account of lockedAccounts) {
+      const clone = els.lockedAccountTemplate.content.cloneNode(true);
+      clone.querySelector("[data-locked-identifier]").textContent = account.identifier || "-";
+      clone.querySelector("[data-locked-role]").textContent = cap(account.role);
+      clone.querySelector("[data-locked-time]").textContent = clockTime(account.lockedAt);
+      
+      const countdownEl = clone.querySelector("[data-locked-countdown]");
+      countdownEl.dataset.unlockAt = account.unlockAt;
+      countdownEl.dataset.remaining = account.remainingSeconds;
+      countdownEl.textContent = formatCountdown(account.remainingSeconds);
+      
+      const unlockBtn = clone.querySelector("[data-locked-unlock]");
+      unlockBtn.addEventListener("click", () => unlockLockedAccount(account));
+      
+      els.lockedAccountsList.appendChild(clone);
+    }
+
+    // Start countdown timer if not already running
+    if (lockedAccounts.length > 0 && !countdownInterval) {
+      startCountdownTimer();
+    } else if (lockedAccounts.length === 0 && countdownInterval) {
+      stopCountdownTimer();
+    }
+  }
+
+  function formatCountdown(seconds) {
+    if (seconds <= 0) return "Expired";
+    const mins = Math.floor(seconds / 60);
+    const secs = seconds % 60;
+    return `${mins}m ${secs}s`;
+  }
+
+  function startCountdownTimer() {
+    if (countdownInterval) return;
+    countdownInterval = setInterval(() => {
+      const now = new Date().toISOString();
+      let hasActive = false;
+
+      document.querySelectorAll("[data-locked-countdown]").forEach((el) => {
+        const unlockAt = el.dataset.unlockAt;
+        if (!unlockAt) return;
+
+        const unlockTime = new Date(unlockAt).getTime();
+        const currentTime = new Date(now).getTime();
+        const remaining = Math.max(0, Math.floor((unlockTime - currentTime) / 1000));
+
+        if (remaining > 0) {
+          hasActive = true;
+          el.textContent = formatCountdown(remaining);
+        } else {
+          el.textContent = "Expired";
+          el.classList.remove("text-red-600", "dark:text-red-400");
+          el.classList.add("text-slate-400");
+        }
+      });
+
+      if (!hasActive) {
+        stopCountdownTimer();
+        // Refresh to remove expired accounts
+        poll();
+      }
+    }, 1000);
+  }
+
+  function stopCountdownTimer() {
+    if (countdownInterval) {
+      clearInterval(countdownInterval);
+      countdownInterval = null;
+    }
+  }
+
+  function unlockLockedAccount(account) {
+    const payload = {};
+    if (account.role === 'ip') {
+      payload.ip = account.identifier;
+    } else {
+      payload.identifier = account.identifier;
+      payload.role = account.role;
+    }
+
+    unlockRequest(payload, null, null);
+    // Refresh after unlock
+    setTimeout(() => poll(), 500);
+  }
+
   function renderStats(stats) {
     els.statOnlineNow.textContent = typeof stats.onlineNow === "number" ? stats.onlineNow : "-";
     els.statActiveHour.textContent = typeof stats.activeHour === "number" ? stats.activeHour : "-";
@@ -355,17 +458,24 @@
         if (msgEl) {
           msgEl.textContent = `Unlocked ${parts.join(" and ") || "target"}. Cleared ${cleared} lock key${cleared === 1 ? "" : "s"} — they can log in now.`;
           msgEl.className = "mt-2 text-sm font-medium text-green-700 dark:text-green-300";
+        } else {
+          // For locked accounts table unlock, show a simple alert
+          alert(`Unlocked ${parts.join(" and ") || "target"}. Cleared ${cleared} lock key${cleared === 1 ? "" : "s"} — they can log in now.`);
         }
       } else {
         if (msgEl) {
           msgEl.textContent = (data && (data.error || data.message)) || "Failed to unlock.";
           msgEl.className = "mt-2 text-sm font-medium text-red-600 dark:text-red-400";
+        } else {
+          alert((data && (data.error || data.message)) || "Failed to unlock.");
         }
       }
     } catch {
       if (msgEl) {
         msgEl.textContent = "An error occurred while unlocking.";
         msgEl.className = "mt-2 text-sm font-medium text-red-600 dark:text-red-400";
+      } else {
+        alert("An error occurred while unlocking.");
       }
     } finally {
       if (btn) {

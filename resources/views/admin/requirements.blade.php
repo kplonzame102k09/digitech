@@ -53,17 +53,17 @@
                     </div>
                     <div class="overflow-x-auto">
                         <table class="w-full text-left text-sm">
-                            <thead class="bg-slate-50 dark:bg-slate-800">
+                            <thead class="bg-slate-50 dark:bg-slate-800 text-center">
                                 <tr>
                                     <th class="p-4">Requirement</th>
                                     <th class="p-4">Student ID</th>
                                     <th class="p-4">Status</th>
                                     <th class="p-4">Due date</th>
                                     <th class="p-4">Actions</th>
-                                    <!-- <th class="p-4">View</th> -->
+                                   
                                 </tr>
                             </thead>
-                            <tbody id="rows"></tbody>
+                            <tbody id="rows" class="text-center"></tbody>
                         </table>
                     </div>
                 </section>

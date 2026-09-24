@@ -170,7 +170,7 @@ class PortalDataController extends Controller
 
         return response()->json([
             'ok' => true,
-            'photo' => Storage::url($path),
+            'photo' => '/storage/'.ltrim($path, '/'),
         ]);
     }
 
@@ -198,7 +198,7 @@ class PortalDataController extends Controller
 
         return response()->json([
             'ok' => true,
-            'photo' => Storage::url($path),
+            'photo' => '/storage/'.ltrim($path, '/'),
             'user' => $this->portal->userToJs($user),
         ]);
     }
