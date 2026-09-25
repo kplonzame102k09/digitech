@@ -2,6 +2,7 @@
 
 namespace App\Http\Requests;
 
+use App\Rules\UniqueContact;
 use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Foundation\Http\FormRequest;
 
@@ -26,7 +27,7 @@ class UpdateProfileRequest extends FormRequest
             'firstName' => ['nullable', 'string', 'max:100'],
             'lastName' => ['nullable', 'string', 'max:100'],
             'middleName' => ['nullable', 'string', 'max:100'],
-            'contact' => ['nullable', 'string', 'max:20'],
+            'contact' => ['required', 'string', 'max:20', new UniqueContact($this->user()->id)],
             'email' => ['nullable', 'email', 'max:255', 'unique:users,email,'.$this->user()->id],
             'address' => ['nullable', 'string', 'max:255'],
             'birthDate' => ['nullable', 'date'],

@@ -24,7 +24,7 @@ class AccountRequestController extends Controller
             'lastName' => ['required', 'string', 'max:100'],
             'role' => ['required', 'in:student,parent,guest'],
             'email' => ['required', 'email', 'max:255'],
-            'contact' => ['nullable', 'string', 'max:20'],
+            'contact' => ['required', 'string', 'max:20'],
             'strand' => ['nullable', 'string', 'max:120'],
             'purpose' => ['required', 'string', 'min:20', 'max:2000'],
         ]);
@@ -48,10 +48,27 @@ class AccountRequestController extends Controller
             ], 422);
         }
 
+        $contact = trim($validated['contact']);
+
+        if ($contact !== '' && $contact !== '00000000000'
+            && User::query()->where('contact', $contact)->exists()) {
+            return response()->json([
+                'ok' => false,
+                'errors' => ['contact' => ['This phone number is already registered to another account.']],
+            ], 422);
+        }
+
+        if ($contact !== '' && $contact !== '00000000000'
+            && AccountRequest::query()->where('status', 'pending')->where('contact', $contact)->exists()) {
+            return response()->json([
+                'ok' => false,
+                'errors' => ['contact' => ['A pending request already uses this phone number.']],
+            ], 422);
+        }
+
         $requestId = $this->generateRequestId($validated['role']);
 
         $middleName = isset($validated['middleName']) && trim($validated['middleName']) !== '' ? trim($validated['middleName']) : null;
-        $contact = isset($validated['contact']) && trim($validated['contact']) !== '' ? trim($validated['contact']) : null;
 
         $accountRequest = AccountRequest::query()->create([
             'request_id' => $requestId,

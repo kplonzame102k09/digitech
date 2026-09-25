@@ -137,6 +137,13 @@ class AccountRequestController extends Controller
 
             $contact = Str::limit($accountRequest->contact ?? '', 20, '');
 
+            if ($contact !== '' && $contact !== '00000000000'
+                && User::query()->where('contact', $contact)->exists()) {
+                throw ValidationException::withMessages([
+                    'phone' => 'This phone number is already registered to another account.',
+                ]);
+            }
+
             $year = now()->year;
             $prefix = match ($accountRequest->role) {
                 'student' => "STU-{$year}",

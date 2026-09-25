@@ -5,6 +5,8 @@ namespace App\Http\Controllers;
 use App\Jobs\ImportUsers;
 use App\Models\Requirement;
 use App\Models\User;
+use App\Rules\TrustedUploadFile;
+use App\Support\FileSignature;
 use App\Services\PortalDataService;
 use Illuminate\Bus\Batch;
 use Illuminate\Http\JsonResponse;
@@ -121,13 +123,26 @@ class PortalDataController extends Controller
         abort_unless($user && in_array($user->role, ['admin', 'student'], true), 403);
 
         $validated = $request->validate([
-            'file' => ['required', 'file', 'mimes:pdf,jpeg,jpg,png,webp', 'max:5120'],
+            'file' => ['required', 'file', new TrustedUploadFile(['pdf', 'jpeg', 'jpg', 'png', 'webp']), 'max:5120'],
             'studentId' => ['sometimes', 'nullable', 'string'],
         ]);
 
         // Requirement files live on the private disk and are only reachable
         // through the ownership-checked download route.
-        $path = $request->file('file')->store('requirement-files', 'private');
+        try {
+            $path = $request->file('file')->storeAs(
+                'requirement-files',
+                Str::random(40).'.'.(FileSignature::detectFile((string) $request->file('file')->getRealPath()) ?? 'bin'),
+                'private'
+            );
+        } catch (\Throwable $e) {
+            report($e);
+
+            return response()->json([
+                'ok' => false,
+                'error' => 'Could not save the uploaded file. Please try again.',
+            ], 500);
+        }
 
         $fileName = basename($path);
 
@@ -163,10 +178,23 @@ class PortalDataController extends Controller
         abort_unless($user && in_array($user->role, ['admin', 'teacher'], true), 403);
 
         $request->validate([
-            'image' => ['required', 'image', 'mimes:jpeg,jpg,png,webp,gif', 'max:5120'],
+            'image' => ['required', 'file', new TrustedUploadFile(['jpeg', 'jpg', 'png', 'webp', 'gif']), 'max:5120'],
         ]);
 
-        $path = $request->file('image')->store('uploads', 'public');
+        try {
+            $path = $request->file('image')->storeAs(
+                'uploads',
+                Str::random(40).'.'.(FileSignature::detectFile((string) $request->file('image')->getRealPath()) ?? 'bin'),
+                'public'
+            );
+        } catch (\Throwable $e) {
+            report($e);
+
+            return response()->json([
+                'ok' => false,
+                'error' => 'Could not save the uploaded image. Please try again.',
+            ], 500);
+        }
 
         return response()->json([
             'ok' => true,
@@ -181,10 +209,23 @@ class PortalDataController extends Controller
         abort_unless($user, 401);
 
         $request->validate([
-            'photo' => ['required', 'image', 'mimes:jpeg,jpg,png,webp', 'max:2048'],
+            'photo' => ['required', 'file', new TrustedUploadFile(['jpeg', 'jpg', 'png', 'webp']), 'max:2048'],
         ]);
 
-        $path = $request->file('photo')->store('profile-photos', 'public');
+        try {
+            $path = $request->file('photo')->storeAs(
+                'profile-photos',
+                Str::random(40).'.'.(FileSignature::detectFile((string) $request->file('photo')->getRealPath()) ?? 'bin'),
+                'public'
+            );
+        } catch (\Throwable $e) {
+            report($e);
+
+            return response()->json([
+                'ok' => false,
+                'error' => 'Could not save the uploaded photo. Please try again.',
+            ], 500);
+        }
 
         // Replacing a photo removes the previous one so uploads never pile up.
         $previous = $user->photo;
@@ -258,5 +299,38 @@ class PortalDataController extends Controller
         }
 
         return false;
+    }
+
+    /**
+     * Persist the signed-in user's GPS coordinates (device-level, only when
+     * they approved the browser prompt) into profile_extra._gps. The admin
+     * live map reads this back as the most precise "currently online" signal,
+     * falling back to IP geolocation and the registered home city otherwise.
+     */
+    public function saveLocation(Request $request): JsonResponse
+    {
+        $validated = $request->validate([
+            'lat' => ['required', 'numeric', 'between:-90,90'],
+            'lon' => ['required', 'numeric', 'between:-180,180'],
+            'accuracy' => ['nullable', 'numeric', 'min:0'],
+        ]);
+
+        $user = $request->user();
+        abort_unless($user, 401);
+
+        $extra = is_array($user->profile_extra) ? $user->profile_extra : [];
+        $extra['_gps'] = [
+            'lat' => (float) $validated['lat'],
+            'lon' => (float) $validated['lon'],
+            'accuracy' => isset($validated['accuracy']) ? (float) $validated['accuracy'] : null,
+            'at' => now()->toIso8601String(),
+        ];
+
+        $user->update(['profile_extra' => $extra]);
+
+        return response()->json([
+            'ok' => true,
+            'saved' => true,
+        ]);
     }
 }

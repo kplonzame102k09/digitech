@@ -11,7 +11,7 @@
                 placeholder="e.g. ICT / Computer Programming" />
         </label>
         <label class="text-sm font-semibold sm:col-span-2">Contact number
-            <input data-profile-field="contact" maxlength="30"
+            <input data-profile-field="contact" required maxlength="20"
                 class="input mt-1.5 w-full rounded border px-3 py-3"
                 placeholder="e.g. +63 900 000 0000" />
         </label>

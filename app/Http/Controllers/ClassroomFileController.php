@@ -6,9 +6,12 @@ use App\Models\Classroom;
 use App\Models\ClassroomActivity;
 use App\Models\ClassroomSubmission;
 use App\Policies\ClassroomWorkPolicy;
+use App\Rules\TrustedUploadFile;
+use App\Support\FileSignature;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Str;
 use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class ClassroomFileController extends Controller
@@ -24,7 +27,7 @@ class ClassroomFileController extends Controller
         $user = $request->user();
 
         $validated = $request->validate([
-            'file' => ['required', 'file', 'mimes:pdf,jpeg,jpg,png,webp', 'max:5120'],
+            'file' => ['required', 'file', new TrustedUploadFile(['pdf', 'jpeg', 'jpg', 'png', 'webp']), 'max:5120'],
             'classroom_id' => ['required', 'string'],
         ]);
 
@@ -35,7 +38,22 @@ class ClassroomFileController extends Controller
             || $user->isAdmin();
         abort_unless($allowed, 403);
 
-        $path = $request->file('file')->store('classroom-files', 'private');
+        $file = $request->file('file');
+
+        try {
+            $path = $file->storeAs(
+                'classroom-files',
+                Str::random(40).'.'.(FileSignature::detectFile((string) $file->getRealPath()) ?? 'bin'),
+                'private'
+            );
+        } catch (\Throwable $e) {
+            report($e);
+
+            return response()->json([
+                'ok' => false,
+                'error' => 'Could not save the uploaded file. Please try again.',
+            ], 500);
+        }
         $fileName = basename($path);
 
         return response()->json([

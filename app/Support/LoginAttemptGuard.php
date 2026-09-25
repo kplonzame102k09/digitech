@@ -32,34 +32,102 @@ class LoginAttemptGuard
     private const ALLOWED_ROLES = ['student', 'teacher', 'admin', 'parent', 'guest'];
 
     /**
+     * Shared throttle key for malformed login payloads (invalid role or empty
+     * user id). These are almost always bots, so they are slowed globally
+     * instead of locking a real IP — IP blocks are applied manually by admins.
+     */
+    public const ANON_KEY = 'login:anon';
+
+    /**
+     * Cache prefix for IPs blocked manually by an admin. Blocks persist until
+     * an admin unlocks them (no TTL).
+     */
+    public const MANUAL_LOCK_PREFIX = 'manual-ip-lock:';
+
+    /**
+     * Cache prefix for explicit lock records written when a sign-in lock
+     * fires. Used by the admin monitor to list still-locked accounts without
+     * depending on the (hashed) rate-limiter keys.
+     */
+    public const LOCK_META_PREFIX = 'login:locked:';
+
+    /**
      * Cache key for a login attempt. Tracks the target account (lowercased
-     * user id/email + role); malformed payloads fall back to the IP so
-     * bots that skip the form still get throttled.
+     * user id/email + role). The login form does not submit a role field, so
+     * the role is derived from the user id prefix (mirroring the login
+     * controller); requests that explicitly carry an invalid role or an empty
+     * user id fall back to a shared anonymous key so bots are still throttled
+     * without locking an IP (IP blocks are created manually by admins).
      */
     public static function keyFor(Request $request): string
     {
-        $role = (string) $request->string('role');
-
-        if (! in_array($role, self::ALLOWED_ROLES, true)) {
-            return 'login:ip|'.$request->ip();
-        }
-
         $identifier = Str::lower(trim((string) $request->string('user_id')));
 
         if ($identifier === '') {
-            return 'login:ip|'.$request->ip();
+            return self::ANON_KEY;
+        }
+
+        $role = (string) $request->string('role');
+
+        if (! in_array($role, self::ALLOWED_ROLES, true)) {
+            $role = self::roleForUserId($identifier);
         }
 
         return 'login:'.$identifier.'|'.$role;
     }
 
     /**
+     * Determine the role from a user id prefix (ADMIN-, STU-, TCH-, PRT-,
+     * GST-). Mirrors the logic that authenticates the account so throttle
+     * keys match real sign-in attempts.
+     */
+    public static function roleForUserId(string $userId): string
+    {
+        $userIdUpper = strtoupper($userId);
+
+        if (str_starts_with($userIdUpper, 'ADMIN')) {
+            return 'admin';
+        }
+
+        $prefix = substr($userIdUpper, 0, 3);
+
+        return match ($prefix) {
+            'STU' => 'student',
+            'TCH' => 'teacher',
+            'PRT' => 'parent',
+            'GST' => 'guest',
+            default => 'student',
+        };
+    }
+
+    /**
+     * Seconds remaining in the lock window for a given throttle key, or null
+     * when the account is not currently locked.
+     */
+    public static function remainingLock(string $key): ?int
+    {
+        $unlockAt = Cache::get(self::LOCK_META_PREFIX.$key);
+
+        if (! is_string($unlockAt) || $unlockAt === '') {
+            return null;
+        }
+
+        $remaining = (int) (strtotime($unlockAt) - time());
+
+        return $remaining > 0 ? $remaining : null;
+    }
+
+    /**
      * Drop the counter after a successful login so only genuine failures
-     * accumulate toward the lock threshold.
+     * accumulate toward the lock threshold. Clears both the plain key and the
+     * md5-hashed limiter key the throttle middleware actually stores under.
      */
     public static function clearAttempts(Request $request): void
     {
-        RateLimiter::clear(self::keyFor($request));
+        $key = self::keyFor($request);
+        RateLimiter::clear($key);
+        Cache::forget(self::hashedLimiterKey($key));
+        Cache::forget(self::hashedLimiterKey($key).':timer');
     }
 
     /**
@@ -107,7 +175,9 @@ class LoginAttemptGuard
     }
 
     /**
-     * Lift the IP-fallback lock so a throttled source can submit again.
+     * Lift the IP-block so a blocked source can submit again. Clears both the
+     * legacy limiter key (auto IP throttle from older builds) and any manual
+     * IP block placed by an admin.
      *
      * @return string[] cleared cache/limiter keys
      */
@@ -119,11 +189,47 @@ class LoginAttemptGuard
             return [];
         }
 
-        return self::clearKey('login:ip|'.$ip);
+        $cleared = self::clearKey('login:ip|'.$ip);
+        $manual = self::manualLockKey($ip);
+        Cache::forget($manual);
+
+        return array_values(array_unique(array_merge($cleared, [$manual])));
     }
 
     /**
-     * Clear one rate-limiter key and its one-shot alert flag.
+     * Block an IP until an admin manually unlocks it. The lock is stored with
+     * no TTL so it persists across requests until it is removed.
+     */
+    public static function lockIp(string $ip, ?string $by = null): void
+    {
+        $ip = trim($ip);
+
+        if ($ip === '') {
+            return;
+        }
+
+        Cache::put(self::manualLockKey($ip), [
+            'lockedAt' => now()->toIso8601String(),
+            'by' => $by,
+        ]);
+    }
+
+    /**
+     * Whether an IP has been manually blocked by an admin.
+     */
+    public static function isIpLocked(?string $ip): bool
+    {
+        return is_string($ip) && $ip !== '' && Cache::has(self::manualLockKey($ip));
+    }
+
+    protected static function manualLockKey(string $ip): string
+    {
+        return self::MANUAL_LOCK_PREFIX.$ip;
+    }
+
+    /**
+     * Clear one rate-limiter key (plain + hashed), its one-shot alert flag
+     * and its explicit lock record.
      *
      * @return string[] the keys that were cleared
      */
@@ -131,8 +237,22 @@ class LoginAttemptGuard
     {
         RateLimiter::clear($key);
         Cache::forget($key.':alerted');
+        Cache::forget(self::LOCK_META_PREFIX.$key);
 
-        return [$key, $key.':alerted'];
+        $hashed = self::hashedLimiterKey($key);
+        Cache::forget($hashed);
+        Cache::forget($hashed.':timer');
+
+        return [$key, $key.':alerted', self::LOCK_META_PREFIX.$key, $hashed, $hashed.':timer'];
+    }
+
+    /**
+     * The key the throttle middleware actually stores limiter hits under:
+     * md5(limiterName.limitKey), with "login" as the named limiter.
+     */
+    protected static function hashedLimiterKey(string $key): string
+    {
+        return md5('login'.$key);
     }
 
     /**
@@ -149,10 +269,13 @@ class LoginAttemptGuard
             : null;
 
         if (! Cache::has($key.':alerted')) {
-            Cache::put($key.':alerted', true, now()->addMinutes(self::LOCK_MINUTES));
+            $unlockAt = now()->addMinutes(self::LOCK_MINUTES);
+
+            Cache::put($key.':alerted', true, $unlockAt);
+            Cache::put(self::LOCK_META_PREFIX.$key, $unlockAt->toIso8601String(), $unlockAt);
 
             $attempts = self::MAX_ATTEMPTS + 1;
-            $lockedUntil = now()->addMinutes(self::LOCK_MINUTES)->format('g:i A \o\n M j, Y');
+            $lockedUntil = $unlockAt->format('g:i A \o\n M j, Y');
 
             if ($owner) {
                 self::alertAccountOwner($request, $owner, $identifier, $role, $attempts, $lockedUntil);

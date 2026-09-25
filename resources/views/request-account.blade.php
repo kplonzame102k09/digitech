@@ -133,8 +133,8 @@
                         </label>
 
                         <label class="block text-sm font-medium">
-                            Contact number
-                            <input id="raContact" maxlength="20"
+                            Contact number *
+                            <input id="raContact" required maxlength="20" inputmode="numeric"
                                 class="input mt-1 w-full rounded border px-3 py-3 dark:bg-slate-900 dark:border-slate-700"
                                 placeholder="09XXXXXXXXX">
                         </label>
@@ -209,12 +209,12 @@
                     lastName: document.getElementById('raLastName').value.trim(),
                     role: roleField.value,
                     email: document.getElementById('raEmail').value.trim(),
-                    contact: document.getElementById('raContact').value.trim() || null,
+                    contact: document.getElementById('raContact').value.trim(),
                     strand: document.getElementById('raStrand').value.trim() || null,
                     purpose: document.getElementById('raPurpose').value.trim()
                 };
 
-                if (!payload.firstName || !payload.lastName || !payload.email || !payload.purpose) {
+                if (!payload.firstName || !payload.lastName || !payload.email || !payload.contact || !payload.purpose) {
                     feedback.textContent = 'Please fill in all required fields.';
                     feedback.classList.remove('hidden');
                     return;

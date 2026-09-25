@@ -4,8 +4,13 @@
 
   const API_BASE = "/admin/api/monitor/activity";
   const UNLOCK_URL = "/admin/api/monitor/unlock";
+  const LOCK_IP_URL = "/admin/api/monitor/lock-ip";
   const POLL_MS = 4000;
   const GEO_CACHE_KEY = "dg-ipgeo-v1";
+  const GEO_CACHE_TTL = 7 * 24 * 60 * 60 * 1000; // re-resolve stale IPs weekly
+  const CAMPUS_FALLBACK = { lat:13.942473, lon:121.623696, label: "Campus / Local network" };
+  const CAMPUS_LAT = CAMPUS_FALLBACK.lat ?? CAMPUS_FALLBACK.latitude ?? 13.942473;
+  const CAMPUS_LON = CAMPUS_FALLBACK.lon ?? CAMPUS_FALLBACK.longitude ?? 121.623696;
 
   let rowsMap = new Map();
   let freshIds = new Set();
@@ -16,6 +21,7 @@
   let geoBusy = false;
   let currentTopIps = [];
   let currentOnline = [];
+  let currentUsers = [];
   let mapInstance = null;
   let mapLayer = null;
   let lastMapKey = "";
@@ -61,6 +67,9 @@
     unlockIp: document.getElementById("unlockIp"),
     unlockBtn: document.getElementById("unlockBtn"),
     unlockMsg: document.getElementById("unlockMsg"),
+    lockIpInput: document.getElementById("lockIpInput"),
+    lockIpBtn: document.getElementById("lockIpBtn"),
+    lockIpMsg: document.getElementById("lockIpMsg"),
     mapCard: document.getElementById("mapCard"),
     trafficMap: document.getElementById("trafficMap"),
     mapEmpty: document.getElementById("mapEmpty"),
@@ -180,6 +189,7 @@
       if (!data || !data.ok) return;
 
       renderActivity(data.activity || []);
+      currentUsers = Array.isArray(data.users) ? data.users : [];
       renderOnline(data.online || []);
       renderLockedAccounts(data.lockedAccounts || []);
       renderStats(data.stats || {});
@@ -289,12 +299,28 @@
     els.onlineEmpty.classList.toggle("hidden", !empty);
     els.onlineList.innerHTML = "";
 
+    // Which phone numbers belong to more than one account? Those can't be a
+    // reliable identity key, so we flag them in the online list.
+    const phoneCount = new Map();
+    for (const u of currentUsers || []) {
+      if (!u.phone) continue;
+      phoneCount.set(u.phone, (phoneCount.get(u.phone) || 0) + 1);
+    }
+
     for (const s of online) {
       const clone = els.onlineTemplate.content.cloneNode(true);
       clone.querySelector("[data-online-name]").textContent = s.name || "Unknown";
       clone.querySelector("[data-online-name]").title = s.ua || "";
+      clone.querySelector("[data-online-id]").textContent = s.userId || "";
+      clone.querySelector("[data-online-id]").classList.toggle("hidden", !s.userId);
       clone.querySelector("[data-online-role]").textContent = cap(s.role || "");
       clone.querySelector("[data-online-ip]").textContent = s.ip || "-";
+      const phone = s.phone || "";
+      clone.querySelector("[data-online-phone]").textContent = phone ? `phone ${phone}` : "no phone";
+      clone.querySelector("[data-online-phone]").classList.toggle("text-slate-400", !phone);
+      const dup = phone && (phoneCount.get(phone) || 0) > 1 ? "(dup)" : "";
+      clone.querySelector("[data-online-dup]").textContent = dup;
+      clone.querySelector("[data-online-dup]").classList.toggle("hidden", !dup);
       clone.querySelector("[data-online-ago]").textContent = timeAgo(s.ago);
       els.onlineList.appendChild(clone);
     }
@@ -309,7 +335,6 @@
 
   function renderLockedAccounts(accounts) {
     lockedAccounts = Array.isArray(accounts) ? accounts : [];
-    console.log("renderLockedAccounts called with:", lockedAccounts);
     els.lockedCount.textContent = lockedAccounts.length;
     const empty = lockedAccounts.length === 0;
     els.lockedEmpty.classList.toggle("hidden", !empty);
@@ -319,17 +344,24 @@
     for (const account of lockedAccounts) {
       const clone = els.lockedAccountTemplate.content.cloneNode(true);
       clone.querySelector("[data-locked-identifier]").textContent = account.identifier || "-";
-      clone.querySelector("[data-locked-role]").textContent = cap(account.role);
-      clone.querySelector("[data-locked-time]").textContent = clockTime(account.lockedAt);
-      
+      clone.querySelector("[data-locked-role]").textContent = account.role === "ip" ? "IP" : cap(account.role);
+
+      const lockedAt = account.lockedAt ? new Date(account.lockedAt) : null;
+      clone.querySelector("[data-locked-time]").textContent =
+        lockedAt && !isNaN(lockedAt) ? lockedAt.toLocaleTimeString("en-PH") : "-";
+
       const countdownEl = clone.querySelector("[data-locked-countdown]");
-      countdownEl.dataset.unlockAt = account.unlockAt;
-      countdownEl.dataset.remaining = account.remainingSeconds;
-      countdownEl.textContent = formatCountdown(account.remainingSeconds);
-      
+      if (account.manual) {
+        countdownEl.textContent = "Until unlocked";
+        countdownEl.className = "font-mono text-xs font-bold text-slate-500 dark:text-slate-400";
+      } else {
+        countdownEl.dataset.unlockAt = account.unlockAt;
+        countdownEl.textContent = formatCountdown(account.remainingSeconds);
+      }
+
       const unlockBtn = clone.querySelector("[data-locked-unlock]");
       unlockBtn.addEventListener("click", () => unlockLockedAccount(account));
-      
+
       els.lockedAccountsList.appendChild(clone);
     }
 
@@ -459,15 +491,15 @@
           msgEl.textContent = `Unlocked ${parts.join(" and ") || "target"}. Cleared ${cleared} lock key${cleared === 1 ? "" : "s"} — they can log in now.`;
           msgEl.className = "mt-2 text-sm font-medium text-green-700 dark:text-green-300";
         } else {
-          // For locked accounts table unlock, show a simple alert
-          alert(`Unlocked ${parts.join(" and ") || "target"}. Cleared ${cleared} lock key${cleared === 1 ? "" : "s"} — they can log in now.`);
+          // For locked accounts table unlock, show a toast
+          APP?.toast?.(`Unlocked ${parts.join(" and ") || "target"}. Cleared ${cleared} lock key${cleared === 1 ? "" : "s"} — they can log in now.`);
         }
       } else {
         if (msgEl) {
           msgEl.textContent = (data && (data.error || data.message)) || "Failed to unlock.";
           msgEl.className = "mt-2 text-sm font-medium text-red-600 dark:text-red-400";
         } else {
-          alert((data && (data.error || data.message)) || "Failed to unlock.");
+          APP?.toast?.((data && (data.error || data.message)) || "Failed to unlock.", "error");
         }
       }
     } catch {
@@ -475,7 +507,7 @@
         msgEl.textContent = "An error occurred while unlocking.";
         msgEl.className = "mt-2 text-sm font-medium text-red-600 dark:text-red-400";
       } else {
-        alert("An error occurred while unlocking.");
+        APP?.toast?.("An error occurred while unlocking.", "error");
       }
     } finally {
       if (btn) {
@@ -576,24 +608,54 @@
 
   function getCachedGeo(ip) {
     if (!ip) return "";
+    if (isLocalIp(ip)) return CAMPUS_FALLBACK.label;
     const entry = geoCache[ip];
     return entry && entry.t ? entry.t : "";
   }
 
   function getGeoCoords(ip) {
     if (!ip) return null;
+    if (isLocalIp(ip)) return { lat: CAMPUS_LAT, lon: CAMPUS_LON, label: CAMPUS_FALLBACK.label };
     const entry = geoCache[ip];
     if (!entry || !entry.lat || !entry.lon) return null;
     return { lat: entry.lat, lon: entry.lon, label: entry.t };
   }
 
+  function isLocalIp(ip) {
+    if (!ip) return true;
+    const norm = ip.replace(/^::ffff:/, "");
+    if (norm === "::1") return true;
+    if (norm.includes(":")) return true; // any other IPv6 local/link-local/ULA
+    const parts = norm.split(".").map(Number);
+    if (parts.length !== 4) return true;
+    const [a, b] = parts;
+    return a === 10 || a === 127 || (a === 192 && b === 168) || (a === 172 && b >= 16 && b <= 31) || (a === 169 && b === 254) || a === 0;
+  }
+
   function queueGeo(ip) {
     if (!ip || geoQueue.includes(ip)) return;
+
+    // Private / local ranges can't be geolocated by ipwho.is — pin them to
+    // the campus fallback point instead of waiting on (failing) lookups.
+    if (isLocalIp(ip)) {
+      geoCache[ip] = {
+        t: CAMPUS_FALLBACK.label,
+        lat: CAMPUS_LAT,
+        lon: CAMPUS_LON,
+        org: "",
+        type: "local",
+        resolvedAt: Date.now(),
+      };
+      saveGeoCache(geoCache);
+      return;
+    }
+
     const entry = geoCache[ip];
     if (entry) {
-      if (entry.lat != null && entry.lon != null) return; // fully resolved
-      if (entry.t === "") return; // previously resolved to unknown — skip
-      // legacy entry: has a label but no coords yet → re-resolve for lat/lon
+      if (entry.resolvedAt && Date.now() - entry.resolvedAt < GEO_CACHE_TTL) {
+        return; // fresh enough — keep the cached result
+      }
+      if (entry.t === "" && !entry.resolvedAt) return; // previously unknown — skip legacy no-data entries
     }
     geoQueue.push(ip);
   }
@@ -602,25 +664,62 @@
     if (geoBusy || !geoQueue.length) return;
     const ip = geoQueue.shift();
     geoBusy = true;
-    fetch(`https://ipwho.is/${encodeURIComponent(ip)}`)
+
+    // Query both public IP geolocation APIs in parallel. They resolve to
+    // ISP/city-level coordinates, not GPS; taking whichever reports the most
+    // specific result gives us the closest approximation available client-side.
+    const who = fetch(`https://ipwho.is/${encodeURIComponent(ip)}`)
       .then((res) => res.json())
       .then((data) => {
         if (data && data.success && data.latitude != null && data.longitude != null) {
-          const bits = [];
-          if (data.city) bits.push(data.city);
-          if (data.country_code) bits.push(data.country_code);
-          geoCache[ip] = {
-            t: bits.join(", "),
+          return {
+            t: [data.city, data.country_code].filter(Boolean).join(", ") || "Unknown",
             lat: data.latitude,
             lon: data.longitude,
+            org: data.connection?.org || "",
+            type: data.connection?.type || "",
+            resolvedAt: Date.now(),
           };
+        }
+        return null;
+      })
+      .catch(() => null);
+
+    const api = fetch(`http://ip-api.com/json/${encodeURIComponent(ip)}`)
+      .then((res) => res.json())
+      .then((data) => {
+        if (data && data.status === "success" && data.lat != null && data.lon != null) {
+          return {
+            t: [data.city, data.countryCode].filter(Boolean).join(", ") || "Unknown",
+            lat: data.lat,
+            lon: data.lon,
+            org: data.org || "",
+            type: data.mobile ? "mobile" : "",
+            resolvedAt: Date.now(),
+          };
+        }
+        return null;
+      })
+      .catch(() => null);
+
+    Promise.allSettled([who, api])
+      .then((results) => {
+        const picks = results
+          .filter((r) => r.status === "fulfilled" && r.value)
+          .map((r) => r.value)
+          .filter((g) => g.lat != null && g.lon != null);
+
+        // Keep whichever side reported the more specific location (a named
+        // city beats a bare country label) so the approximation is the best
+        // either provider returned. Both "Unknown" cases clear the pending
+        // state so we don't retry forever.
+        picks.sort((a, b) => (nameSpecificity(b.t) - nameSpecificity(a.t)) || (a.resolvedAt - b.resolvedAt));
+        const geo = picks[0] || null;
+        if (geo) {
+          geoCache[ip] = geo;
         } else {
           geoCache[ip] = { t: "", lat: null, lon: null };
         }
-        saveGeoCache(geoCache);
-      })
-      .catch(() => {
-        geoCache[ip] = { t: "", lat: null, lon: null };
         saveGeoCache(geoCache);
       })
       .finally(() => {
@@ -629,6 +728,16 @@
         renderMap();
         setTimeout(resolveGeoQueue, 800);
       });
+  }
+
+  function nameSpecificity(label) {
+    // A multi-part label like "Iligan, PH" is a named city (specific);
+    // bare country codes or empty labels are coarse. Higher = better.
+    const s = String(label || "").trim();
+    if (!s) return 0;
+    if (s.includes(",")) return 3;
+    if (s.length <= 3) return 1;
+    return 2;
   }
 
   function refreshGeoSpans(ip) {
@@ -643,12 +752,16 @@
     }
   }
 
-  // ---- embedded traffic map (Leaflet + OpenStreetMap) ----
+  // ---- embedded online-users map (Leaflet + OpenStreetMap) ----
 
   function initMap() {
     if (mapInstance || !els.trafficMap) return;
     if (!window.L) {
-      if (els.mapCard) els.mapCard.classList.add("hidden");
+      if (els.mapEmpty) {
+        els.mapEmpty.classList.remove("hidden");
+        els.mapEmpty.textContent =
+          "Map library could not be loaded — online users are listed below instead.";
+      }
       return;
     }
     mapInstance = L.map(els.trafficMap, {
@@ -667,53 +780,125 @@
 
   function renderMap() {
     initMap();
+
+    // Always keep the card visible; empty states are handled inside.
+    if (els.mapCard) els.mapCard.classList.remove("hidden");
+
     if (!mapInstance) return;
 
-    const seen = new Map();
-    const add = (ip, hits) => {
-      const geo = getGeoCoords(ip);
-      if (!geo || seen.has(ip)) return;
-      seen.set(ip, { ip, hits, geo });
-    };
+    // Online users are pinned individually. Location source priority:
+    // 1. GPS opt-in (device-level, most precise)
+    // 2. IP geolocation (city/ISP level)
+    // 3. registered address centroid (city -> province -> region, resolved
+    //    server-side from the PSGC reference tables; barangay shown in label)
+    // Offline users have no live signal and are grouped into a single campus
+    // marker rather than misleading dots.
+    const coordCount = new Map();
+    const points = [];
+    const offlineUsers = [];
 
-    for (const t of currentTopIps || []) add(t.ip, t.hits);
-    for (const s of currentOnline || []) add(s.ip, 1);
+    for (const u of currentUsers || []) {
+      if (!u || !u.userId) continue;
 
-    const points = Array.from(seen.values()).slice(0, 10);
+      if (u.online && u.ip) {
+        let geo = null;
+        let source = "";
+
+        if (u.gps && typeof u.gps.lat === "number" && typeof u.gps.lon === "number") {
+          const gpsAt = new Date(u.gps.at || Date.now()).getTime();
+          const gpsFresh = Number.isFinite(gpsAt) && Date.now() - gpsAt <= 24 * 60 * 60 * 1000;
+          if (gpsFresh) {
+            geo = { lat: u.gps.lat, lon: u.gps.lon, label: "GPS (device)" };
+            source = "gps";
+          }
+        }
+        if (!geo) {
+          const ipGeo = getGeoCoords(u.ip);
+          if (ipGeo) {
+            geo = ipGeo;
+            source = "ip";
+          }
+        }
+        if (!geo && u.home && typeof u.home.lat === "number" && typeof u.home.lon === "number") {
+          geo = { lat: u.home.lat, lon: u.home.lon, label: u.home.label || "Registered address (home)" };
+          source = "home";
+        }
+        if (!geo) {
+          geo = { lat: CAMPUS_LAT, lon: CAMPUS_LON, label: "Campus / Local network" };
+          source = "campus";
+        }
+
+        const key = `${Math.round(geo.lat * 1000)}|${Math.round(geo.lon * 1000)}`;
+        const n = (coordCount.get(key) || 0) + 1;
+        coordCount.set(key, n);
+        // Nudge stacked users so same-location markers don't overlap fully.
+        const spread = Math.min(n - 1, 8) * 0.004;
+        points.push({
+          ...u,
+          geo,
+          source,
+          lat: geo.lat + spread,
+          lon: geo.lon + spread,
+        });
+        continue;
+      }
+
+      offlineUsers.push(u);
+    }
+
     const key = points
-      .map((p) => `${p.ip}:${p.geo.lat}:${p.geo.lon}:${p.hits}`)
-      .join("|");
+      .map((p) => `${p.userId}:${p.source}:${Math.round(p.lat * 1000)}:${Math.round(p.lon * 1000)}:${p.ip || ""}:${p.phone || ""}`)
+      .join("|") + `|offline:${offlineUsers.length}`;
+
+    if (els.mapEmpty) {
+      els.mapEmpty.classList.toggle("hidden", points.length > 0 || offlineUsers.length > 0);
+      if (!points.length && !offlineUsers.length) {
+        els.mapEmpty.textContent =
+          "No users found for the selected role.";
+      }
+    }
 
     if (key === lastMapKey) return;
     lastMapKey = key;
 
-    if (els.mapCard) els.mapCard.classList.remove("hidden");
     mapLayer.clearLayers();
 
-    if (!points.length) {
-      if (els.mapEmpty) els.mapEmpty.classList.remove("hidden");
-      return;
-    }
-
-    if (els.mapEmpty) els.mapEmpty.classList.add("hidden");
+    if (!points.length && !offlineUsers.length) return;
 
     for (const p of points) {
-      const marker = L.marker([p.geo.lat, p.geo.lon]);
+      const marker = L.marker([p.lat, p.lon]);
+      const activity = `active ${timeAgo(p.ago)}`;
+      const sourceBadge =
+        p.source === "gps" ? '<span style="color:#7c3aed">GPS</span>'
+        : p.source === "home" ? '<span style="color:#b45309">home</span>'
+        : p.source === "campus" ? '<span style="color:#0ea5e9">campus</span>'
+        : '<span style="color:#475569">IP</span>';
       marker.bindTooltip(
-        `<b>${p.ip}</b><br/>${p.geo.label || "Unknown location"}<br/>${p.hits} hit${p.hits === 1 ? "" : "s"}`,
+        `<b>${esc(p.name || "Unknown")}</b> <span style="color:#94a3b8">(${esc(p.userId || "")})</span><br/><span style="color:#16a34a">● ONLINE</span> · ${esc(p.role ? cap(p.role) : "")} · ${sourceBadge}<br/>phone ${esc(p.phone || "no phone")}${p.ip ? ` · ${esc(p.ip)}` : ""}<br/>${p.source === "home" && p.home && p.home.address ? "Registered: " + esc(p.home.address) : (p.geo.label ? esc(p.geo.label) : "Unknown location")}<br/>${activity}<br/>${p.geo.lat.toFixed(4)}, ${p.geo.lon.toFixed(4)}`,
         { direction: "top" },
       );
       mapLayer.addLayer(marker);
     }
 
-    if (points.length === 1) {
-      mapInstance.setView([points[0].geo.lat, points[0].geo.lon], 10);
-    } else {
-      mapInstance.fitBounds(L.latLngBounds(points.map((p) => [p.geo.lat, p.geo.lon])), {
-        padding: [24, 24],
-        maxZoom: 10,
+    if (offlineUsers.length) {
+      const count = offlineUsers.length;
+      const roster = offlineUsers
+        .map((u) => `${esc(u.name || u.userId || "Unknown")} — ${esc(u.role ? cap(u.role) : "?")} — ${esc(u.phone || "no phone")}`)
+        .join("<br/>");
+      const cluster = L.circleMarker([CAMPUS_LAT, CAMPUS_LON], {
+        radius: 9 + Math.min(count, 12),
+        color: "#94a3b8",
+        fillColor: "#cbd5e1",
+        fillOpacity: 0.7,
+        weight: 1,
       });
+      cluster.bindTooltip(
+        `<b>${count} offline user${count === 1 ? "" : "s"}</b> — live location offline<br/>${roster}`,
+        { direction: "top" },
+      );
+      mapLayer.addLayer(cluster);
     }
+
     requestAnimationFrame(() => mapInstance && mapInstance.invalidateSize());
   }
 
@@ -839,6 +1024,61 @@
     }
     unlockRequest(payload, els.unlockMsg, els.unlockBtn);
   });
+
+  els.lockIpBtn.addEventListener("click", () => lockIp());
+  els.lockIpInput.addEventListener("keydown", (event) => {
+    if (event.key === "Enter") lockIp();
+  });
+
+  async function lockIp() {
+    const ip = els.lockIpInput.value.trim();
+    els.lockIpMsg.textContent = "";
+    els.lockIpMsg.className = "mt-2 text-sm font-medium";
+
+    if (!ip) {
+      els.lockIpMsg.textContent = "Enter an IP address to block.";
+      els.lockIpMsg.className = "mt-2 text-sm font-medium text-amber-600 dark:text-amber-400";
+      return;
+    }
+    if (!/^(\d{1,3}\.){3}\d{1,3}$/.test(ip)) {
+      els.lockIpMsg.textContent = "That does not look like a valid IPv4 address.";
+      els.lockIpMsg.className = "mt-2 text-sm font-medium text-red-600 dark:text-red-400";
+      return;
+    }
+
+    els.lockIpBtn.disabled = true;
+    els.lockIpBtn.textContent = "Locking…";
+    try {
+      const res = await fetch(LOCK_IP_URL, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Accept: "application/json",
+          "X-CSRF-TOKEN": csrfToken,
+        },
+        body: JSON.stringify({ ip }),
+      });
+      const data = await res.json();
+      if (data && data.ok) {
+        els.lockIpMsg.textContent = `IP ${data.ip} is now blocked until you unlock it.`;
+        els.lockIpMsg.className = "mt-2 text-sm font-medium text-green-700 dark:text-green-300";
+        els.lockIpInput.value = "";
+        APP?.toast?.(`IP ${data.ip} blocked`);
+        poll();
+      } else {
+        els.lockIpMsg.textContent = (data && (data.error || data.message)) || "Failed to block the IP.";
+        els.lockIpMsg.className = "mt-2 text-sm font-medium text-red-600 dark:text-red-400";
+        APP?.toast?.("Failed to block IP", "error");
+      }
+    } catch {
+      els.lockIpMsg.textContent = "An error occurred while blocking the IP.";
+      els.lockIpMsg.className = "mt-2 text-sm font-medium text-red-600 dark:text-red-400";
+      APP?.toast?.("Failed to block IP", "error");
+    } finally {
+      els.lockIpBtn.disabled = false;
+      els.lockIpBtn.textContent = "Lock IP";
+    }
+  }
 
   const geoCache = loadGeoCache();
 

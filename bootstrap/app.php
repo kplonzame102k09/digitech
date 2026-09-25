@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Middleware\BlockManuallyLockedIp;
 use App\Http\Middleware\EnsurePasswordUpdated;
 use App\Http\Middleware\EnsureStudentEnrollment;
 use App\Http\Middleware\EnsureUserRole;
@@ -25,6 +26,7 @@ return Application::configure(basePath: dirname(__DIR__))
             'role' => EnsureUserRole::class,
             'password.updated' => EnsurePasswordUpdated::class,
             'student.enrolled' => EnsureStudentEnrollment::class,
+            'manual-ip-block' => BlockManuallyLockedIp::class,
         ]);
 
         $middleware->web(append: [

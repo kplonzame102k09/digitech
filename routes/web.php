@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\AccountController;
+use App\Http\Controllers\AccountRequestController;
 use App\Http\Controllers\AddressController;
 use App\Http\Controllers\Admin\AccountRequestController as AdminAccountRequestController;
 use App\Http\Controllers\Admin\AttendanceFinalizeController;
@@ -10,24 +11,23 @@ use App\Http\Controllers\Analytics\AttendanceAnalyticsController;
 use App\Http\Controllers\Analytics\GradeAnalyticsController;
 use App\Http\Controllers\Authentication\LoginController;
 use App\Http\Controllers\Authentication\PasswordController;
-use App\Http\Controllers\AccountRequestController;
+use App\Http\Controllers\ClassroomFileController;
 use App\Http\Controllers\PortalDataController;
-use App\Http\Controllers\Student\DocumentRequestController;
-use App\Http\Controllers\Student\EnrollmentController;
-use App\Http\Controllers\Student\GradeController;
-use App\Http\Controllers\Student\ProfileController;
+use App\Http\Controllers\StorageFileController;
 use App\Http\Controllers\Student\ClassroomDetailController;
 use App\Http\Controllers\Student\ClassroomJoinController;
 use App\Http\Controllers\Student\ClassroomMeetingController as StudentClassroomMeetingController;
 use App\Http\Controllers\Student\ClassroomWorkController;
-use App\Http\Controllers\StorageFileController;
+use App\Http\Controllers\Student\DocumentRequestController;
+use App\Http\Controllers\Student\EnrollmentController;
+use App\Http\Controllers\Student\GradeController;
+use App\Http\Controllers\Student\ProfileController;
 use App\Http\Controllers\Teacher\AttendanceController as TeacherAttendanceController;
 use App\Http\Controllers\Teacher\AttendanceReviewController;
 use App\Http\Controllers\Teacher\ClassroomActivityController;
-use App\Http\Controllers\Teacher\ClassroomMeetingController as TeacherClassroomMeetingController;
 use App\Http\Controllers\Teacher\ClassroomController as TeacherClassroomController;
+use App\Http\Controllers\Teacher\ClassroomMeetingController as TeacherClassroomMeetingController;
 use App\Http\Controllers\Teacher\ClassroomSubmissionController;
-use App\Http\Controllers\ClassroomFileController;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', function () {
@@ -36,7 +36,7 @@ Route::get('/', function () {
 
 Route::get('/auth/login', [LoginController::class, 'showLogin'])->name('auth.login');
 Route::get('/login', [LoginController::class, 'showLogin'])->name('login');
-Route::post('/login', [LoginController::class, 'login'])->middleware('throttle:login')->name('login.submit');
+Route::post('/login', [LoginController::class, 'login'])->middleware(['manual-ip-block', 'throttle:login'])->name('login.submit');
 Route::post('/logout', [LoginController::class, 'logout'])->middleware('auth')->name('logout');
 Route::get('/auth/password/change', [PasswordController::class, 'show'])->middleware('auth')->name('auth.password.change');
 Route::post('/auth/password/change', [PasswordController::class, 'update'])->middleware('auth')->name('auth.password.update');
@@ -59,6 +59,7 @@ Route::middleware(['auth', 'password.updated'])->prefix('api/portal')->group(fun
     Route::post('/users/import', [PortalDataController::class, 'importUsers']);
     Route::get('/users/import/{batchId}', [PortalDataController::class, 'importStatus']);
     Route::post('/photo', [PortalDataController::class, 'uploadPhoto'])->middleware('throttle:uploads');
+    Route::post('/location', [PortalDataController::class, 'saveLocation'])->middleware('throttle:uploads');
     Route::post('/uploads', [PortalDataController::class, 'uploadImage'])->middleware('throttle:uploads');
     Route::post('/requirements/upload', [PortalDataController::class, 'uploadRequirementFile'])->middleware('throttle:uploads');
     Route::get('/requirements/files/{file}', [PortalDataController::class, 'downloadRequirementFile']);
@@ -91,6 +92,7 @@ Route::middleware(['auth', 'password.updated', 'role:admin'])->prefix('admin')->
     Route::get('/live-monitoring', [MonitorController::class, 'index'])->name('live-monitoring');
     Route::get('/api/monitor/activity', [MonitorController::class, 'activity'])->name('api.monitor.activity');
     Route::post('/api/monitor/unlock', [MonitorController::class, 'unlock'])->name('api.monitor.unlock');
+    Route::post('/api/monitor/lock-ip', [MonitorController::class, 'lockIp'])->name('api.monitor.lock-ip');
     Route::get('/profile', fn () => view('admin.profile'))->name('profile');
     Route::get('/api/profile', [AdminProfileController::class, 'show'])->name('api.profile.show');
     Route::put('/api/profile', [AdminProfileController::class, 'update'])->name('api.profile.update');

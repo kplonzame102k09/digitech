@@ -6,6 +6,8 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\UpdateProfileRequest;
 use App\Models\AuditLog;
 use App\Models\User;
+use App\Rules\TrustedUploadFile;
+use App\Support\FileSignature;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
@@ -116,11 +118,25 @@ class ProfileController extends Controller
         abort_unless($user, 401);
 
         $request->validate([
-            'photo' => ['required', 'image', 'mimes:jpeg,jpg,png,webp', 'max:2048'],
+            'photo' => ['required', 'file', new TrustedUploadFile(['jpeg', 'jpg', 'png', 'webp']), 'max:2048'],
         ]);
 
         $photo = $request->file('photo');
-        $path = $photo->store('profile-photos', 'public');
+
+        try {
+            $path = $photo->storeAs(
+                'profile-photos',
+                Str::random(40).'.'.(FileSignature::detectFile((string) $photo->getRealPath()) ?? 'bin'),
+                'public'
+            );
+        } catch (\Throwable $e) {
+            report($e);
+
+            return response()->json([
+                'ok' => false,
+                'error' => 'Could not save the uploaded photo. Please try again.',
+            ], 500);
+        }
 
         // Replacing a photo removes the previous one so uploads never pile up.
         $previous = $user->photo;

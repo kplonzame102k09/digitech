@@ -6,7 +6,7 @@
                 class="input mt-1.5 w-full rounded border bg-slate-50 px-3 py-3 dark:bg-slate-800" />
         </label>
         <label class="text-sm font-semibold">Contact number
-            <input data-profile-field="contact" maxlength="20"
+            <input data-profile-field="contact" required maxlength="20"
                 class="input mt-1.5 w-full rounded border px-3 py-3"
                 placeholder="e.g. +63 900 000 0000" />
         </label>

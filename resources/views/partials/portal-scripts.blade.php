@@ -6,6 +6,94 @@
 <script>
     window.__DIGITECH_BOOT__ = @json($portalBoot ?? ['csrf' => csrf_token(), 'collections' => [], 'currentUser' => null]);
 </script>
+<script>
+    (() => {
+        // GPS consent + capture. The live-monitoring map can only show a
+        // device-precise "currently online" point when the user themselves
+        // says yes to the location prompt — so we ask once, politely, and
+        // never pester after a clear choice. Deny simply means the map falls
+        // back to IP geolocation / home address as usual.
+        const KEY = "dg-gps-v1";
+        const state = (() => {
+            try { return JSON.parse(localStorage.getItem(KEY) || "{}"); } catch { return {}; }
+        })();
+
+        const isSecure = window.isSecureContext === true;
+        if (!isSecure) return; // geolocation needs HTTPS (or localhost)
+
+        const send = (lat, lon, accuracy) => {
+            fetch("/api/portal/location", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                    "X-CSRF-TOKEN": window.__DIGITECH_BOOT__?.csrf || document.querySelector('meta[name="csrf-token"]')?.content || "",
+                    Accept: "application/json",
+                },
+                body: JSON.stringify({ lat, lon, accuracy }),
+            }).catch(() => { /* non-fatal; map falls back to IP geo */ });
+        };
+
+        // Previously approved: silently refresh the position on page load so
+        // the live map never shows a stale dot, with no banner or prompt.
+        if (state.chosen === "granted") {
+            try {
+                if (navigator.geolocation) {
+                    navigator.geolocation.getCurrentPosition(
+                        (pos) => send(pos.coords.latitude, pos.coords.longitude, pos.coords.accuracy),
+                        () => {}, // transient failure — keep last known coords
+                        { enableHighAccuracy: true, timeout: 10000, maximumAge: 60000 },
+                    );
+                }
+            } catch { /* ignore */ }
+            return;
+        }
+
+        if (state.chosen === "denied") return;
+
+        // Show a small consent banner once per browser until a choice is made.
+        const banner = document.createElement("div");
+        banner.id = "gps-consent";
+        banner.style.cssText = [
+            "position:fixed", "z-index:9999", "bottom:16px", "right:16px",
+            "max-width:340px", "background:#0f172a", "color:#e2e8f0",
+            "padding:14px 16px", "border-radius:14px", "box-shadow:0 10px 30px rgba(0,0,0,.35)",
+            "font:14px/1.5 system-ui,sans-serif", "display:flex", "flex-direction:column", "gap:10px",
+        ].join(";");
+        banner.innerHTML = `
+            <p style="margin:0">Share your device location so the admin live map can show you with live precision? You can deny any time — the map still works without it.</p>
+            <div style="display:flex;gap:8px;justify-content:flex-end">
+                <button type="button" data-gps-no style="cursor:pointer;border:1px solid #475569;background:transparent;color:#cbd5e1;border-radius:9px;padding:6px 12px">Not now</button>
+                <button type="button" data-gps-yes style="cursor:pointer;border:none;background:#16a34a;color:#fff;border-radius:9px;padding:6px 14px;font-weight:700">Share location</button>
+            </div>`;
+        document.body.appendChild(banner);
+
+        const remember = (partial) => {
+            try { localStorage.setItem(KEY, JSON.stringify({ ...state, ...partial })); } catch { /* ignore */ }
+        };
+
+        const deny = () => {
+            remember({ chosen: "denied" });
+            banner.remove();
+        };
+
+        const grant = () => {
+            banner.remove();
+            if (!navigator.geolocation) { remember({ chosen: "denied" }); return; }
+            navigator.geolocation.getCurrentPosition(
+                (pos) => {
+                    const { latitude, longitude, accuracy } = pos.coords;
+                    remember({ chosen: "granted", at: Date.now() });
+                    send(latitude, longitude, accuracy);
+                },
+                () => remember({ chosen: "denied" }), // user declined / blocked / timed out
+                { enableHighAccuracy: true, timeout: 10000, maximumAge: 60000 },
+            );
+        };
+
+        banner.querySelector("[data-gps-no]").addEventListener("click", deny);
+        banner.querySelector("[data-gps-yes]").addEventListener("click", grant);
+    })();
+</script>
 <script src="{{ asset('js/storage.js') . '?v=' . (file_exists(public_path('js/storage.js')) ? filemtime(public_path('js/storage.js')) : 1) }}"></script>
 <script>
     if (window.DG && window.__DIGITECH_BOOT__) {

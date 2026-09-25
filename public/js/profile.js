@@ -93,6 +93,14 @@
       return;
     }
 
+    // Contact number is required for portal accounts, so it must always be
+    // sent to the server (uniqueness guard lives there). Only profiles that
+    // round-trip to the API are affected; local-only roles skip this.
+    if (user.role === "admin" || user.role === "student") {
+      const contactEl = document.querySelector('[data-profile-field="contact"]');
+      if (contactEl) changed.contact = contactEl.value.trim();
+    }
+
     setLoading(true);
     try {
       if (user.role === "admin" || user.role === "student") {

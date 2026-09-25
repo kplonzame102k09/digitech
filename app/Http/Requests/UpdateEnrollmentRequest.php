@@ -2,6 +2,7 @@
 
 namespace App\Http\Requests;
 
+use App\Rules\UniqueContact;
 use App\Services\PortalDataService;
 use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Foundation\Http\FormRequest;
@@ -60,7 +61,7 @@ class UpdateEnrollmentRequest extends FormRequest
                     }
                 }
             }],
-            'contact' => ['nullable', 'string', 'max:20'],
+            'contact' => ['required', 'string', 'max:20', new UniqueContact($this->user()->id)],
             'birthDate' => ['nullable', 'date'],
             'address' => ['nullable', 'string', 'max:255'],
             'guardianName' => ['nullable', 'string', 'max:255'],

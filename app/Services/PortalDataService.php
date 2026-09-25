@@ -395,7 +395,7 @@ class PortalDataService
      *  value is already a human-readable name (or not found in the reference
      *  table) it is returned unchanged so the profile keeps working for users
      *  who already have correct names stored. */
-    protected function resolveLocationName(string $field, mixed $value): ?string
+    public function resolveLocationName(string $field, mixed $value): ?string
     {
         if (! is_string($value) || trim($value) === '') {
             return $value;
@@ -447,6 +447,84 @@ class PortalDataService
             'createdAt' => $user->created_at?->toIso8601String(),
             'updatedAt' => $user->updated_at?->toIso8601String(),
         ]);
+    }
+
+    /**
+     * Resolve a user's registered address (region / province / city / barangay)
+     * to its finest known coordinate. Precedence: city -> province -> region,
+     * whichever carries a seeded centroid. Used by the admin live map as the
+     * "registered address" pin when GPS is declined and IP does not resolve.
+     *
+     * @return array{lat: float, lon: float, level: string, label: string, address: string}|null
+     */
+    public function resolveHomeCentroid(User $user): ?array
+    {
+        $region = $this->matchLocationRow('philippine_regions', 'region_code', 'region_code', $user->region);
+        $province = $this->matchLocationRow('philippine_provinces', 'province_code', 'region_code', $user->province, $region?->region_code);
+        $city = $this->matchLocationRow('philippine_cities', 'city_code', 'province_code', $user->city, $province?->province_code);
+
+        foreach ([['city', $city], ['province', $province], ['region', $region]] as [$level, $row]) {
+            if ($row && isset($row->latitude, $row->longitude) && $row->latitude !== null && $row->longitude !== null) {
+                return [
+                    'lat' => (float) $row->latitude,
+                    'lon' => (float) $row->longitude,
+                    'level' => $level,
+                    'label' => 'Registered address (home) · '.Str::ucfirst($level),
+                    'address' => $this->registeredAddressLabel($user, $region, $province, $city),
+                ];
+            }
+        }
+
+        return null;
+    }
+
+    /**
+     * Locate a PSGC reference row by exact code, or by name when the stored
+     * value is a display name. City/lower lookups are constrained to the
+     * resolved parent code so duplicate municipality names (CLARIN, NAGA...)
+     * resolve to the correct province.
+     */
+    private function matchLocationRow(
+        string $table,
+        string $codeColumn,
+        string $parentColumn,
+        mixed $value,
+        ?string $parentCode = null,
+    ): ?object {
+        if (! is_string($value) || trim($value) === '') {
+            return null;
+        }
+
+        $value = trim($value);
+
+        $find = function (string $column, mixed $v) use ($table, $parentColumn, $parentCode): ?object {
+            if ($parentCode === null) {
+                return DB::table($table)->where($column, $v)->first();
+            }
+
+            return DB::table($table)
+                ->where($column, $v)
+                ->where($parentColumn, $parentCode)
+                ->first();
+        };
+
+        return $find($codeColumn, $value) ?? $find('name', $value);
+    }
+
+    /**
+     * Human-readable address line built from resolved names with the barangay
+     * and city name as the finest components shown in the map tooltip.
+     */
+    private function registeredAddressLabel(User $user, ?object $region, ?object $province, ?object $city): string
+    {
+        $parts = array_values(array_filter([
+            $this->resolveLocationName('barangay', $user->barangay),
+            $city->name ?? $this->resolveLocationName('city', $user->city),
+            $province->name ?? $this->resolveLocationName('province', $user->province),
+            $region->name ?? $this->resolveLocationName('region', $user->region),
+        ], static fn (?string $part): bool => is_string($part) && trim($part) !== '' && ! in_array($part, ['N/A', 'NA'], true)));
+
+        return $parts === [] ? '' : implode(' · ', $parts);
     }
 
     /**

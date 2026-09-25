@@ -100,26 +100,11 @@ class LoginController extends Controller
     }
 
     /**
-     * Determine role from user_id prefix
+     * Determine role from user_id prefix (shared with the login throttle so
+     * throttling keys match the account being signed in to).
      */
     private function determineRoleFromUserId(string $userId): string
     {
-        $userIdUpper = strtoupper($userId);
-
-        // Check for admin first since it has a longer prefix
-        if (str_starts_with($userIdUpper, 'ADMIN')) {
-            return 'admin';
-        }
-
-        // Check other 3-character prefixes
-        $prefix = substr($userIdUpper, 0, 3);
-
-        return match($prefix) {
-            'STU' => 'student',
-            'TCH' => 'teacher',
-            'PRT' => 'parent',
-            'GST' => 'guest',
-            default => 'student', // Default fallback
-        };
+        return LoginAttemptGuard::roleForUserId($userId);
     }
 }
