@@ -326,6 +326,58 @@ class PortalDataController extends Controller
             'at' => now()->toIso8601String(),
         ];
 
+        // Keep a short trail of recent fixes (newest last) so the admin map can
+        // draw a movement line. Capped and deduped so it stays tiny.
+        $history = is_array($extra['_gps_history'] ?? null) ? $extra['_gps_history'] : [];
+        $prev = $history ? $history[count($history) - 1] : null;
+        $nowTs = strtotime($extra['_gps']['at']);
+        $dupe =
+            is_array($prev)
+            && isset($prev['lat'], $prev['lon'], $prev['at'])
+            && abs((float) $prev['lat'] - (float) $extra['_gps']['lat']) < 0.0001
+            && abs((float) $prev['lon'] - (float) $extra['_gps']['lon']) < 0.0001
+            && abs($nowTs - strtotime($prev['at'])) < 300;
+        if (! $dupe) {
+            $history[] = [
+                'lat' => (float) $extra['_gps']['lat'],
+                'lon' => (float) $extra['_gps']['lon'],
+                'accuracy' => $extra['_gps']['accuracy'],
+                'at' => $extra['_gps']['at'],
+            ];
+            $extra['_gps_history'] = array_slice($history, -30);
+        }
+
+        $user->update(['profile_extra' => $extra]);
+
+        return response()->json([
+            'ok' => true,
+            'saved' => true,
+        ]);
+    }
+
+    /**
+     * Persist a user-set "I am actually here" pin into profile_extra._home_fix.
+     * Admin live monitoring prefers this exact point over the registered
+     * address centroid whenever the user has no fresh device GPS fix, so the
+     * IP/home fallback stops showing them kilometres away at an ISP/hub.
+     */
+    public function saveSelfLocation(Request $request): JsonResponse
+    {
+        $validated = $request->validate([
+            'lat' => ['required', 'numeric', 'between:-90,90'],
+            'lon' => ['required', 'numeric', 'between:-180,180'],
+        ]);
+
+        $user = $request->user();
+        abort_unless($user, 401);
+
+        $extra = is_array($user->profile_extra) ? $user->profile_extra : [];
+        $extra['_home_fix'] = [
+            'lat' => (float) $validated['lat'],
+            'lon' => (float) $validated['lon'],
+            'at' => now()->toIso8601String(),
+        ];
+
         $user->update(['profile_extra' => $extra]);
 
         return response()->json([

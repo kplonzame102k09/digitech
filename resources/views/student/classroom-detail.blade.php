@@ -3,15 +3,11 @@
 
 <head>
     @include('partials.meta', ['pageTitle' => 'Classroom | Digitech College'])
-    <script src="https://cdn.tailwindcss.com"></script>
-    <script>
-        tailwind.config = { darkMode: "class" };
-    </script>
-    <script src="https://unpkg.com/lucide@latest"></script>
+    @include('partials.assets')
     <link rel="stylesheet" href="{{ asset('css/custom.css') }}" />
 </head>
 
-<body class="student-portal min-h-screen bg-slate-50 text-slate-800 dark:bg-slate-950 dark:text-slate-100" data-classroom-id="{{ $classroomId }}">
+<body class="student-portal min-h-screen bg-slate-50 text-slate-800 dark:bg-slate-950 dark:text-slate-100" data-classroom-id="{{ $classroomId }}" data-classroom-ref="{{ \App\Support\UrlCipher::ref($classroomId) }}">
     @include('student.components.sidebar')
     <div class="lg:pl-64">
         @include('student.components.header', ['title' => 'Classroom', 'subtitle' => 'Classrooms'])
@@ -40,6 +36,10 @@
                         class="flex flex-1 items-center justify-center gap-2 whitespace-nowrap rounded px-3 py-2.5 text-sm text-slate-500 dark:text-slate-400">My scores</button>
                     <button type="button" data-detail-tab="classmates" aria-selected="false"
                         class="flex flex-1 items-center justify-center gap-2 whitespace-nowrap rounded px-3 py-2.5 text-sm text-slate-500 dark:text-slate-400">Classmates</button>
+                    <button type="button" data-detail-tab="messages" aria-selected="false"
+                        class="relative flex flex-1 items-center justify-center gap-2 whitespace-nowrap rounded px-3 py-2.5 text-sm text-slate-500 dark:text-slate-400">Messages<span
+                            data-msg-badge
+                            class="hidden ml-0.5 rounded-full bg-violet-600 px-1.5 py-0.5 text-[10px] font-bold text-white dark:bg-violet-500"></span></button>
                 </div>
 
                 <section data-detail-panel="activities" class="space-y-4">
@@ -66,11 +66,14 @@
                 <section data-detail-panel="classmates" class="hidden">
                     <div id="classmateGrid" class="grid gap-4 md:grid-cols-2"></div>
                 </section>
+
+                @include('partials.classroom-messages')
             </div>
         </main>
     </div>
     <div id="modalRoot"></div>
     <script src="{{ asset('js/classroom-video.js') }}"></script>
+    <script src="{{ asset('js/classroom-messages.js') }}?v={{ filemtime(public_path('js/classroom-messages.js')) }}"></script>
     @include('partials.portal-scripts', ['portalPage' => 'student/classroom-detail.js'])
 </body>
 

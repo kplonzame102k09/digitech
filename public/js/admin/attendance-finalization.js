@@ -128,7 +128,7 @@
 
   const openPackage = async (id) => {
     try {
-      const data = await API.request(`${API_BASE}/${encodeURIComponent(id)}`);
+      const data = await API.request(`${API_BASE}/${encodeURIComponent(DG.ref(id))}`);
       renderDetail(data);
     } catch (error) {
       showError(error.message);
@@ -208,7 +208,7 @@
       return;
     }
     try {
-      await API.request(`${API_BASE}/${encodeURIComponent(pkg.id)}/return`, {
+      await API.request(`${API_BASE}/${encodeURIComponent(DG.ref(pkg.id))}/return`, {
         method: 'POST',
         body: JSON.stringify({ reason: reason.trim() }),
       });
@@ -228,7 +228,7 @@
       tone: 'danger',
     }))) return;
     try {
-      await API.request(`${API_BASE}/${encodeURIComponent(id)}`, { method: 'POST' });
+      await API.request(`${API_BASE}/${encodeURIComponent(DG.ref(id))}`, { method: 'POST' });
       close();
       APP?.toast?.('Attendance package finalized.');
       load();

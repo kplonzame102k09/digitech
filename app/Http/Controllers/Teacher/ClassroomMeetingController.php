@@ -9,6 +9,7 @@ use App\Models\ClassroomMeeting;
 use App\Models\User;
 use App\Policies\ClassroomWorkPolicy;
 use App\Services\VideoTokenService;
+use App\Support\UrlCipher;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
@@ -175,7 +176,8 @@ class ClassroomMeetingController extends Controller
     {
         return [
             'id' => $m->id,
-            'title' => $m->title,
+
+            'ref' => UrlCipher::ref($m->id),            'title' => $m->title,
             'starts_at' => $m->starts_at?->toIso8601String(),
             'ends_at' => $m->ends_at?->toIso8601String(),
             'status' => $m->status,

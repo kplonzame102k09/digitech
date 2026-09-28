@@ -3,11 +3,7 @@
 
 <head>
     @include('partials.meta', ['pageTitle' => 'Attendance administration | Digitech College'])
-    <script src="https://cdn.tailwindcss.com"></script>
-    <script>
-        tailwind.config = { darkMode: "class" };
-    </script>
-    <script src="https://unpkg.com/lucide@latest"></script>
+    @include('partials.assets')
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <link rel="stylesheet" href="{{ asset('css/custom.css') }}" />
 </head>

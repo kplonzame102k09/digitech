@@ -12,6 +12,7 @@ use App\Models\Notification;
 use App\Models\SystemSetting;
 use App\Models\User;
 use App\Policies\ClassroomWorkPolicy;
+use App\Support\UrlCipher;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Symfony\Component\HttpFoundation\StreamedResponse;
@@ -170,6 +171,7 @@ class ClassroomSubmissionController extends Controller
 
             return [
                 'studentId' => $s->user_id,
+                'studentRef' => UrlCipher::ref($s->user_id),
                 'firstName' => $s->firstName,
                 'lastName' => $s->lastName,
                 'photo' => $s->photo,
@@ -355,10 +357,12 @@ class ClassroomSubmissionController extends Controller
         $data = [
             'id' => $s->id,
             'activityId' => $s->activity_id,
+            'ref' => UrlCipher::ref($s->id),
             'activityTitle' => $s->activity?->title,
             'activityTerm' => $s->activity?->term ?? 'Prelim',
             'studentId' => $s->studentId,
             'studentName' => $s->student ? trim($s->student->firstName.' '.$s->student->lastName) : $s->studentId,
+            'studentRef' => UrlCipher::ref($s->studentId),
             'studentPhoto' => $s->student?->photo,
             'fileUrl' => $s->fileUrl,
             'notes' => $s->notes,

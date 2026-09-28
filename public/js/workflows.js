@@ -274,7 +274,7 @@
 
     const fetchRecorderStudents = async (recorderId) => {
       const response = await fetch(
-        `/api/portal/analytics/attendance/by-recorder/${encodeURIComponent(recorderId)}`,
+        `/api/portal/analytics/attendance/by-recorder/${encodeURIComponent(DG.ref(recorderId))}`,
         {
           headers: { Accept: "application/json", "X-Requested-With": "XMLHttpRequest" },
           credentials: "same-origin",
@@ -1025,7 +1025,7 @@
       const metaEl = $("#detailMeta");
       if (metaEl) metaEl.textContent = `${found.subject || "No subject"} · ${found.status || "active"}`;
       try {
-        const data = await classroomApi(`/teacher/api/classrooms/${encodeURIComponent(found.id)}`);
+        const data = await classroomApi(`/teacher/api/classrooms/${encodeURIComponent(DG.ref(found.id))}`);
         const members = (data.classroom?.students || []).map((s) => ({
           id: s.id, firstName: s.firstName, lastName: s.lastName,
           email: s.email, photo: s.photo,
@@ -1110,7 +1110,7 @@
       if (!useClassrooms || !activeClassroom) return;
       const v = Math.max(1, Math.min(20, Number($("#sessionsPerDay")?.value) || 1));
       try {
-        const data = await classroomApi(`/teacher/api/classrooms/${encodeURIComponent(activeClassroom.id)}`, {
+        const data = await classroomApi(`/teacher/api/classrooms/${encodeURIComponent(DG.ref(activeClassroom.id))}`, {
           method: "PUT",
           body: JSON.stringify({ sessionsPerDay: v }),
         });

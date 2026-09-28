@@ -3,10 +3,7 @@
 
 <head>
     @include('partials.meta', ['pageTitle' => 'Login | Digitech College'])
-    <script src="https://cdn.tailwindcss.com"></script>
-    <script>
-        tailwind.config = { darkMode: "class" };
-    </script>
+    @include('partials.assets')
     <script>
         (function () {
             try {
@@ -19,7 +16,6 @@
             } catch (e) {}
         })();
     </script>
-    <script src="https://unpkg.com/lucide@latest"></script>
     <link rel="stylesheet" href="{{ asset('css/custom.css') }}">
     <link rel="icon" href="{{ asset('images/16432.png') }}" type="png">
 </head>
@@ -149,13 +145,12 @@
                         Visit the nearest Digitech College branch.
                     </p>
                 </div>
-                <div class="border border-red-900 text-center text-left bg-red-800/20 rounded-xl">
-                    <small class="m-7 text-red-500 mt-2 text-xs italic">
+                <div class="text-center">
+                    <small class="text-red-500 text-xs italic">
                         <strong>NOTE:</strong>
                         <br>
                         
                         IF YOU DO NOT REMEMBER YOUR PASSWORD DO NOT TRY TO GUESS <br>
-                        TOO MANY FAILED ATTEMPT CAN CAUSE TEMPORARY LOCK OF YOUR ACCOUNT <br>
                         PLEASE CONTACT THE ADMINISTRATOR FOR PASSWORD RESET.
                         
                 </small>
@@ -189,6 +184,7 @@
 });
     </script>
     @include('partials.password-toggle')
+    @include('partials.gps-consent')
 </body>
 
 </html>

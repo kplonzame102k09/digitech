@@ -4,6 +4,10 @@
   if (!AUTH.gateEnrolled(true)) return;
 
   const classroomId = document.body.dataset.classroomId;
+  // The page was opened by an encrypted URL; register the token the view
+  // handed down before the first request is built.
+  const classroomRef = document.body.dataset.classroomRef;
+  if (classroomId && classroomRef) DG.learnRefs({ id: classroomId, ref: classroomRef });
   if (!classroomId) return;
 
   const $ = (id) => document.getElementById(id);
@@ -64,7 +68,7 @@
   async function loadDetail() {
     setError("");
     try {
-      const data = await api(`/student/api/classrooms/${encodeURIComponent(classroomId)}`);
+      const data = await api(`/student/api/classrooms/${encodeURIComponent(DG.ref(classroomId))}`);
       const c = data.classroom;
       $("detailName").textContent = c.name || "Classroom";
       $("detailMeta").textContent = `${c.subject || ""} · ${c.teacherName || "Your teacher"} · ${c.studentsCount ?? ""} students`;
@@ -98,7 +102,7 @@
   async function loadActivities() {
     setError("");
     try {
-      const data = await api(`/student/api/classrooms/${encodeURIComponent(classroomId)}/activities`);
+      const data = await api(`/student/api/classrooms/${encodeURIComponent(DG.ref(classroomId))}/activities`);
       activities = data.activities || [];
       renderActivities();
       renderScores();
@@ -191,7 +195,7 @@
     }
     try {
       const fileUrl = await uploadFile(file);
-      await api(`/student/api/activities/${encodeURIComponent(activityId)}/submit`, {
+      await api(`/student/api/activities/${encodeURIComponent(DG.ref(activityId))}/submit`, {
         method: "POST",
         body: JSON.stringify({ fileUrl, notes: notesInput?.value?.trim() || null }),
       });
@@ -208,8 +212,8 @@
     if (section && window.ClassroomVideo) {
       window.ClassroomVideo.init({
         classroomId,
-        meetingsUrl: `/student/api/classrooms/${encodeURIComponent(classroomId)}/meetings`,
-        tokenUrl: `/student/api/classrooms/${encodeURIComponent(classroomId)}/video/token`,
+        meetingsUrl: `/student/api/classrooms/${encodeURIComponent(DG.ref(classroomId))}/meetings`,
+        tokenUrl: `/student/api/classrooms/${encodeURIComponent(DG.ref(classroomId))}/video/token`,
         isTeacher: false,
         listEl: document.getElementById("videoMeetings-student"),
         errorEl: document.getElementById("videoError-student"),

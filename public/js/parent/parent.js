@@ -223,9 +223,9 @@
     const gradesLink = $("[data-grade-link]", card);
     const attendanceLink = $("[data-attendance-link]", card);
     if (gradesLink)
-      gradesLink.href = `/parent/grades?student=${encodeURIComponent(student.id)}`;
+      gradesLink.href = `/parent/grades?student=${encodeURIComponent(DG.ref(student.id))}`;
     if (attendanceLink)
-      attendanceLink.href = `/parent/attendance?student=${encodeURIComponent(student.id)}`;
+      attendanceLink.href = `/parent/attendance?student=${encodeURIComponent(DG.ref(student.id))}`;
   }
 
   function appendChildCards(container, children) {
@@ -375,14 +375,14 @@
             const studentId = String(child.id || "").trim();
 
             link.href =
-                `/parent/${target}?student=${encodeURIComponent(studentId)}`;
+                `/parent/${target}?student=${encodeURIComponent(DG.ref(studentId))}`;
 
             link.dataset.studentId = studentId;
         }
 
         const active =
             selected &&
-            String(selected).trim() === String(child.id || "").trim();
+            DG.matchesRef(child.id, String(selected).trim());
 
         link?.classList.toggle("bg-green-600", active);
         link?.classList.toggle("text-white", active);
@@ -394,7 +394,7 @@
   function renderAttendance(children) {
     const selected = new URLSearchParams(location.search).get("student");
     const visibleChildren = selected
-      ? children.filter((child) => child.id === selected)
+      ? children.filter((child) => DG.matchesRef(child.id, selected))
       : children;
     const attendance = recordsForChildren("attendance", visibleChildren).sort(
       (a, b) => new Date(b.date) - new Date(a.date),
@@ -478,7 +478,7 @@
     const selected = new URLSearchParams(location.search).get("student");
     const semester = $("#semesterFilter")?.value || "1st Semester";
     const visibleChildren = selected
-      ? children.filter((child) => child.id === selected)
+      ? children.filter((child) => DG.matchesRef(child.id, selected))
       : children;
     const groups = visibleChildren
       .map((student) => ({
@@ -646,7 +646,7 @@
     const selected = new URLSearchParams(location.search).get("student");
     const children = linkedChildren(currentParent());
     const visibleChildren = selected
-      ? children.filter((child) => child.id === selected)
+      ? children.filter((child) => DG.matchesRef(child.id, selected))
       : children;
     const rows = [];
     visibleChildren.forEach((student) => {

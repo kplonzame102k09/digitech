@@ -8,6 +8,7 @@ use App\Models\AuditLog;
 use App\Models\Classroom;
 use App\Models\Enrollment;
 use App\Models\User;
+use App\Support\UrlCipher;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 
@@ -265,6 +266,7 @@ class AttendanceReviewService
         return [
             'id' => $package->id,
             'adviserId' => $package->adviserId,
+            'ref' => UrlCipher::ref($package->id),
             'date' => $package->date->format('Y-m-d'),
             'status' => $package->status,
             'submittedAt' => $package->submittedAt?->toIso8601String(),

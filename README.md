@@ -161,12 +161,14 @@ preview-save flow (`GradeAnalyticsController::summary` / `::preview`).
 ### Request pipeline (server)
 
 ```
-web.php → middleware: auth → password.updated → role:{admin|student|teacher|parent|guest}
+web.php → middleware: decrypt.route-params → auth → password.updated
+        → role:{admin|student|teacher|parent|guest}
         → (student only) student.enrolled → controller → PortalDataService
 ```
 
 | Middleware             | Purpose                                                        |
 |------------------------|----------------------------------------------------------------|
+| `decrypt.route-params` | Swaps `~`-marked URL identifiers back to plaintext (see below)  |
 | `auth`                 | Laravel session auth                                            |
 | `password.updated`     | Forces the must-change-password flow                            |
 | `role:{...}`           | `EnsureUserRole` route guard                                    |
@@ -185,6 +187,8 @@ web.php → middleware: auth → password.updated → role:{admin|student|teache
   (path-traversal and dotfile rejected, immutable browser caching).
 - **`app/Support/LoginAttemptGuard.php`** / **`ReferenceCode.php`** — login
   throttling helpers and human-friendly reference-code generation.
+- **`app/Http/Controllers/ClassroomMessageController.php`** — the classroom
+  message channel (see [Classroom messages](#classroom-messages)).
 
 ### Client (vanilla JS, no framework)
 
@@ -219,7 +223,8 @@ Migrations in `database/migrations/` group into:
   competencies, document requests, requirements (file URL), announcements
   (image + author).
 - **Classrooms** — classrooms, classroom students, activities, submissions,
-  meetings (room name nullable), classroom files.
+  meetings (room name nullable), classroom files, classroom messages and
+  classroom message reads.
 
 Seeders ship full Philippine region/province/city/barangay data plus an admin
 (see `ADMIN_SEED_*` env vars).
@@ -241,6 +246,107 @@ Seeders ship full Philippine region/province/city/barangay data plus an admin
   `public/`, and the front controller boots Laravel. Uploads are served through
   PHP (`StorageFileController`) — a `^storage/` **rewrite rule is forbidden**
   (it loops on shared Apache).
+
+### URL identifier encryption
+
+Record ids in the URL (`/admin/api/account-requests/2`, `/teacher/classrooms/{id}`)
+are guessable. `UrlCipher` (`app/Support/UrlCipher.php`) wraps them in
+Laravel's `Crypt::encryptString()` and base64url-encodes the result behind a
+`~` marker, so links stop advertising how many records exist and stop being
+enumerable.
+
+```
+plaintext 2   →  ~ZXlKcGRpSTZJbXQwY1ZsaldEUk5SMjlETW1Kd05HWTN...
+```
+
+**How it stays non-breaking.** `DecryptRouteParameters` runs first in the `web`
+group, before `SubstituteBindings`, and rewrites allow-listed parameters:
+
+- a `~`-marked value that decrypts → the plaintext id, so the controller and
+  every model query are unchanged;
+- a `~`-marked value that fails its MAC → `404`. There is deliberately no
+  fallback to a raw lookup, otherwise a tampered token would silently resolve;
+- an unmarked value → passed through untouched, so **bookmarks, links in
+  existing emails, and old bookmarks keep working**.
+
+Encryption uses a random IV, so the same id mints a different token each time.
+That is fine — tokens are only ever minted server-side and resolved
+server-side; nothing compares them for equality.
+
+**The client never encrypts.** `PortalDataService` ships a `refs` map (id →
+token) in the boot payload for exactly the records the signed-in user may
+already see, REST list endpoints attach a `ref` to each row, and
+`api.js` learns any `ref` it sees. `DG.ref(id)` then builds links and falls
+back to the raw id if it has no token, so a page can never emit a broken link.
+Parent `?student=` deep links accept either form via `DG.matchesRef()`.
+
+**Scope.** Path and query identifiers only — JSON bodies still carry plaintext
+ids. Random capability values (`key`, `token`) are deliberately left alone:
+they are already unguessable, and re-encrypting them would add nothing.
+
+**Kill switch.** `URL_CIPHER_ENABLED=false` turns emission off and makes
+decryption a no-op, which restores plaintext URLs everywhere at once. Read
+`app/Support/UrlCipher.php` before disabling: with the switch off, any `ref`
+already embedded in a page or an old API payload would be passed through as if
+it were an id.
+
+### Login interstitial (signing-in page)
+
+Every sign-in passes through a "signing you in" page before the session is
+authenticated. It is a UX transition, **not** a second factor — the password is
+already verified by the time it renders, so it adds no authentication strength.
+
+```
+POST /login                      password verified, nothing authenticated yet
+   └─ 302                        pending login stashed in the session, 30s TTL
+GET  /logging_in_user_id/{ref}   renders the spinner; performs no auth
+   └─ auto-submits a CSRF form
+POST /auth/login/complete        Auth::login(), then redirect to the dashboard
+```
+
+- The `{ref}` is an `UrlCipher` token (`logging_in_user_id` is on the
+  `params` allowlist), so no plaintext user id appears in the URL.
+- The **GET renders only**. A browser or crawler can prefetch a GET, so
+  authentication only ever happens on the final POST. A `<noscript>` Continue
+  button submits the same form when JavaScript is unavailable.
+- The pending payload is single-use and is forgotten on success *and* on
+  failure, so a replayed completion POST cannot sign anyone in. Expiry (30s)
+  and a ref that does not match the pending account both redirect back to
+  `/login` with a message rather than showing a spinner that cannot complete.
+- `Auth::login()`, session regeneration, `LoginAttemptGuard::clearAttempts()`
+  and the login `AuditLog` entry all moved to the completion step, so they
+  happen exactly once and only on a genuine sign-in.
+- An already-authenticated visitor is bounced to their dashboard, which keeps
+  the back button from stranding anyone on a dead spinner.
+
+### Legacy `PAR-` parent ids
+
+`roleForUserId()` maps `PRT` to `parent`, and both id generators already emit
+`PRT`. Accounts created under the old `PAR-` prefix resolved to role `student`,
+so the role-scoped login query never matched and they were locked out whatever
+password they held. Migration `2026_09_25_000003` rewrites `PAR-` to `PRT-`,
+carrying `notifications.userId` / `recordId` and `users.childId` / `childIds`
+along with it (foreign-key checks are disabled for the rename and restored
+afterwards, since 32 keys reference `users.user_id`).
+
+`audit_logs.recordId` is deliberately left alone — it is an append-only record
+of what was true at the time, and it carries no foreign key, so historical rows
+keep showing the legacy id. The migration is idempotent, and its `down()` is an
+intentional no-op: reversing it is not safely inferable, because the
+pre-existing `PRT-2026-HE6855` account was never a `PAR-` and a rollback would
+corrupt it.
+
+### Known issues (not fixed — out of scope for the cipher work)
+
+- `users.childId` / `users.childIds` and the `*_request` uuid columns receive
+  client-generated values (`ENR-*`, `GRD-*`, …) that do not match the column
+  type, so ids are predictable by construction.
+- `bootstrap/app.php` sets `trustProxies(at: '*')`. Behind a proxy that rewrites
+  the client IP header this makes the request IP attacker-influenced, which
+  feeds `LoginAttemptGuard`'s per-IP lockout. Trust the real proxy instead.
+- `AccountRequestController` keeps the generated plaintext password in a
+  Mailable property, so it stays in memory for the life of the request and can
+  reach logs. Generate it inside the notification instead.
 
 ## Local setup
 
@@ -269,7 +375,7 @@ See `.env.example` for the full list with defaults. Grouped reference:
 |--------------|------------------------------------------------------------------|
 | App          | `APP_NAME`, `APP_ENV`, `APP_DEBUG`, `APP_KEY`, `APP_URL`, `APP_MAINTENANCE_DRIVER` |
 | Admin seed   | `ADMIN_SEED_USER_ID`, `ADMIN_SEED_EMAIL`, `ADMIN_SEED_PASSWORD`  |
-| Security     | `SESSION_DRIVER`, `SESSION_LIFETIME`, `SESSION_SECURE_COOKIE`, `SETUP_TOKEN` |
+| Security     | `SESSION_DRIVER`, `SESSION_LIFETIME`, `SESSION_SECURE_COOKIE`, `SETUP_TOKEN`, `URL_CIPHER_ENABLED` |
 | Database/queue | `DB_*`, `CACHE_STORE`, `QUEUE_CONNECTION`                       |
 | Video        | `LIVEKIT_URL`, `LIVEKIT_API_KEY`, `LIVEKIT_API_SECRET`           |
 | Mail         | `MAIL_*` (mailer, host, credentials, from)                        |
@@ -283,6 +389,9 @@ Rules of thumb:
   depends on a queue worker).
 - On InfinityFree, outbound SMTP is blocked — every `Mail::` call site is inside
   `try/catch` + `Log::warning`, so account creation/login never 500s.
+- `URL_CIPHER_ENABLED` defaults to `true`. Changing `APP_KEY` (or dropping
+  `config:cache`) invalidates existing tokens, so those links 404 — re-issue
+  them from the app. Keep `APP_KEY` stable across deploys.
 
 ## Testing
 
@@ -295,6 +404,11 @@ php artisan test            # uses digitech_portal_test when unset
 DB_TEST_DATABASE=my_scratch_db php artisan test
 ```
 
+> **Currently non-functional.** `phpunit.xml` points at `tests/bootstrap.php`
+> and `tests/Feature`, neither of which exists in this checkout (only
+> `tests/Unit` does), so `php artisan test` errors out before running anything.
+> Restore those two before relying on the suite.
+
 **Never** run `php artisan test` against a database with real data —
 `RefreshDatabase` rebuilds the schema and destroys it. The app DB user needs
 `CREATE DATABASE` (or a pre-created scratch DB with full grants):
@@ -302,21 +416,6 @@ DB_TEST_DATABASE=my_scratch_db php artisan test
 ```sql
 CREATE DATABASE IF NOT EXISTS digitech_portal_test;
 GRANT ALL PRIVILEGES ON digitech_portal_test.* TO 'portal_user'@'localhost';
-```
-
-### Standalone harnesses (safe on live data)
-
-Root-level `test-batch*.php` scripts bootstrap the app inside
-`DB::transaction()`/`rollback()`, so they never modify data:
-
-```bash
-php test-batch1-scoping.php                # 23 checks: read/write scoping
-php test-batch2-uploads.php                # 13 checks: upload/download perms/sanitization
-php test-batch3-guards.php                 # 13 checks: enums, dedupe, lifecycle guards
-php test-batch4-notifications.php          # 15 checks: notification forgery + dedupe
-php test-batch5-admin-alerts.php           # 10 checks: server-side admin alerts
-php test-batch6-guards.php                 # 10 checks: admin user-sync guards
-php test-batch7-enrollment-guards.php      # 38 checks: enrolment-gate routes + roster scoping
 ```
 
 ## Deployment (InfinityFree)
@@ -403,4 +502,6 @@ test-*.php          # harnesses stay local by policy
 | Login for everyone fails the same day              | `APP_KEY` was regenerated on deploy — overlay `live.env` so it stays stable. |
 | Mail-dependent flow fails                          | INF blocks SMTP; failures are logged, not fatal. Set `MAIL_MAILER=log` to silence. |
 | `git push` doesn't change the live site            | `infinityfree/` is a gitignored build artifact — run `dev/infinityfree-sync.sh` instead. |
+| A `~`-marked URL suddenly 404s                     | `APP_KEY` changed, so old tokens no longer verify. Old *plaintext* links still work; re-issue tokens by reloading the listing page. |
+| Parent login always says invalid credentials       | Fixed: the `PAR-` prefix is normalised to `PRT-` by migration `2026_09_25_000003`. If a legacy id reappears, re-run `php artisan migrate`. |
 | Sync takes minutes with nothing to change          | First-pass FTP listing of ~7,700 files; only changed bytes transfer. |

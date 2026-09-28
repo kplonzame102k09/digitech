@@ -23,7 +23,17 @@ const API = {
         throw new Error(errorData.error || `HTTP ${response.status}: ${response.statusText}`);
       }
 
-      return await response.json();
+      const payload = await response.json();
+
+      // Pick up any id -> URL token the response carries, so records fetched
+      // from a list endpoint can be used to build encrypted URLs later.
+      try {
+        window.DG?.learnRefs?.(payload);
+      } catch (_) {
+        /* refs are an optimisation; never fail a request over them */
+      }
+
+      return payload;
     } catch (error) {
       console.error('API request failed:', error);
       throw error;
@@ -74,14 +84,14 @@ const API = {
   student: {
     enrollments: {
       list: () => API.get('/student/api/enrollments'),
-      get: (id) => API.get(`/student/api/enrollments/${id}`),
+      get: (id) => API.get(`/student/api/enrollments/${DG.ref(id)}`),
       create: (data) => API.post('/student/api/enrollments', data),
-      update: (id, data) => API.put(`/student/api/enrollments/${id}`, data),
-      delete: (id) => API.delete(`/student/api/enrollments/${id}`),
+      update: (id, data) => API.put(`/student/api/enrollments/${DG.ref(id)}`, data),
+      delete: (id) => API.delete(`/student/api/enrollments/${DG.ref(id)}`),
     },
     grades: {
       list: () => API.get('/student/api/grades'),
-      get: (id) => API.get(`/student/api/grades/${id}`),
+      get: (id) => API.get(`/student/api/grades/${DG.ref(id)}`),
       summary: (params = {}) => {
         const query = new URLSearchParams(params).toString();
         return API.get(`/student/api/grades/summary${query ? `?${query}` : ''}`);
@@ -89,9 +99,9 @@ const API = {
     },
     documentRequests: {
       list: () => API.get('/student/api/document-requests'),
-      get: (id) => API.get(`/student/api/document-requests/${id}`),
+      get: (id) => API.get(`/student/api/document-requests/${DG.ref(id)}`),
       create: (data) => API.post('/student/api/document-requests', data),
-      delete: (id) => API.delete(`/student/api/document-requests/${id}`),
+      delete: (id) => API.delete(`/student/api/document-requests/${DG.ref(id)}`),
     },
     profile: {
       get: () => API.get('/student/api/profile'),

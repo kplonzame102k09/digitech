@@ -38,4 +38,43 @@ return [
     | to avoid control characters and absurd lengths sneaking into the registry.
     */
     'section_pattern' => env('PORTAL_SECTION_PATTERN', '/^[A-Za-z0-9][A-Za-z0-9 .,\'\/\-]{0,49}$/'),
+
+    /*
+    | URL parameter cipher. Identifiers listed in `params` are enciphered with
+    | the application key on the way out and decrypted on the way in, so a
+    | sequential account-request id or a `STU-2026-000123` user id stops being
+    | readable in a URL, browser history, Referer header, or access log.
+    |
+    | The list is an explicit allowlist on purpose. These are deliberately NOT
+    | enciphered:
+    |   key            - a collection name that is part of the bulk sync
+    |                    contract consumed by public/js/sync.js
+    |   token          - a classroom invite token, already Str::random(32)
+    |   file / path    - stored names are already Str::random(40)
+    |   batchId        - a Laravel job batch UUID
+    |   regionCode / provinceCode / cityCode - public PSGC reference data
+    |
+    | Values without the "~" marker are treated as legacy plaintext and passed
+    | through untouched, so existing bookmarks and shared links keep working
+    | while the encrypted form rolls out. Set URL_CIPHER_ENABLED=false to fall
+    | back to plaintext URLs entirely.
+    */
+    'url_cipher' => [
+        'enabled' => env('URL_CIPHER_ENABLED', true),
+        'params' => [
+            'id',
+            'studentId',
+            'recorderId',
+            'logging_in_user_id',
+            'classroomId',
+            'activityId',
+            'submissionId',
+            'meetingId',
+            'sessionId',
+            'packageId',
+            'enrollment',
+            'grade',
+            'document_request',
+        ],
+    ],
 ];

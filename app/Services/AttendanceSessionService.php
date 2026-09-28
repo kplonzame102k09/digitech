@@ -8,6 +8,7 @@ use App\Models\AuditLog;
 use App\Models\Classroom;
 use App\Models\Enrollment;
 use App\Models\User;
+use App\Support\UrlCipher;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
@@ -221,6 +222,7 @@ class AttendanceSessionService
         return [
             'id' => $session->id,
             'classroomId' => $session->classroomId,
+            'ref' => UrlCipher::ref($session->id),
             'date' => $session->date->format('Y-m-d'),
             'startTime' => $session->startTime,
             'scheduledEndTime' => $end,
@@ -251,6 +253,7 @@ class AttendanceSessionService
             'id' => $classroom->id,
             'name' => $classroom->name,
             'subject' => $classroom->subject,
+            'ref' => UrlCipher::ref($classroom->id),
             'academicYear' => $classroom->academicYear,
             'department' => $classroom->department,
             'section' => $classroom->section,

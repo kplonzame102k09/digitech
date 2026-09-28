@@ -15,6 +15,69 @@ const syncRetryCount = Object.create(null);
 const MAX_SYNC_RETRIES = 5;
 const DEFAULT_AVATAR = "/images/16432.png";
 
+// identifier -> opaque URL token, handed over by the server so the client can
+// build encrypted URLs without being able to mint tokens itself (the secret is
+// APP_KEY, which never reaches the browser).
+const urlRefs = Object.create(null);
+// Field names a record may carry its token under. "ref" is the id's own token;
+// "studentRef" is a nested person reference (submission -> student).
+const REF_FIELDS = ["ref", "studentRef", "classroomRef", "activityRef"];
+
+function rememberRef(id, ref) {
+  if (id === null || id === undefined || id === "") return;
+  const key = String(id);
+  if (ref === null || ref === undefined || ref === "") return;
+  urlRefs[key] = String(ref);
+}
+
+// Walk an arbitrary decoded JSON payload and remember every id -> token pair it
+// carries. Called on API responses so a record learned from a list endpoint is
+// usable for building URLs on any later screen.
+function learnRefs(node, depth = 0) {
+  if (!node || typeof node !== "object" || depth > 6) return;
+  if (Array.isArray(node)) {
+    for (const item of node) learnRefs(item, depth + 1);
+    return;
+  }
+  if (node.id !== undefined && node.id !== null) {
+    for (const field of REF_FIELDS) {
+      if (node[field]) {
+        rememberRef(node.id, node[field]);
+        break;
+      }
+    }
+  }
+  // A nested person reference (gradebook row, submission -> student) carries
+  // its token beside the id rather than in place of it.
+  if (node.studentId !== undefined && node.studentId !== null && node.studentRef) {
+    rememberRef(node.studentId, node.studentRef);
+  }
+  for (const value of Object.values(node)) {
+    if (value && typeof value === "object") learnRefs(value, depth + 1);
+  }
+}
+
+// The token to put in a URL for `id`, falling back to the raw id so every call
+// site keeps working when the cipher is disabled or the id was never handed
+// out. A legacy link carrying a plaintext id therefore still resolves.
+function ref(id) {
+  if (id === null || id === undefined || id === "") return "";
+  const key = String(id);
+  return urlRefs[key] || key;
+}
+
+// True when a value taken from a URL (path segment or query string) points at
+// this id. Accepts the token *or* the raw id, so links minted before the cipher
+// existed keep resolving after it is switched on. Surrounding whitespace is
+// ignored because URLSearchParams and hand-typed values both introduce it.
+function matchesRef(id, value) {
+  if (id === null || id === undefined || value === null || value === undefined) return false;
+  const candidate = String(value).trim();
+  if (!candidate) return false;
+  const raw = String(id).trim();
+  return candidate === raw || candidate === ref(id);
+}
+
 function saveData(key, data) {
   memoryStore[key] = data;
   if (syncEnabled && key !== "currentUser") queueSync(key, data);
@@ -121,6 +184,12 @@ function hydrateFromBoot(boot) {
     memoryStore.notifications = dedupeNotifications(memoryStore.notifications);
   }
   if (boot.currentUser) memoryStore.currentUser = boot.currentUser;
+  // Opaque URL tokens for the identifiers this page is allowed to see. Seeded
+  // before the collections are walked so a record that carries its own "ref"
+  // cannot shadow a token the server already issued.
+  Object.entries(boot.refs || {}).forEach(([id, token]) => rememberRef(id, token));
+  learnRefs(boot.collections || {});
+  if (boot.currentUser) learnRefs(boot.currentUser);
   syncEnabled = true;
   window.__DIGITECH_READY__ = true;
   document.dispatchEvent(new CustomEvent("digitech:ready"));
@@ -301,4 +370,4 @@ function loadProfileElements() {
   document.querySelectorAll("[data-user-name]").forEach((el) => { el.textContent = `${user.firstName} ${user.lastName}`; });
   document.querySelectorAll("[data-user-id]").forEach((el) => { el.textContent = user.id; });
 }
-window.DG = { saveData, getData, removeData, clearData, importData, pendingKeys, generateId, generateUserId, userIdExists, getCurrentUser, setCurrentUser, logoutUser, getProfilePhoto, normalizePhotoUrl, DEFAULT_AVATAR, setProfilePhoto, uploadProfilePhoto, uploadImage, uploadRequirementFile, loadProfileElements, hydrateFromBoot, flushSync, dedupeNotifications, STORAGE_KEYS };
+window.DG = { saveData, getData, removeData, clearData, importData, pendingKeys, generateId, generateUserId, userIdExists, getCurrentUser, setCurrentUser, logoutUser, getProfilePhoto, normalizePhotoUrl, DEFAULT_AVATAR, setProfilePhoto, uploadProfilePhoto, uploadImage, uploadRequirementFile, loadProfileElements, hydrateFromBoot, flushSync, dedupeNotifications, ref, matchesRef, learnRefs, STORAGE_KEYS };

@@ -7,6 +7,7 @@ use App\Models\Attendance;
 use App\Models\AuditLog;
 use App\Models\Classroom;
 use App\Models\User;
+use App\Support\UrlCipher;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
@@ -74,7 +75,8 @@ class ClassroomController extends Controller
         $data = $this->serialize($classroom);
         $data['students'] = $classroom->students->map(fn (User $s) => [
             'id' => $s->user_id,
-            'firstName' => $s->firstName,
+
+            'ref' => UrlCipher::ref($s->user_id),            'firstName' => $s->firstName,
             'lastName' => $s->lastName,
             'email' => $s->email,
             'photo' => $s->photo,
@@ -218,6 +220,7 @@ class ClassroomController extends Controller
         return [
             'id' => $classroom->id,
             'teacherId' => $classroom->teacherId,
+            'ref' => UrlCipher::ref($classroom->id),
             'name' => $classroom->name,
             'subject' => $classroom->subject,
             'sessionsPerDay' => (int) ($classroom->sessionsPerDay ?? 1),

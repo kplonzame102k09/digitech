@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Classroom;
 use App\Models\ClassroomActivity;
+use App\Models\ClassroomMessage;
 use App\Models\ClassroomSubmission;
 use App\Policies\ClassroomWorkPolicy;
 use App\Rules\TrustedUploadFile;
@@ -83,18 +84,8 @@ class ClassroomFileController extends Controller
             return true;
         }
 
-        // Exact-basename match on submission fileUrls (LIKE-escaped).
-        $like = '%'.str_replace(['\\', '%', '_'], ['\\\\', '\%', '\_'], $fileName).'%';
-        $submission = ClassroomSubmission::query()
-            ->where('fileUrl', 'like', $like)
-            ->with('activity')
-            ->first();
+        $classroom = $this->classroomForFile($fileName);
 
-        if (! $submission || ! $submission->activity) {
-            return false;
-        }
-
-        $classroom = $submission->activity->classroom;
         if (! $classroom) {
             return false;
         }
@@ -103,11 +94,39 @@ class ClassroomFileController extends Controller
             return true;
         }
 
-        // Roster students may view/download classmates' submissions (classroom work).
-        if ($user->isStudent() && $this->work->isRosterStudent($user, $classroom)) {
-            return true;
+        // Roster students may read anything shared in their own classroom
+        // (classmates' submissions, and message attachments).
+        return $user->isStudent() && $this->work->isRosterStudent($user, $classroom);
+    }
+
+    /**
+     * Resolve the classroom a stored file belongs to.
+     *
+     * Both lookups are needed. A file is referenced either by a submission in
+     * the classroom or by a message in the channel, and message attachments
+     * are never linked to a ClassroomSubmission — checking submissions alone
+     * would make every attached file 403 on download even though the upload
+     * succeeded.
+     */
+    private function classroomForFile(string $fileName): ?Classroom
+    {
+        // Exact-basename match on the fileUrl columns (LIKE-escaped).
+        $like = '%'.str_replace(['\\', '%', '_'], ['\\\\', '\%', '\_'], $fileName).'%';
+
+        $submission = ClassroomSubmission::query()
+            ->where('fileUrl', 'like', $like)
+            ->with('activity')
+            ->first();
+
+        if ($submission?->activity?->classroom) {
+            return $submission->activity->classroom;
         }
 
-        return false;
+        $message = ClassroomMessage::query()
+            ->where('fileUrl', 'like', $like)
+            ->with('classroom')
+            ->first();
+
+        return $message?->classroom;
     }
 }

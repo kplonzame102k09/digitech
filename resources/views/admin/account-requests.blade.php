@@ -4,11 +4,7 @@
 <head>
     @include('partials.meta', ['pageTitle' => 'Account Requests | Digitech College'])
     <meta name="csrf-token" content="{{ csrf_token() }}" />
-    <script src="https://cdn.tailwindcss.com"></script>
-    <script>
-        tailwind.config = { darkMode: "class" };
-    </script>
-    <script src="https://unpkg.com/lucide@latest"></script>
+    @include('partials.assets')
     <link rel="stylesheet" href="{{ asset('css/custom.css') }}" />
 </head>
 <body class="min-h-screen bg-slate-50 text-slate-800 dark:bg-slate-950 dark:text-slate-100">
@@ -420,7 +416,7 @@
                 if (!request) return;
 
                 document.getElementById('approveRequestId').textContent = request.request_id;
-                document.getElementById('approveRequestIdInput').value = request.id;
+                document.getElementById('approveRequestIdInput').value = request.ref || request.id;
                 document.getElementById('approveUsername').value = '';
                 document.getElementById('approvePassword').value = generatePassword();
                 document.getElementById('approveNotes').value = '';
@@ -433,7 +429,7 @@
                 if (!request) return;
 
                 document.getElementById('rejectRequestId').textContent = request.request_id;
-                document.getElementById('rejectRequestIdInput').value = request.id;
+                document.getElementById('rejectRequestIdInput').value = request.ref || request.id;
                 document.getElementById('rejectReason').value = '';
                 document.getElementById('rejectDialog').showModal();
             }

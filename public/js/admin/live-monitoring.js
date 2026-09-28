@@ -12,6 +12,21 @@
   const CAMPUS_LAT = CAMPUS_FALLBACK.lat ?? CAMPUS_FALLBACK.latitude ?? 13.942473;
   const CAMPUS_LON = CAMPUS_FALLBACK.lon ?? CAMPUS_FALLBACK.longitude ?? 121.623696;
 
+  // A saved device GPS fix counts as "currently online" only while it is this
+  // fresh; older fixes quietly fall back to IP / home / campus as usual.
+  const GPS_FRESH_MS = 60 * 60 * 1000;
+
+  // Map UI state + icons (pop-out draggable panel / fullscreen toggle).
+  let mapPopOut = false;
+  const ICON_POP =
+    '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M12 9l4 3-4 3"/><path d="M16 5v14"/></svg>';
+  const ICON_DOCK =
+    '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M12 9l-4 3 4 3"/><path d="M8 5v14"/></svg>';
+  const ICON_MAX =
+    '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 3H5a2 2 0 0 0-2 2v3"/><path d="M21 8V5a2 2 0 0 0-2-2h-3"/><path d="M3 16v3a2 2 0 0 0 2 2h3"/><path d="M16 21h3a2 2 0 0 0 2-2v-3"/></svg>';
+  const ICON_MIN =
+    '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 3v3a2 2 0 0 1-2 2H3"/><path d="M21 8h-3a2 2 0 0 1-2-2V3"/><path d="M3 16h3a2 2 0 0 1 2 2v3"/><path d="M16 21v-3a2 2 0 0 1 2-2h3"/></svg>';
+
   let rowsMap = new Map();
   let freshIds = new Set();
   let paused = false;
@@ -22,6 +37,7 @@
   let currentTopIps = [];
   let currentOnline = [];
   let currentUsers = [];
+  let currentAttempts = [];
   let mapInstance = null;
   let mapLayer = null;
   let lastMapKey = "";
@@ -62,6 +78,9 @@
     detailUnlockAccount: document.getElementById("detailUnlockAccount"),
     detailUnlockIp: document.getElementById("detailUnlockIp"),
     detailUnlockMsg: document.getElementById("detailUnlockMsg"),
+    detailLock: document.getElementById("detailLock"),
+    detailLockIp: document.getElementById("detailLockIp"),
+    detailLockMsg: document.getElementById("detailLockMsg"),
     unlockIdentifier: document.getElementById("unlockIdentifier"),
     unlockRole: document.getElementById("unlockRole"),
     unlockIp: document.getElementById("unlockIp"),
@@ -73,6 +92,9 @@
     mapCard: document.getElementById("mapCard"),
     trafficMap: document.getElementById("trafficMap"),
     mapEmpty: document.getElementById("mapEmpty"),
+    mapPopBtn: document.getElementById("mapPopBtn"),
+    mapFsBtn: document.getElementById("mapFsBtn"),
+    mapCardHeader: document.getElementById("mapCardHeader"),
     lockedAccountsList: document.getElementById("lockedAccountsList"),
     lockedEmpty: document.getElementById("lockedEmpty"),
     lockedCount: document.getElementById("lockedCount"),
@@ -108,6 +130,13 @@
     if (secs < 3600) return `${Math.floor(secs / 60)}m ago`;
     if (secs < 86400) return `${Math.floor(secs / 3600)}h ago`;
     return `${Math.floor(secs / 86400)}d ago`;
+  }
+
+  function fixAge(iso) {
+    if (!iso) return "?";
+    const t = Date.parse(iso);
+    if (!Number.isFinite(t)) return "?";
+    return timeAgo((Date.now() - t) / 1000);
   }
 
   function clockTime(iso) {
@@ -190,6 +219,10 @@
 
       renderActivity(data.activity || []);
       currentUsers = Array.isArray(data.users) ? data.users : [];
+      currentAttempts = Array.isArray(data.loginAttempts) ? data.loginAttempts : [];
+      for (const a of currentAttempts) {
+        if (a.ip && !getCachedGeo(a.ip)) queueGeo(a.ip);
+      }
       renderOnline(data.online || []);
       renderLockedAccounts(data.lockedAccounts || []);
       renderStats(data.stats || {});
@@ -266,10 +299,21 @@
       if (geo) geoEl.textContent = geo;
 
       const statusEl = clone.querySelector("[data-row-status]");
-      statusEl.textContent = row.status || "";
-      statusEl.className = "font-mono text-xs font-bold " + statusClass(row.status);
+      statusEl.textContent = row.status || "-";
+      statusEl.className =
+        "inline-flex items-center rounded-full px-2 py-0.5 text-xs font-bold " + statusClass(row.status);
 
       tr.addEventListener("click", () => openDetail(row.id));
+
+      const lockBtn = clone.querySelector("[data-row-lock-ip]");
+      if (lockBtn && row.ip) {
+        lockBtn.addEventListener("click", (e) => {
+          e.stopPropagation();
+          lockIpRequest(row.ip, null, lockBtn);
+        });
+      } else if (lockBtn) {
+        lockBtn.classList.add("hidden");
+      }
 
       if (freshIds.has(row.id)) {
         tr.style.animation = isSecurityKind(row.kind)
@@ -299,8 +343,6 @@
     els.onlineEmpty.classList.toggle("hidden", !empty);
     els.onlineList.innerHTML = "";
 
-    // Which phone numbers belong to more than one account? Those can't be a
-    // reliable identity key, so we flag them in the online list.
     const phoneCount = new Map();
     for (const u of currentUsers || []) {
       if (!u.phone) continue;
@@ -579,6 +621,9 @@
 
     els.detailUnlockMsg.textContent = "";
     els.detailUnlock.classList.toggle("hidden", !security);
+
+    els.detailLockMsg.textContent = "";
+    if (els.detailLock) els.detailLock.style.display = row.ip ? "block" : "none";
   }
 
   // ---- geo lookup (client-side, ipwho.is, cached in localStorage) ----
@@ -665,9 +710,12 @@
     const ip = geoQueue.shift();
     geoBusy = true;
 
-    // Query both public IP geolocation APIs in parallel. They resolve to
-    // ISP/city-level coordinates, not GPS; taking whichever reports the most
-    // specific result gives us the closest approximation available client-side.
+    // Single HTTPS provider. The previous second provider (ip-api.com) was
+    // plain HTTP, so browsers blocked it as mixed content on the HTTPS portal:
+    // it never resolved, and it handed every viewing admin's IP to a second
+    // party. It has been removed; ipwho.is over HTTPS resolves to ISP/city
+    // coordinates, not GPS, which is the closest approximation available
+    // client-side.
     const who = fetch(`https://ipwho.is/${encodeURIComponent(ip)}`)
       .then((res) => res.json())
       .then((data) => {
@@ -685,59 +733,21 @@
       })
       .catch(() => null);
 
-    const api = fetch(`http://ip-api.com/json/${encodeURIComponent(ip)}`)
-      .then((res) => res.json())
-      .then((data) => {
-        if (data && data.status === "success" && data.lat != null && data.lon != null) {
-          return {
-            t: [data.city, data.countryCode].filter(Boolean).join(", ") || "Unknown",
-            lat: data.lat,
-            lon: data.lon,
-            org: data.org || "",
-            type: data.mobile ? "mobile" : "",
-            resolvedAt: Date.now(),
-          };
-        }
-        return null;
-      })
-      .catch(() => null);
-
-    Promise.allSettled([who, api])
-      .then((results) => {
-        const picks = results
-          .filter((r) => r.status === "fulfilled" && r.value)
-          .map((r) => r.value)
-          .filter((g) => g.lat != null && g.lon != null);
-
-        // Keep whichever side reported the more specific location (a named
-        // city beats a bare country label) so the approximation is the best
-        // either provider returned. Both "Unknown" cases clear the pending
-        // state so we don't retry forever.
-        picks.sort((a, b) => (nameSpecificity(b.t) - nameSpecificity(a.t)) || (a.resolvedAt - b.resolvedAt));
-        const geo = picks[0] || null;
-        if (geo) {
-          geoCache[ip] = geo;
-        } else {
-          geoCache[ip] = { t: "", lat: null, lon: null };
-        }
-        saveGeoCache(geoCache);
-      })
+    who.then((geo) => {
+      // A null result clears the pending state so we don't retry forever.
+      if (geo) {
+        geoCache[ip] = geo;
+      } else {
+        geoCache[ip] = { t: "", lat: null, lon: null };
+      }
+      saveGeoCache(geoCache);
+    })
       .finally(() => {
         geoBusy = false;
         refreshGeoSpans(ip);
         renderMap();
         setTimeout(resolveGeoQueue, 800);
       });
-  }
-
-  function nameSpecificity(label) {
-    // A multi-part label like "Iligan, PH" is a named city (specific);
-    // bare country codes or empty labels are coarse. Higher = better.
-    const s = String(label || "").trim();
-    if (!s) return 0;
-    if (s.includes(",")) return 3;
-    if (s.length <= 3) return 1;
-    return 2;
   }
 
   function refreshGeoSpans(ip) {
@@ -778,6 +788,108 @@
     requestAnimationFrame(() => mapInstance && mapInstance.invalidateSize());
   }
 
+  // ---- map UI: pop-out (draggable panel) + fullscreen ----
+
+  function bumpMap() {
+    requestAnimationFrame(() =>
+      requestAnimationFrame(() => mapInstance && mapInstance.invalidateSize()),
+    );
+  }
+
+  function setMapPop(pop) {
+    mapPopOut = !!pop;
+    const card = els.mapCard;
+    if (!card) return;
+    card.classList.toggle("dg-map-pop", mapPopOut);
+    card.classList.toggle("dg-map-grab", mapPopOut);
+    if (els.mapPopBtn) els.mapPopBtn.innerHTML = mapPopOut ? ICON_DOCK : ICON_POP;
+    // Seed a sensible corner position the first time we pop out.
+    if (mapPopOut && !card.style.top && !card.style.left) {
+      card.style.top = "72px";
+      card.style.right = "16px";
+    }
+    bumpMap();
+  }
+
+  function setupMapDrag() {
+    const header = els.mapCardHeader;
+    const card = els.mapCard;
+    if (!header || !card) return;
+    let dragging = false;
+    let moved = false;
+    let sx = 0;
+    let sy = 0;
+    let ox = 0;
+    let oy = 0;
+
+    header.addEventListener("pointerdown", (e) => {
+      if (!card.classList.contains("dg-map-pop") || e.button !== 0) return;
+      if (e.target.closest("button")) return;
+      dragging = true;
+      moved = false;
+      sx = e.clientX;
+      sy = e.clientY;
+      ox = card.offsetLeft;
+      oy = card.offsetTop;
+      card.setPointerCapture(e.pointerId);
+      e.preventDefault();
+    });
+
+    header.addEventListener("pointermove", (e) => {
+      if (!dragging) return;
+      const dx = e.clientX - sx;
+      const dy = e.clientY - sy;
+      if (Math.abs(dx) > 2 || Math.abs(dy) > 2) moved = true;
+      card.style.left =
+        Math.max(0, Math.min(ox + dx, window.innerWidth - card.offsetWidth)) + "px";
+      card.style.top =
+        Math.max(68, Math.min(oy + dy, window.innerHeight - 48)) + "px";
+      card.style.right = "auto";
+    });
+
+    const endDrag = () => {
+      dragging = false;
+    };
+    header.addEventListener("pointerup", endDrag);
+    header.addEventListener("pointercancel", endDrag);
+  }
+
+  function updateFsIcon() {
+    const btn = els.mapFsBtn;
+    if (btn) btn.innerHTML = document.fullscreenElement ? ICON_MIN : ICON_MAX;
+  }
+
+  function setupMapFullscreen() {
+    const card = els.mapCard;
+    if (!card || !els.mapFsBtn) return;
+    els.mapFsBtn.addEventListener("click", () => {
+      if (document.fullscreenElement) {
+        document.exitFullscreen().catch(() => {});
+      } else if (card.requestFullscreen) {
+        card.requestFullscreen({ navigationUI: "hide" }).catch(() => {});
+      } else if (card.webkitRequestFullscreen) {
+        card.webkitRequestFullscreen();
+      }
+    });
+    document.addEventListener("fullscreenchange", () => {
+      updateFsIcon();
+      bumpMap();
+    });
+    document.addEventListener("webkitfullscreenchange", () => {
+      updateFsIcon();
+      bumpMap();
+    });
+  }
+
+  function setupMapControls() {
+    if (!els.mapCard || !els.mapPopBtn || !els.mapFsBtn || !els.mapCardHeader) return;
+    setMapPop(false);
+    updateFsIcon();
+    setupMapDrag();
+    setupMapFullscreen();
+    els.mapPopBtn.addEventListener("click", () => setMapPop(!mapPopOut));
+  }
+
   function renderMap() {
     initMap();
 
@@ -806,7 +918,7 @@
 
         if (u.gps && typeof u.gps.lat === "number" && typeof u.gps.lon === "number") {
           const gpsAt = new Date(u.gps.at || Date.now()).getTime();
-          const gpsFresh = Number.isFinite(gpsAt) && Date.now() - gpsAt <= 24 * 60 * 60 * 1000;
+          const gpsFresh = Number.isFinite(gpsAt) && Date.now() - gpsAt <= GPS_FRESH_MS;
           if (gpsFresh) {
             geo = { lat: u.gps.lat, lon: u.gps.lon, label: "GPS (device)" };
             source = "gps";
@@ -847,12 +959,15 @@
     }
 
     const key = points
-      .map((p) => `${p.userId}:${p.source}:${Math.round(p.lat * 1000)}:${Math.round(p.lon * 1000)}:${p.ip || ""}:${p.phone || ""}`)
-      .join("|") + `|offline:${offlineUsers.length}`;
+      .map((p) => `${p.userId}:${p.source}:${Math.round(p.lat * 1000)}:${Math.round(p.lon * 1000)}:${p.ip || ""}:${p.phone || ""}:${p.gps && p.gps.at ? p.gps.at : ""}:${p.gps && p.gps.accuracy != null ? Math.round(p.gps.accuracy) : ""}:${p.home && p.home.pinned ? "P" : "h"}:${p.trail ? `${p.trail.length}:${p.trail[p.trail.length - 1].at || ""}` : "_"}`)
+      .join("|") + `|offline:${offlineUsers.length}|attempts:${currentAttempts.map((a) => `${a.ip}:${a.count}:${a.lastAt || ""}`).join(",")}`;
 
     if (els.mapEmpty) {
-      els.mapEmpty.classList.toggle("hidden", points.length > 0 || offlineUsers.length > 0);
-      if (!points.length && !offlineUsers.length) {
+      els.mapEmpty.classList.toggle(
+        "hidden",
+        points.length > 0 || offlineUsers.length > 0 || currentAttempts.length > 0,
+      );
+      if (!points.length && !offlineUsers.length && !currentAttempts.length) {
         els.mapEmpty.textContent =
           "No users found for the selected role.";
       }
@@ -863,21 +978,87 @@
 
     mapLayer.clearLayers();
 
-    if (!points.length && !offlineUsers.length) return;
+    if (!points.length && !offlineUsers.length && !currentAttempts.length) return;
 
     for (const p of points) {
+      if (p.trail && p.trail.length > 1) {
+        const pts = p.trail
+          .filter((t) => Number.isFinite(t.lat) && Number.isFinite(t.lon))
+          .map((t) => [t.lat, t.lon]);
+        if (pts.length > 1) {
+          mapLayer.addLayer(
+            L.polyline(pts, {
+              color: "#64748b",
+              weight: 2,
+              opacity: 0.4,
+              dashArray: "4 7",
+            }),
+          );
+        }
+      }
       const marker = L.marker([p.lat, p.lon]);
       const activity = `active ${timeAgo(p.ago)}`;
-      const sourceBadge =
-        p.source === "gps" ? '<span style="color:#7c3aed">GPS</span>'
-        : p.source === "home" ? '<span style="color:#b45309">home</span>'
+      // Browser/device location is reported honestly by its accuracy tier:
+      // <100 m  → GPS-grade device fix
+      // 100+ m  → Wi-Fi / cellular estimate
+      // 2000+ m → OS coarse ("approximate") tier
+      const acc = p.source === "gps" && p.gps ? p.gps.accuracy : null;
+      const gpsTier =
+        p.source === "gps"
+          ? Number.isFinite(acc) && acc >= 2000
+            ? { label: "approx.", color: "#b45309" }
+            : Number.isFinite(acc) && acc >= 100
+              ? { label: "Wi-Fi/net", color: "#f59e0b" }
+              : { label: "GPS", color: "#7c3aed" }
+          : null;
+      const sourceBadge = gpsTier
+        ? `<span style="color:${gpsTier.color}">${gpsTier.label}</span>`
+        : p.source === "home"
+          ? p.home && p.home.pinned
+            ? '<span style="color:#0d9488">pinned</span>'
+            : '<span style="color:#b45309">home</span>'
         : p.source === "campus" ? '<span style="color:#0ea5e9">campus</span>'
         : '<span style="color:#475569">IP</span>';
+      const gpsMeta =
+        p.source === "gps" && p.gps
+          ? ` · ±${acc != null && acc > 0 ? Math.round(acc) : "?"} m${gpsTier && gpsTier.label !== "GPS" ? ` · ${gpsTier.label}` : ""} · fix ${fixAge(p.gps.at)}`
+          : "";
       marker.bindTooltip(
-        `<b>${esc(p.name || "Unknown")}</b> <span style="color:#94a3b8">(${esc(p.userId || "")})</span><br/><span style="color:#16a34a">● ONLINE</span> · ${esc(p.role ? cap(p.role) : "")} · ${sourceBadge}<br/>phone ${esc(p.phone || "no phone")}${p.ip ? ` · ${esc(p.ip)}` : ""}<br/>${p.source === "home" && p.home && p.home.address ? "Registered: " + esc(p.home.address) : (p.geo.label ? esc(p.geo.label) : "Unknown location")}<br/>${activity}<br/>${p.geo.lat.toFixed(4)}, ${p.geo.lon.toFixed(4)}`,
+        `<b>${esc(p.name || "Unknown")}</b> 
+        <span style="color:#94a3b8">(${esc(p.userId || "")})</span>
+        <br/>
+        <span style="color:#16a34a">● ONLINE</span> · ${esc(p.role ? cap(p.role) : "")} · ${sourceBadge}${gpsMeta}
+        <br/>
+        phone ${esc(p.phone || "no phone")}${p.ip ? ` · ${esc(p.ip)}` : ""}
+        <br/>
+        ${p.source === "home" && p.home && p.home.pinned
+          ? "Pinned location — set by the user"
+          : p.source === "home" && p.home && p.home.address
+            ? "Registered: " + esc(p.home.address)
+            : (p.geo.label ? esc(p.geo.label) : "Unknown location")}
+        <br/>
+        ${activity}
+        <br/>
+        ${p.geo.lat.toFixed(4)}, ${p.geo.lon.toFixed(4)}`,
         { direction: "top" },
       );
       mapLayer.addLayer(marker);
+
+      if (p.source === "gps" && p.gps && Number.isFinite(p.gps.accuracy) && p.gps.accuracy > 0) {
+        if (p.gps.accuracy < 2000) {
+          const tierColor = gpsTier ? gpsTier.color : "#7c3aed";
+          mapLayer.addLayer(
+            L.circle([p.geo.lat, p.geo.lon], {
+              radius: Math.min(p.gps.accuracy, 250),
+              color: tierColor,
+              weight: 1,
+              opacity: 0.45,
+              fillColor: tierColor,
+              fillOpacity: 0.08,
+            }),
+          );
+        }
+      }
     }
 
     if (offlineUsers.length) {
@@ -897,6 +1078,38 @@
         { direction: "top" },
       );
       mapLayer.addLayer(cluster);
+    }
+
+    // Failed/blocked sign-in sources in the current time window are pinned as
+    // red warning dots so brute-force pressure shows up at a glance. Size grows
+    // with the attempt count; geolocation is ISP/city-level (approximate).
+    for (const a of currentAttempts || []) {
+      const geo = getGeoCoords(a.ip);
+      if (!geo || typeof geo.lat !== "number" || typeof geo.lon !== "number") continue;
+
+      const warn = L.circleMarker([geo.lat, geo.lon], {
+        radius: 6 + Math.min(Math.max(a.count - 1, 0), 8),
+        color: "#b91c1c",
+        weight: 2,
+        opacity: 0.9,
+        fillColor: "#ef4444",
+        fillOpacity: 0.55,
+      });
+      const target =
+        a.target || a.role ? ` · targeted ${esc(a.role || "?")} ${esc(a.target || "…")}` : "";
+      const kind =
+        a.lastKind === "blocked"
+          ? "Throttled by rate limit"
+          : a.lastKind === "login_blocked"
+            ? "Sign-in blocked"
+            : "Failed sign-in";
+      warn.bindTooltip(
+        `<b style="color:#ef4444">✕ ${kind} ×${a.count}</b><br/>` +
+          `source ${esc(a.ip)}${target}<br/>` +
+          `last ${fixAge(a.lastAt)} · approx ${esc(geo.label || "Unknown")}`,
+        { direction: "top" },
+      );
+      mapLayer.addLayer(warn);
     }
 
     requestAnimationFrame(() => mapInstance && mapInstance.invalidateSize());
@@ -929,7 +1142,11 @@
       els.pulse.textContent = "";
       els.pulse.insertAdjacentHTML(
         "afterbegin",
-        `<span class="relative flex h-2.5 w-2.5"><span class="absolute inline-flex h-full w-full animate-ping rounded-full bg-green-400 opacity-75"></span><span class="relative inline-flex h-2.5 w-2.5 rounded-full bg-green-500"></span></span>LIVE`,
+        `<span class="relative flex h-2.5 w-2.5">
+          <span class="absolute inline-flex h-full w-full animate-ping rounded-full bg-green-400 opacity-75"></span>
+          <span class="relative inline-flex h-2.5 w-2.5 rounded-full bg-green-500"></span>
+        </span>
+        LIVE`,
       );
       els.pulse.classList.remove("opacity-50");
       els.pauseBtn.textContent = "Pause";
@@ -1007,6 +1224,13 @@
     unlockRequest({ ip: currentDetail.ip }, els.detailUnlockMsg, els.detailUnlockIp);
   });
 
+  if (els.detailLockIp) {
+    els.detailLockIp.addEventListener("click", () => {
+      if (!currentDetail || !currentDetail.ip) return;
+      lockIpRequest(currentDetail.ip, els.detailLockMsg, els.detailLockIp);
+    });
+  }
+
   els.unlockBtn.addEventListener("click", () => {
     const payload = {};
     const id = els.unlockIdentifier.value.trim();
@@ -1030,24 +1254,27 @@
     if (event.key === "Enter") lockIp();
   });
 
-  async function lockIp() {
-    const ip = els.lockIpInput.value.trim();
-    els.lockIpMsg.textContent = "";
-    els.lockIpMsg.className = "mt-2 text-sm font-medium";
+  async function lockIpRequest(ip, msgEl, btn) {
+    const value = (ip || "").trim();
+    const write = (text, cls) => {
+      if (!msgEl) return;
+      msgEl.textContent = text;
+      msgEl.className = "mt-2 text-sm font-medium " + (cls || "");
+    };
 
-    if (!ip) {
-      els.lockIpMsg.textContent = "Enter an IP address to block.";
-      els.lockIpMsg.className = "mt-2 text-sm font-medium text-amber-600 dark:text-amber-400";
+    if (!value) {
+      write("Enter an IP address to block.", "text-amber-600 dark:text-amber-400");
       return;
     }
-    if (!/^(\d{1,3}\.){3}\d{1,3}$/.test(ip)) {
-      els.lockIpMsg.textContent = "That does not look like a valid IPv4 address.";
-      els.lockIpMsg.className = "mt-2 text-sm font-medium text-red-600 dark:text-red-400";
+    if (!/^(\d{1,3}\.){3}\d{1,3}$/.test(value)) {
+      write("That does not look like a valid IPv4 address.", "text-red-600 dark:text-red-400");
       return;
     }
 
-    els.lockIpBtn.disabled = true;
-    els.lockIpBtn.textContent = "Locking…";
+    const iconBtn = btn && !!btn.querySelector("svg");
+    const originalLabel = btn ? btn.textContent : null;
+    if (btn) btn.disabled = true;
+    if (btn && !iconBtn) btn.textContent = "Locking…";
     try {
       const res = await fetch(LOCK_IP_URL, {
         method: "POST",
@@ -1056,31 +1283,36 @@
           Accept: "application/json",
           "X-CSRF-TOKEN": csrfToken,
         },
-        body: JSON.stringify({ ip }),
+        body: JSON.stringify({ ip: value }),
       });
       const data = await res.json();
       if (data && data.ok) {
-        els.lockIpMsg.textContent = `IP ${data.ip} is now blocked until you unlock it.`;
-        els.lockIpMsg.className = "mt-2 text-sm font-medium text-green-700 dark:text-green-300";
-        els.lockIpInput.value = "";
+        write(`IP ${data.ip} is now blocked until you unlock it.`, "text-green-700 dark:text-green-300");
+        if (els.lockIpInput) els.lockIpInput.value = "";
         APP?.toast?.(`IP ${data.ip} blocked`);
         poll();
       } else {
-        els.lockIpMsg.textContent = (data && (data.error || data.message)) || "Failed to block the IP.";
-        els.lockIpMsg.className = "mt-2 text-sm font-medium text-red-600 dark:text-red-400";
+        write((data && (data.error || data.message)) || "Failed to block the IP.", "text-red-600 dark:text-red-400");
         APP?.toast?.("Failed to block IP", "error");
       }
     } catch {
-      els.lockIpMsg.textContent = "An error occurred while blocking the IP.";
-      els.lockIpMsg.className = "mt-2 text-sm font-medium text-red-600 dark:text-red-400";
+      write("An error occurred while blocking the IP.", "text-red-600 dark:text-red-400");
       APP?.toast?.("Failed to block IP", "error");
     } finally {
-      els.lockIpBtn.disabled = false;
-      els.lockIpBtn.textContent = "Lock IP";
+      if (btn) {
+        btn.disabled = false;
+        if (!iconBtn && originalLabel != null) btn.textContent = originalLabel;
+      }
     }
   }
 
+  async function lockIp() {
+    await lockIpRequest(els.lockIpInput.value, els.lockIpMsg, els.lockIpBtn);
+  }
+
   const geoCache = loadGeoCache();
+
+  setupMapControls();
 
   start();
 })();

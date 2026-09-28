@@ -9,6 +9,7 @@ use App\Models\Enrollment;
 use App\Models\Notification;
 use App\Models\SystemSetting;
 use App\Models\User;
+use App\Support\UrlCipher;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -31,6 +32,7 @@ class ClassroomJoinController extends Controller
             'ok' => true,
             'classrooms' => $classrooms->map(fn (Classroom $c) => [
                 'id' => $c->id,
+                'ref' => UrlCipher::ref($c->id),
                 'name' => $c->name,
                 'subject' => $c->subject,
                 'description' => $c->description,
@@ -66,6 +68,7 @@ class ClassroomJoinController extends Controller
                 'subject' => $classroom->subject,
                 'description' => $classroom->description,
                 'teacherName' => $classroom->teacher ? trim($classroom->teacher->firstName.' '.$classroom->teacher->lastName) : 'Your teacher',
+                'ref' => UrlCipher::ref($classroom->id),
                 'joined' => $joined,
             ],
         ]);
@@ -160,6 +163,7 @@ class ClassroomJoinController extends Controller
                 'name' => $classroom->name,
                 'subject' => $classroom->subject,
                 'teacherId' => $classroom->teacherId,
+                'ref' => UrlCipher::ref($classroom->id),
             ],
         ]);
     }

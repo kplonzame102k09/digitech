@@ -48,6 +48,8 @@ class Notification extends Model
 
     const SOURCE_SECURITY = 'security';
 
+    const SOURCE_CLASSROOM = 'classroom';
+
     public function user()
     {
         return $this->belongsTo(User::class, 'userId', 'user_id');

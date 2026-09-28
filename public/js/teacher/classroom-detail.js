@@ -3,6 +3,10 @@
   if (!U) return;
 
   const classroomId = document.body.dataset.classroomId;
+  // The page was opened by an encrypted URL; register the token the view
+  // handed down before the first request is built.
+  const classroomRef = document.body.dataset.classroomRef;
+  if (classroomId && classroomRef) DG.learnRefs({ id: classroomId, ref: classroomRef });
   if (!classroomId) return;
 
   const $ = (id) => document.getElementById(id);
@@ -98,7 +102,7 @@
   async function loadClassroom() {
     setError("");
     try {
-      const data = await api(`/teacher/api/classrooms/${encodeURIComponent(classroomId)}`);
+      const data = await api(`/teacher/api/classrooms/${encodeURIComponent(DG.ref(classroomId))}`);
       classroom = data.classroom;
       $("detailName").textContent = classroom.name || "";
       $("detailMeta").textContent = `${classroom.subject || ""} · ${classroom.status}`;
@@ -142,7 +146,7 @@
           tone: "danger",
         }))) return;
         try {
-          await api(`/teacher/api/classrooms/${encodeURIComponent(classroomId)}/students/${encodeURIComponent(btn.dataset.remove)}`, { method: "DELETE" });
+          await api(`/teacher/api/classrooms/${encodeURIComponent(DG.ref(classroomId))}/students/${encodeURIComponent(DG.ref(btn.dataset.remove))}`, { method: "DELETE" });
           loadClassroom();
         } catch (error) {
           setError(error.message || "Failed to remove student.");
@@ -154,7 +158,7 @@
 
   async function loadActivities() {
     try {
-      const data = await api(`/teacher/api/classrooms/${encodeURIComponent(classroomId)}/activities`);
+      const data = await api(`/teacher/api/classrooms/${encodeURIComponent(DG.ref(classroomId))}/activities`);
       activities = data.activities || [];
       renderActivities();
     } catch (error) {
@@ -191,7 +195,7 @@
           tone: "danger",
         }))) return;
         try {
-          await api(`/teacher/api/classrooms/${encodeURIComponent(classroomId)}/activities/${encodeURIComponent(btn.dataset.delActivity)}`, { method: "DELETE" });
+          await api(`/teacher/api/classrooms/${encodeURIComponent(DG.ref(classroomId))}/activities/${encodeURIComponent(DG.ref(btn.dataset.delActivity))}`, { method: "DELETE" });
           loadActivities();
         } catch (error) {
           setError(error.message || "Failed to delete activity.");
@@ -203,7 +207,7 @@
 
   async function loadSubmissions() {
     try {
-      const data = await api(`/teacher/api/classrooms/${encodeURIComponent(classroomId)}/submissions`);
+      const data = await api(`/teacher/api/classrooms/${encodeURIComponent(DG.ref(classroomId))}/submissions`);
       submissions = data.submissions || [];
       renderSubmissions();
     } catch (error) {
@@ -241,7 +245,7 @@
   async function openSubmission(id) {
     setError("");
     try {
-      const data = await api(`/teacher/api/classrooms/${encodeURIComponent(classroomId)}/submissions/${encodeURIComponent(id)}`);
+      const data = await api(`/teacher/api/classrooms/${encodeURIComponent(DG.ref(classroomId))}/submissions/${encodeURIComponent(DG.ref(id))}`);
       const s = data.submission;
       activeSubmission = s;
       $("subPhoto").src = photoOf(s.studentPhoto);
@@ -281,7 +285,7 @@
         semester: $("gradeSemester")?.value || "1st Semester",
         schoolYear: $("gradeYear")?.value || "",
       }).toString();
-      const data = await api(`/teacher/api/classrooms/${encodeURIComponent(classroomId)}/gradebook?${params}`);
+      const data = await api(`/teacher/api/classrooms/${encodeURIComponent(DG.ref(classroomId))}/gradebook?${params}`);
       const body = $("gradebookRows");
       if (!data.rows.length) {
         body.innerHTML = `<tr><td colspan="10" class="p-8 text-center text-slate-500 dark:text-slate-400">No roster students.</td></tr>`;
@@ -321,7 +325,7 @@
 
   async function applyAverages(studentId) {
     try {
-      const data = await api(`/teacher/api/classrooms/${encodeURIComponent(classroomId)}/gradebook/${encodeURIComponent(studentId)}`, {
+      const data = await api(`/teacher/api/classrooms/${encodeURIComponent(DG.ref(classroomId))}/gradebook/${encodeURIComponent(DG.ref(studentId))}`, {
         method: "PUT",
         body: JSON.stringify({
           autofill: true,
@@ -347,7 +351,7 @@
       return v === "" || v === undefined ? null : Number(v);
     };
     try {
-      const data = await api(`/teacher/api/classrooms/${encodeURIComponent(classroomId)}/gradebook/${encodeURIComponent(studentId)}`, {
+      const data = await api(`/teacher/api/classrooms/${encodeURIComponent(DG.ref(classroomId))}/gradebook/${encodeURIComponent(DG.ref(studentId))}`, {
         method: "PUT",
         body: JSON.stringify({
           prelim: val("prelim"),
@@ -380,7 +384,7 @@
   $("copyLink")?.addEventListener("click", () => copyText($("detailLink").value));
   $("regenBoth")?.addEventListener("click", async () => {
     try {
-      await api(`/teacher/api/classrooms/${encodeURIComponent(classroomId)}/regenerate`, { method: "POST", body: JSON.stringify({ target: "both" }) });
+      await api(`/teacher/api/classrooms/${encodeURIComponent(DG.ref(classroomId))}/regenerate`, { method: "POST", body: JSON.stringify({ target: "both" }) });
       loadClassroom();
     } catch (error) {
       setError(error.message || "Regenerate failed.");
@@ -388,7 +392,7 @@
   });
   $("regenCode")?.addEventListener("click", async () => {
     try {
-      await api(`/teacher/api/classrooms/${encodeURIComponent(classroomId)}/regenerate`, { method: "POST", body: JSON.stringify({ target: "code" }) });
+      await api(`/teacher/api/classrooms/${encodeURIComponent(DG.ref(classroomId))}/regenerate`, { method: "POST", body: JSON.stringify({ target: "code" }) });
       loadClassroom();
     } catch (error) {
       setError(error.message || "Regenerate failed.");
@@ -396,7 +400,7 @@
   });
   $("archiveToggle")?.addEventListener("click", async () => {
     try {
-      await api(`/teacher/api/classrooms/${encodeURIComponent(classroomId)}/archive`, { method: "POST", body: JSON.stringify({}) });
+      await api(`/teacher/api/classrooms/${encodeURIComponent(DG.ref(classroomId))}/archive`, { method: "POST", body: JSON.stringify({}) });
       loadClassroom();
     } catch (error) {
       setError(error.message || "Archive failed.");
@@ -409,7 +413,7 @@
     event.preventDefault();
     setError("");
     try {
-      await api(`/teacher/api/classrooms/${encodeURIComponent(classroomId)}/activities`, {
+      await api(`/teacher/api/classrooms/${encodeURIComponent(DG.ref(classroomId))}/activities`, {
         method: "POST",
         body: JSON.stringify({
           title: $("activityTitle").value.trim(),
@@ -429,7 +433,7 @@
   // Submissions
   $("submissionFilter")?.addEventListener("change", renderSubmissions);
   $("exportSubmissions")?.addEventListener("click", () => {
-    window.location.href = `/teacher/api/classrooms/${encodeURIComponent(classroomId)}/submissions/export`;
+    window.location.href = `/teacher/api/classrooms/${encodeURIComponent(DG.ref(classroomId))}/submissions/export`;
   });
   document.querySelector("[data-close-sub]")?.addEventListener("click", () => $("submissionDialog")?.close());
   $("saveScore")?.addEventListener("click", async () => {
@@ -440,7 +444,7 @@
       return;
     }
     try {
-      const data = await api(`/teacher/api/classrooms/${encodeURIComponent(classroomId)}/submissions/${encodeURIComponent(activeSubmission.id)}/score`, {
+      const data = await api(`/teacher/api/classrooms/${encodeURIComponent(DG.ref(classroomId))}/submissions/${encodeURIComponent(DG.ref(activeSubmission.id))}/score`, {
         method: "POST",
         body: JSON.stringify({ score: Number(v) }),
       });
@@ -455,7 +459,7 @@
   $("returnSubmission")?.addEventListener("click", async () => {
     if (!activeSubmission) return;
     try {
-      const data = await api(`/teacher/api/classrooms/${encodeURIComponent(classroomId)}/submissions/${encodeURIComponent(activeSubmission.id)}/return`, { method: "POST", body: JSON.stringify({}) });
+      const data = await api(`/teacher/api/classrooms/${encodeURIComponent(DG.ref(classroomId))}/submissions/${encodeURIComponent(DG.ref(activeSubmission.id))}/return`, { method: "POST", body: JSON.stringify({}) });
       activeSubmission = { ...activeSubmission, ...data.submission };
       $("subStatus").textContent = data.submission.status;
       loadSubmissions();
@@ -490,8 +494,8 @@
     if (section && window.ClassroomVideo) {
       window.ClassroomVideo.init({
         classroomId,
-        meetingsUrl: `/teacher/api/classrooms/${encodeURIComponent(classroomId)}/meetings`,
-        tokenUrl: `/teacher/api/classrooms/${encodeURIComponent(classroomId)}/video/token`,
+        meetingsUrl: `/teacher/api/classrooms/${encodeURIComponent(DG.ref(classroomId))}/meetings`,
+        tokenUrl: `/teacher/api/classrooms/${encodeURIComponent(DG.ref(classroomId))}/video/token`,
         isTeacher: true,
         listEl: document.getElementById("videoMeetings-teacher"),
         errorEl: document.getElementById("videoError-teacher"),

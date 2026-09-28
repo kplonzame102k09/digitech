@@ -87,7 +87,7 @@
   }
 
   function openDetail(id) {
-    window.location.href = `/teacher/classrooms/${encodeURIComponent(id)}`;
+    window.location.href = `/teacher/classrooms/${encodeURIComponent(DG.ref(id))}`;
   }
 
   function showDeleteConfirm(id) {
@@ -101,7 +101,7 @@
   async function deleteClassroom(id) {
     setError("");
     try {
-      await api(`/teacher/api/classrooms/${encodeURIComponent(id)}`, { method: "DELETE" });
+      await api(`/teacher/api/classrooms/${encodeURIComponent(DG.ref(id))}`, { method: "DELETE" });
       classrooms = classrooms.filter((c) => String(c.id) !== String(id));
       renderGrid();
       APP.toast("Classroom deleted.");

@@ -3,11 +3,7 @@
 
 <head>
     @include('partials.meta', ['pageTitle' => 'System Settings | Digitech College'])
-    <script src="https://cdn.tailwindcss.com"></script>
-    <script>
-        tailwind.config = { darkMode: "class" };
-    </script>
-    <script src="https://unpkg.com/lucide@latest"></script>
+    @include('partials.assets')
     <link rel="stylesheet" href="{{ asset('css/custom.css') }}" />
 </head>
 

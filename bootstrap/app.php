@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Middleware\BlockManuallyLockedIp;
+use App\Http\Middleware\DecryptRouteParameters;
 use App\Http\Middleware\EnsurePasswordUpdated;
 use App\Http\Middleware\EnsureStudentEnrollment;
 use App\Http\Middleware\EnsureUserRole;
@@ -28,6 +29,12 @@ return Application::configure(basePath: dirname(__DIR__))
             'student.enrolled' => EnsureStudentEnrollment::class,
             'manual-ip-block' => BlockManuallyLockedIp::class,
         ]);
+
+        // Runs first so route model binding, controllers, policies and the
+        // view closures that echo an id all receive the plaintext identifier.
+        // Unmarked values pass through, so links minted before the cipher
+        // existed keep working.
+        $middleware->prependToGroup('web', DecryptRouteParameters::class);
 
         $middleware->web(append: [
             TrackActivity::class,

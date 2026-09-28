@@ -4,10 +4,7 @@
 <head>
     @include('partials.meta', ['pageTitle' => 'Request Account | Digitech College'])
     <meta name="csrf-token" content="{{ csrf_token() }}">
-    <script src="https://cdn.tailwindcss.com"></script>
-    <script>
-        tailwind.config = { darkMode: "class" };
-    </script>
+    @include('partials.assets')
     <script>
         (function () {
             try {
@@ -20,7 +17,6 @@
             } catch (e) {}
         })();
     </script>
-    <script src="https://unpkg.com/lucide@latest"></script>
     <link rel="stylesheet" href="{{ asset('css/custom.css') }}">
     <link rel="icon" href="{{ asset('images/16432.png') }}" type="png">
 </head>

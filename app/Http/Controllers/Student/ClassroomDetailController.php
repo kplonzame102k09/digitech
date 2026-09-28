@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Student;
 use App\Http\Controllers\Controller;
 use App\Models\Classroom;
 use App\Policies\ClassroomWorkPolicy;
+use App\Support\UrlCipher;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
@@ -32,6 +33,8 @@ class ClassroomDetailController extends Controller
             'ok' => true,
             'classroom' => [
                 'id' => $classroom->id,
+
+                'ref' => UrlCipher::ref($classroom->id),
                 'name' => $classroom->name,
                 'subject' => $classroom->subject,
                 'description' => $classroom->description,
@@ -44,6 +47,8 @@ class ClassroomDetailController extends Controller
             ],
             'classmates' => $classroom->students->map(fn ($s) => [
                 'id' => $s->user_id,
+
+                'ref' => UrlCipher::ref($s->user_id),
                 'firstName' => $s->firstName,
                 'lastName' => $s->lastName,
                 'email' => $s->email,

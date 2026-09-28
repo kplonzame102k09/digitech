@@ -10,6 +10,7 @@ use App\Models\Notification;
 use App\Models\SystemSetting;
 use App\Models\User;
 use App\Policies\ClassroomWorkPolicy;
+use App\Support\UrlCipher;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
@@ -46,7 +47,8 @@ class ClassroomActivityController extends Controller
             'subject' => $classroom->subject,
             'activities' => $activities->map(fn (ClassroomActivity $a) => [
                 'id' => $a->id,
-                'title' => $a->title,
+
+                'ref' => UrlCipher::ref($a->id),                'title' => $a->title,
                 'description' => $a->description,
                 'term' => $a->term ?? 'Prelim',
                 'dueDate' => $a->dueDate?->format('Y-m-d'),
@@ -100,7 +102,8 @@ class ClassroomActivityController extends Controller
 
         return response()->json(['ok' => true, 'activity' => [
             'id' => $activity->id,
-            'title' => $activity->title,
+
+            'ref' => UrlCipher::ref($activity->id),            'title' => $activity->title,
             'description' => $activity->description,
             'term' => $activity->term,
             'dueDate' => $activity->dueDate?->format('Y-m-d'),

@@ -8,6 +8,7 @@ use App\Mail\AccountRequestDenied;
 use App\Models\AccountRequest;
 use App\Models\User;
 use App\Support\ReferenceCode;
+use App\Support\UrlCipher;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -57,6 +58,9 @@ class AccountRequestController extends Controller
             'requests' => $requests->map(function ($request) {
                 return [
                     'id' => $request->id,
+                    // Opaque stand-in for the auto-increment primary key, so
+                    // the approve/reject/show URLs carry no enumerable id.
+                    'ref' => UrlCipher::ref($request->id),
                     'request_id' => $request->request_id,
                     'role' => $request->role,
                     'status' => $request->status,
@@ -93,6 +97,7 @@ class AccountRequestController extends Controller
             'ok' => true,
             'request' => [
                 'id' => $accountRequest->id,
+                'ref' => UrlCipher::ref($accountRequest->id),
                 'request_id' => $accountRequest->request_id,
                 'role' => $accountRequest->role,
                 'status' => $accountRequest->status,

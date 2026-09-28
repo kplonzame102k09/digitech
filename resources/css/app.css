@@ -5,6 +5,31 @@
 @source '../../vendor/laravel/framework/src/Illuminate/Pagination/resources/views/*.blade.php';
 @source '../../storage/framework/views/*.php';
 
+/*
+ * These pages used to load Tailwind through the Play CDN, which compiles
+ * utilities in the browser at runtime. That meant class names assembled inside
+ * JavaScript template literals worked without appearing as literal strings.
+ * A pre-built stylesheet has to be told about them up front, otherwise those
+ * badges silently lose their colour.
+ *
+ * public/js/teacher/attendance-review.js
+ * public/js/teacher/attendance-flow.js
+ * public/js/admin/attendance-finalization.js
+ *   build: bg-{c}-100, bg-{c}-500, bg-{c}-600, text-{c}-300, text-{c}-400,
+ *          text-{c}-600, text-{c}-700
+ *   where {c} is any of the status colours below.
+ *
+ * 'orange' is listed separately because attendance-flow.js feeds it into
+ * summaryChip('Awaiting check', ..., 'orange'), which is the same template
+ * literal. Nothing writes bg-orange-100 or text-orange-300 literally anywhere,
+ * so a narrower list drops those two rules and the "Awaiting check" chip loses
+ * its background and heading colour.
+ */
+@source inline("{hover:,dark:}{bg,text}-{amber,emerald,rose,slate,violet}-{100,300,400,500,600,700}");
+@source inline("{hover:,dark:}{bg,text}-orange-{100,300,400,500,600,700}");
+@source inline("dark:bg-{amber,emerald,rose,slate,violet,orange}-500/10");
+
+
 @theme {
     --font-sans: 'Instrument Sans', ui-sans-serif, system-ui, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji',
         'Segoe UI Symbol', 'Noto Color Emoji';

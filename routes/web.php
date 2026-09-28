@@ -12,6 +12,7 @@ use App\Http\Controllers\Analytics\GradeAnalyticsController;
 use App\Http\Controllers\Authentication\LoginController;
 use App\Http\Controllers\Authentication\PasswordController;
 use App\Http\Controllers\ClassroomFileController;
+use App\Http\Controllers\ClassroomMessageController;
 use App\Http\Controllers\PortalDataController;
 use App\Http\Controllers\StorageFileController;
 use App\Http\Controllers\Student\ClassroomDetailController;
@@ -37,6 +38,8 @@ Route::get('/', function () {
 Route::get('/auth/login', [LoginController::class, 'showLogin'])->name('auth.login');
 Route::get('/login', [LoginController::class, 'showLogin'])->name('login');
 Route::post('/login', [LoginController::class, 'login'])->middleware(['manual-ip-block', 'throttle:login'])->name('login.submit');
+Route::get('/logging_in_user_id/{logging_in_user_id}', [LoginController::class, 'loggingIn'])->name('login.logging-in');
+Route::post('/auth/login/complete', [LoginController::class, 'completeLogin'])->middleware('throttle:login-complete')->name('login.complete');
 Route::post('/logout', [LoginController::class, 'logout'])->middleware('auth')->name('logout');
 Route::get('/auth/password/change', [PasswordController::class, 'show'])->middleware('auth')->name('auth.password.change');
 Route::post('/auth/password/change', [PasswordController::class, 'update'])->middleware('auth')->name('auth.password.update');
@@ -60,6 +63,7 @@ Route::middleware(['auth', 'password.updated'])->prefix('api/portal')->group(fun
     Route::get('/users/import/{batchId}', [PortalDataController::class, 'importStatus']);
     Route::post('/photo', [PortalDataController::class, 'uploadPhoto'])->middleware('throttle:uploads');
     Route::post('/location', [PortalDataController::class, 'saveLocation'])->middleware('throttle:uploads');
+    Route::post('/self-location', [PortalDataController::class, 'saveSelfLocation'])->middleware('throttle:uploads');
     Route::post('/uploads', [PortalDataController::class, 'uploadImage'])->middleware('throttle:uploads');
     Route::post('/requirements/upload', [PortalDataController::class, 'uploadRequirementFile'])->middleware('throttle:uploads');
     Route::get('/requirements/files/{file}', [PortalDataController::class, 'downloadRequirementFile']);
@@ -211,6 +215,13 @@ Route::middleware(['auth', 'password.updated'])->group(function () {
     // Classroom files live on the private disk behind ownership checks.
     Route::post('/api/classroom-files', [ClassroomFileController::class, 'upload'])->middleware('throttle:uploads')->name('api.classroom-files.upload');
     Route::get('/api/classroom-files/{file}', [ClassroomFileController::class, 'download'])->name('api.classroom-files.download');
+
+    // Classroom message channel. No role middleware: the owning teacher and the
+    // roster students are both legitimate participants, and ClassroomWorkPolicy
+    // decides per classroom. Admins are allowed through as owners.
+    Route::get('/api/classrooms/{id}/messages', [ClassroomMessageController::class, 'index'])->name('api.classroom-messages.index');
+    Route::post('/api/classrooms/{id}/messages', [ClassroomMessageController::class, 'store'])->middleware('throttle:classroom-messages')->name('api.classroom-messages.store');
+    Route::post('/api/classrooms/{id}/messages/read', [ClassroomMessageController::class, 'markRead'])->name('api.classroom-messages.read');
 });
 
 Route::middleware(['auth', 'password.updated', 'role:parent'])->prefix('parent')->name('parent.')->group(function () {

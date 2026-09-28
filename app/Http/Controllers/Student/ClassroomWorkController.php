@@ -8,6 +8,7 @@ use App\Models\Classroom;
 use App\Models\ClassroomActivity;
 use App\Models\ClassroomSubmission;
 use App\Policies\ClassroomWorkPolicy;
+use App\Support\UrlCipher;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
@@ -42,13 +43,15 @@ class ClassroomWorkController extends Controller
             'subject' => $classroom->subject,
             'activities' => $activities->map(fn (ClassroomActivity $a) => [
                 'id' => $a->id,
-                'title' => $a->title,
+
+                'ref' => UrlCipher::ref($a->id),                'title' => $a->title,
                 'description' => $a->description,
                 'term' => $a->term ?? 'Prelim',
                 'dueDate' => $a->dueDate?->format('Y-m-d'),
                 'submission' => isset($mine[$a->id]) ? [
                     'id' => $mine[$a->id]->id,
-                    'status' => $mine[$a->id]->status,
+
+                    'ref' => UrlCipher::ref($mine[$a->id]->id),                    'status' => $mine[$a->id]->status,
                     'score' => $mine[$a->id]->score !== null ? (float) $mine[$a->id]->score : null,
                     'fileUrl' => $mine[$a->id]->fileUrl,
                     'submittedAt' => $mine[$a->id]->submittedAt?->toIso8601String(),
@@ -113,7 +116,8 @@ class ClassroomWorkController extends Controller
 
         return response()->json(['ok' => true, 'submission' => [
             'id' => $submission->id,
-            'status' => $submission->status,
+
+            'ref' => UrlCipher::ref($submission->id),            'status' => $submission->status,
         ]], 201);
     }
 

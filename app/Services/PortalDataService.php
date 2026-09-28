@@ -16,15 +16,16 @@ use App\Models\PortalCollection;
 use App\Models\Requirement;
 use App\Models\SystemSetting;
 use App\Models\User;
+use App\Support\UrlCipher;
 use DateTimeInterface;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\QueryException;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Mail;
+use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 
@@ -122,13 +123,61 @@ class PortalDataService
 
     public function bootPayload(?User $authUser = null): array
     {
+        $collections = $this->allCollections($authUser);
+
         return [
             'csrf' => csrf_token(),
             'logoutUrl' => url('/logout'),
             'apiBase' => url('/api/portal'),
             'currentUser' => $authUser ? $this->userToJs($authUser) : null,
-            'collections' => $this->allCollections($authUser),
+            'collections' => $collections,
+            // Opaque tokens for every id the page is allowed to see, so the
+            // client can build encrypted URLs without a second round trip.
+            'refs' => $this->refMap($collections),
         ];
+    }
+
+    /**
+     * Build the identifier -> opaque-token map the client uses to construct
+     * encrypted URLs.
+     *
+     * Derived from the collections the caller was already served, so it can
+     * never widen visibility: if a row is not in the actor's own payload, the
+     * actor has no token for it. Rows reached through the dedicated REST
+     * endpoints (classrooms, activities, submissions, meetings, attendance
+     * sessions, account requests) are not mirrored here; those endpoints emit
+     * their own `ref` and the client learns them as responses arrive.
+     *
+     * @param  array<string, mixed>  $collections
+     * @return array<string, string>
+     */
+    public function refMap(array $collections): array
+    {
+        if (! UrlCipher::enabled()) {
+            return [];
+        }
+
+        $map = [];
+
+        // user_id is the identifier that appears in URLs for a person
+        // (the parent ?student= deep link, the by-recorder analytics path).
+        foreach ($collections['users'] ?? [] as $row) {
+            if (is_array($row) && isset($row['id']) && is_string($row['id'])) {
+                $map[$row['id']] = UrlCipher::ref($row['id']);
+            }
+        }
+
+        // Record ids addressed by the apiResource routes: student/api/
+        // enrollments|grades|document-requests/{id}.
+        foreach (['enrollments', 'grades', 'documentRequests', 'attendance', 'requirements', 'competencies'] as $key) {
+            foreach ($collections[$key] ?? [] as $row) {
+                if (is_array($row) && isset($row['id']) && is_string($row['id'])) {
+                    $map[$row['id']] = UrlCipher::ref($row['id']);
+                }
+            }
+        }
+
+        return $map;
     }
 
     public function allCollections(?User $actor = null): array
@@ -512,13 +561,156 @@ class PortalDataService
     }
 
     /**
+     * Resolve the home centroid for many users in a fixed number of queries.
+     *
+     * resolveHomeCentroid() issues up to 7 PSGC queries per user, so the admin
+     * live monitor spent 42 of its 54 queries per poll purely re-reading static
+     * reference data. This performs one bulk query per reference table for the
+     * whole directory, then resolves each user in memory with the exact same
+     * precedence rules: code match before name match, child lookups constrained
+     * to the resolved parent, and city -> province -> region fallback.
+     *
+     * @param  iterable<User>  $users
+     * @return array<string, array{lat: float, lon: float, level: string, label: string, address: string}|null>
+     */
+    public function resolveHomeCentroids(iterable $users): array
+    {
+        $users = collect($users);
+
+        if ($users->isEmpty()) {
+            return [];
+        }
+
+        $values = static fn (mixed $v): string => is_string($v) ? trim($v) : '';
+
+        // bucket column = the parent the lookup is constrained on; null means
+        // the lookup is unconstrained, so every row shares one bucket.
+        $regions = $this->bulkLocationIndex('region', null, $users->map(fn (User $u): string => $values($u->region)));
+        $provinces = $this->bulkLocationIndex('province', 'region_code', $users->map(fn (User $u): string => $values($u->province)));
+        $cities = $this->bulkLocationIndex('city', 'province_code', $users->map(fn (User $u): string => $values($u->city)));
+        $barangays = $this->bulkLocationNames('barangay', $users->map(fn (User $u): string => $values($u->barangay)));
+
+        $out = [];
+
+        foreach ($users as $user) {
+            $region = $this->pickBulkRow($regions, $values($user->region), null);
+            $province = $this->pickBulkRow($provinces, $values($user->province), $region?->region_code);
+            $city = $this->pickBulkRow($cities, $values($user->city), $province?->province_code);
+
+            $home = null;
+
+            foreach ([['city', $city], ['province', $province], ['region', $region]] as [$level, $row]) {
+                if ($row && isset($row->latitude, $row->longitude) && $row->latitude !== null && $row->longitude !== null) {
+                    $home = [
+                        'lat' => (float) $row->latitude,
+                        'lon' => (float) $row->longitude,
+                        'level' => $level,
+                        'label' => 'Registered address (home) · '.Str::ucfirst($level),
+                        'address' => $this->registeredAddressLabel($user, $region, $province, $city, $barangays),
+                    ];
+                    break;
+                }
+            }
+
+            $out[$user->user_id] = $home;
+        }
+
+        return $out;
+    }
+
+    /**
+     * Load every PSGC row matching the given codes or names, indexed by parent
+     * code so lookups stay scoped exactly like matchLocationRow() scopes them.
+     *
+     * @param  Collection<int, string>  $values
+     * @return array{byCode: array<string, array<string, object>>, byName: array<string, array<string, object>>}
+     */
+    private function bulkLocationIndex(string $field, ?string $bucketColumn, $values): array
+    {
+        [$table, $codeColumn] = self::LOCATION_TABLES[$field] ?? [];
+
+        $values = $values->filter(fn (string $v): bool => $v !== '')->unique()->values();
+
+        $index = ['byCode' => [], 'byName' => []];
+
+        if (! $table || $values->isEmpty()) {
+            return $index;
+        }
+
+        $columns = $bucketColumn === null
+            ? [$codeColumn, 'name', 'latitude', 'longitude']
+            : [$codeColumn, $bucketColumn, 'name', 'latitude', 'longitude'];
+
+        $rows = DB::table($table)
+            ->whereIn($codeColumn, $values->all())
+            ->orWhereIn('name', $values->all())
+            ->get($columns);
+
+        foreach ($rows as $row) {
+            $bucket = $bucketColumn === null ? '' : (string) ($row->{$bucketColumn} ?? '');
+            $index['byCode'][$bucket][(string) $row->{$codeColumn}] = $row;
+            $index['byName'][$bucket][(string) $row->name] = $row;
+        }
+
+        return $index;
+    }
+
+    /**
+     * Load code -> name for a field in one query, for address labels.
+     *
+     * @param  Collection<int, string>  $values
+     * @return array<string, string>
+     */
+    private function bulkLocationNames(string $field, $values): array
+    {
+        [$table, $codeColumn, $nameColumn] = self::LOCATION_TABLES[$field] ?? [];
+
+        $values = $values->filter(fn (string $v): bool => $v !== '')->unique()->values();
+
+        if (! $table || $values->isEmpty()) {
+            return [];
+        }
+
+        $map = [];
+
+        foreach (DB::table($table)->whereIn($codeColumn, $values->all())->get([$codeColumn, $nameColumn]) as $row) {
+            $map[(string) $row->{$codeColumn}] = (string) $row->{$nameColumn};
+        }
+
+        return $map;
+    }
+
+    /**
+     * Code match before name match, within the resolved parent bucket.
+     *
+     * @param  array{byCode: array<string, array<string, object>>, byName: array<string, array<string, object>>}  $index
+     */
+    private function pickBulkRow(array $index, string $value, ?string $parentCode): ?object
+    {
+        if ($value === '') {
+            return null;
+        }
+
+        $bucket = (string) ($parentCode ?? '');
+
+        return $index['byCode'][$bucket][$value] ?? $index['byName'][$bucket][$value] ?? null;
+    }
+
+    /**
      * Human-readable address line built from resolved names with the barangay
      * and city name as the finest components shown in the map tooltip.
+     *
+     * @param  array<string, string>  $barangayNames  preloaded code => name, to avoid a query per user
      */
-    private function registeredAddressLabel(User $user, ?object $region, ?object $province, ?object $city): string
+    private function registeredAddressLabel(User $user, ?object $region, ?object $province, ?object $city, array $barangayNames = []): string
     {
+        $barangayValue = is_string($user->barangay) ? trim($user->barangay) : '';
+        $barangay = $barangayValue === ''
+            ? $barangayValue
+            : ($barangayNames[$barangayValue] ?? $barangayValue);
+
         $parts = array_values(array_filter([
-            $this->resolveLocationName('barangay', $user->barangay),
+            $barangay,
             $city->name ?? $this->resolveLocationName('city', $user->city),
             $province->name ?? $this->resolveLocationName('province', $user->province),
             $region->name ?? $this->resolveLocationName('region', $user->region),
@@ -2281,7 +2473,7 @@ class PortalDataService
         } catch (\Throwable $e) {
             // Auditing must never break a request.
         }
-    
+
     }
 
     protected function auditUserManagement(?User $actor, array $createdIds, array $deletedIds): void

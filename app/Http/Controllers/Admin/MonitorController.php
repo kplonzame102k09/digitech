@@ -6,9 +6,11 @@ use App\Http\Controllers\Controller;
 use App\Models\ActivityLog;
 use App\Models\AuditLog;
 use App\Models\User;
+use App\Services\PortalDataService;
 use App\Support\LoginAttemptGuard;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 
@@ -19,6 +21,13 @@ class MonitorController extends Controller
 
     /** Bound on rows returned per poll so the page stays cheap to refresh. */
     private const ACTIVITY_LIMIT = 100;
+
+    /**
+     * Upper bound on the 30-day manual-IP-lock candidate scan. The rows are
+     * only used to look up which IPs are still locked, so a generous cap keeps
+     * the per-poll query bounded without changing realistic results.
+     */
+    private const MANUAL_LOCK_SCAN_LIMIT = 500;
 
     private const ALLOWED_ROLES = ['student', 'teacher', 'admin', 'parent', 'guest'];
 
@@ -148,8 +157,67 @@ class MonitorController extends Controller
             'online' => $online,
             'users' => $this->userDirectory($online),
             'lockedAccounts' => $lockedAccounts,
+            'loginAttempts' => $this->loginAttemptMarkers($window, $role),
             'stats' => $this->stats($window, count($online)),
         ]);
+    }
+
+    /**
+     * Compact per-IP summary of failed/blocked sign-in attempts inside the
+     * chosen window, so the admin map can render a warning marker per source.
+     * Grouping happens in PHP (portable across sqlite/mysql) and the result is
+     * capped so a brute-force storm cannot swamp the map with identical dots.
+     */
+    protected function loginAttemptMarkers(int $window, string $role): array
+    {
+        // Grouping happens in SQL: the previous version pulled up to 5000 rows
+        // into PHP on every poll just to reduce them to the 40 newest IPs.
+        // COUNT/ROW_NUMBER window functions give the same per-IP count and
+        // newest-row detail in one round trip, and without the 5000-row cap
+        // that could silently under-count a busy IP.
+        $table = (new ActivityLog)->getTable();
+
+        $scoped = DB::table($table)
+            ->whereIn('kind', ['login_failed', 'login_blocked', 'blocked'])
+            ->where('created_at', '>=', now()->subMinutes($window))
+            ->whereNotNull('ip_address')
+            ->where('ip_address', '<>', '');
+
+        if ($role !== '') {
+            $scoped->where('role', $role);
+        }
+
+        $markers = DB::query()
+            ->fromSub(
+                $scoped
+                    ->select(['ip_address', 'kind', 'role', 'context', 'created_at'])
+                    ->selectRaw('COUNT(*) OVER (PARTITION BY ip_address) AS attempts')
+                    ->selectRaw('ROW_NUMBER() OVER (PARTITION BY ip_address ORDER BY created_at DESC, id DESC) AS rn'),
+                'grouped'
+            )
+            ->where('rn', 1)
+            // Freshest sources first, then capped so the map stays readable.
+            ->orderByDesc('created_at')
+            ->limit(40)
+            ->get(['ip_address', 'attempts', 'kind', 'role', 'context', 'created_at']);
+
+        return $markers
+            ->map(function ($marker): array {
+                $context = $marker->context ? json_decode($marker->context, true) : null;
+                $lastAt = $marker->created_at !== null
+                    ? Carbon::parse($marker->created_at)->toIso8601String()
+                    : '';
+
+                return [
+                    'ip' => (string) $marker->ip_address,
+                    'count' => (int) $marker->attempts,
+                    'lastAt' => $lastAt,
+                    'lastKind' => $marker->kind,
+                    'role' => $marker->role,
+                    'target' => is_array($context) ? ($context['target'] ?? null) : null,
+                ];
+            })
+            ->all();
     }
 
     protected function buildActivityQuery(string $type, string $event, string $role, string $search)
@@ -216,16 +284,54 @@ class MonitorController extends Controller
     protected function userDirectory(array $online): array
     {
         $onlineByUserId = collect($online)->keyBy('userId');
-        $portal = app(\App\Services\PortalDataService::class);
+        $portal = app(PortalDataService::class);
 
-        return User::query()
+        $directory = User::query()
             ->orderBy('role')
             ->orderBy('firstName')
-            ->get(['user_id', 'firstName', 'lastName', 'role', 'contact', 'region', 'province', 'city', 'barangay', 'profile_extra'])
-            ->map(function (User $user) use ($onlineByUserId, $portal): array {
+            ->get(['user_id', 'firstName', 'lastName', 'role', 'contact', 'region', 'province', 'city', 'barangay', 'profile_extra']);
+
+        // Resolve every registered-address centroid in 4 bulk queries rather
+        // than up to 7 per user on every 4-second poll.
+        $homes = $portal->resolveHomeCentroids($directory);
+
+        return $directory
+            ->map(function (User $user) use ($onlineByUserId, $homes): array {
                 $current = $onlineByUserId->get($user->user_id);
                 $extra = is_array($user->profile_extra) ? $user->profile_extra : [];
                 $gps = $extra['_gps'] ?? null;
+
+                // A user-set "I am actually here" pin (≤ 90 days old) beats the
+                // registered-address centroid as the IP/home fallback.
+                $home = null;
+                $homeFix = $extra['_home_fix'] ?? null;
+                if (is_array($homeFix) && isset($homeFix['lat'], $homeFix['lon'])) {
+                    $fixTs = is_string($homeFix['at'] ?? null) ? strtotime($homeFix['at']) : false;
+                    if ($fixTs !== false && $fixTs >= now()->subDays(90)->getTimestamp()) {
+                        $home = [
+                            'lat' => (float) $homeFix['lat'],
+                            'lon' => (float) $homeFix['lon'],
+                            'level' => 'pinned',
+                            'label' => 'Pinned location (self-set)',
+                            'address' => null,
+                            'pinned' => true,
+                        ];
+                    }
+                }
+                if ($home === null) {
+                    $home = $homes[$user->user_id] ?? null;
+                }
+
+                $trail = collect(is_array($extra['_gps_history'] ?? null) ? $extra['_gps_history'] : [])
+                    ->map(fn (array $pt): array => [
+                        'lat' => (float) ($pt['lat'] ?? 0),
+                        'lon' => (float) ($pt['lon'] ?? 0),
+                        'accuracy' => isset($pt['accuracy']) ? (float) $pt['accuracy'] : null,
+                        'at' => $pt['at'] ?? null,
+                    ])
+                    ->filter(fn (array $pt): bool => $pt['lat'] !== 0.0 || $pt['lon'] !== 0.0)
+                    ->values()
+                    ->all();
 
                 return [
                     'userId' => $user->user_id,
@@ -234,9 +340,15 @@ class MonitorController extends Controller
                     'phone' => $user->contact,
                     'online' => $current !== null,
                     'ip' => $current['ip'] ?? null,
-                    'home' => $portal->resolveHomeCentroid($user),
+                    'home' => $home,
+                    'trail' => $trail,
                     'gps' => is_array($gps) && isset($gps['lat'], $gps['lon'])
-                        ? ['lat' => (float) $gps['lat'], 'lon' => (float) $gps['lon'], 'at' => $gps['at'] ?? null]
+                        ? [
+                            'lat' => (float) $gps['lat'],
+                            'lon' => (float) $gps['lon'],
+                            'accuracy' => isset($gps['accuracy']) ? (float) $gps['accuracy'] : null,
+                            'at' => $gps['at'] ?? null,
+                        ]
                         : null,
                     'lastActivity' => $current['lastActivity'] ?? null,
                     'ago' => $current['ago'] ?? null,
@@ -369,10 +481,20 @@ class MonitorController extends Controller
         }
 
         // Manual IP blocks placed by an admin (persist until unlocked).
+        // Grouped by IP and reported at its most recent lock. Grouping before
+        // the limit matters twice over: a single IP that was re-blocked over
+        // and over would otherwise fill the whole scan budget on raw rows and
+        // push every other active block off the end of the list, and it would
+        // be reported once per lock event instead of once. The scan is still
+        // bounded, because an admin cannot meaningfully hold more than this
+        // many blocks.
         $manualLocks = AuditLog::query()
             ->where('action', 'ip_manual_lock')
             ->where('createdAt', '>=', now()->subDays(30))
-            ->orderByDesc('createdAt')
+            ->groupBy('recordId')
+            ->selectRaw('recordId, MAX(createdAt) as createdAt')
+            ->orderBy(DB::raw('MAX(createdAt)'), 'desc')
+            ->limit(self::MANUAL_LOCK_SCAN_LIMIT)
             ->get();
 
         foreach ($manualLocks as $lock) {
