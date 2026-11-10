@@ -17,7 +17,7 @@
                     class="inline-flex items-center gap-1.5 text-sm font-semibold text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-slate-200">
                     <i data-lucide="arrow-left" class="h-4 w-4"></i> Back to classrooms
                 </a>
-                <section class="mt-3 mb-7 overflow-hidden rounded-3xl p-6 shadow-xl sm:p-8">
+                <section class="mt-3 mb-2 overflow-hidden p-6 sm:p-8">
                     <p class="text-xs font-bold uppercase tracking-[0.18em] text-blue-600 dark:text-blue-400">Classroom</p>
                     <h2 id="detailName" class="mt-1 text-3xl font-extrabold tracking-tight">Loading…</h2>
                     <p id="detailMeta" class="mt-1 text-sm text-slate-500"></p>

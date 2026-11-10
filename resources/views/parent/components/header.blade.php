@@ -1,4 +1,4 @@
-<header class="sticky top-0 z-30 border-b border-slate-200 bg-white/90 backdrop-blur dark:border-slate-800 dark:bg-slate-950/90">
+<header class="sticky top-0 z-30 border-b border-slate-200 border-slate-200 bg-white/90 backdrop-blur dark:border-slate-800 dark:bg-slate-950/90">
     <div class="flex h-16 items-center justify-between px-4 sm:px-6">
         <div class="flex min-w-0 items-center gap-3">
             <button id="open" class="lg:hidden p-2">

@@ -1,6 +1,6 @@
 <aside id="side" class="sidebar fixed inset-y-0 left-0 z-40 w-64 -translate-x-full lg:translate-x-0 bg-white dark:bg-slate-900 border-r dark:border-slate-800">
     <div class="h-full flex flex-col">
-        <div class="h-20 border-b dark:border-slate-800 flex items-center gap-3 px-5">
+        <div class="h-20 border-b border-slate-200 dark:border-slate-800 flex items-center gap-3 px-5">
             <img src="{{ asset('images/16432.png') }}" class="w-10 h-10 rounded object-cover" alt="Digitech College logo" />
             <div>
                 <b>DIGITECH</b>

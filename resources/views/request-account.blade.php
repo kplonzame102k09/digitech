@@ -130,6 +130,7 @@
 
                         <label class="block text-sm font-medium">
                             Contact number *
+                            <small class="m-4 text-xs text-slate-400 italic">Please use a valid and active phone number.</small>
                             <input id="raContact" required maxlength="20" inputmode="numeric"
                                 class="input mt-1 w-full rounded border px-3 py-3 dark:bg-slate-900 dark:border-slate-700"
                                 placeholder="09XXXXXXXXX">

@@ -24,7 +24,7 @@
     <div id="loader" role="status" aria-label="Loading">
         <img src="{{ asset('images/16432.png') }}" alt="" width="160" height="160" class="logo">
     </div>
-    <header class="fixed top-0 inset-x-0 z-50 bg-white/95 backdrop-blur border-b dark:bg-slate-950/90 dark:border-slate-800">
+    <header class="fixed top-0 inset-x-0 z-50 bg-white/95 backdrop-blur dark:bg-slate-950/90 dark:border-slate-500">
         <nav class="max-w-7xl mx-auto px-4">
             <div class="h-20 flex items-center justify-between">
                 <a class="flex items-center gap-3" href="{{ url('/') }}">
@@ -102,7 +102,7 @@
                             Access Portal
                             <i data-lucide="arrow-right" class="inline w-5"></i>
                         </a>
-                        <a href="#services" class="px-6 py-3.5 rounded bg-white border font-semibold dark:bg-slate-900 dark:border-slate-700 dark:text-slate-100">
+                        <a href="#services" class="px-6 py-3.5 rounded bg-white shadow-lg hover:bg-green-600 hover:text-white font-semibold dark:hover:bg-green-500 dark:bg-slate-900 dark:border-slate-700 dark:text-slate-100">
                             Explore Services
                         </a>
                     </div>
@@ -124,7 +124,7 @@
                 <div class="relative">
                     <div class="absolute -inset-3 sm:-inset-6 bg-green-100/70 rounded-[2rem] blur-2xl dark:bg-emerald-950/40"></div>
                     <div class="relative bg-white rounded-2xl shadow p-5 dark:bg-slate-900 dark:border dark:border-slate-800">
-                        <div class="flex justify-between border-b pb-4">
+                        <div class="flex justify-between border-b border-slate-300 dark:border-slate-500 pb-4">
                             <div class="flex gap-3">
                                 <img src="{{ asset('images/16432.png') }}"
                                     class="w-9 h-9 rounded flex items-center justify-center">
@@ -175,7 +175,7 @@
                     <p class="mt-4 text-slate-600 dark:text-slate-300">Essential academic and administrative workflows in one interface.</p>
                 </div>
                 <div class="mt-12 grid sm:grid-cols-2 lg:grid-cols-4 gap-6">
-                    <article class="p-6 rounded-2xl border hover:shadow-lg transition dark:border-slate-800 dark:bg-slate-900">
+                    <article class="p-6 rounded-2xl hover:shadow-lg transition dark:border-slate-800 dark:bg-slate-900">
                         <div class="w-12 h-12 rounded bg-green-50 flex items-center justify-center dark:bg-emerald-950/40">
                             <i data-lucide="clipboard-list" class="text-green-600 dark:text-green-400"></i>
                         </div>
@@ -185,7 +185,7 @@
                             submit enrollment information.
                         </p>
                     </article>
-                    <article class="p-6 rounded-2xl border hover:shadow-lg transition dark:border-slate-800 dark:bg-slate-900">
+                    <article class="p-6 rounded-2xl hover:shadow-lg transition dark:border-slate-800 dark:bg-slate-900">
                         <div class="w-12 h-12 rounded bg-amber-50 flex items-center justify-center dark:bg-amber-950/40">
                             <i data-lucide="file-text" class="text-amber-600 dark:text-amber-400"></i>
                         </div>
@@ -195,7 +195,7 @@
                             Diploma, and track status.
                         </p>
                     </article>
-                    <article class="p-6 rounded-2xl border hover:shadow-lg transition dark:border-slate-800 dark:bg-slate-900">
+                    <article class="p-6 rounded-2xl hover:shadow-lg transition dark:border-slate-800 dark:bg-slate-900">
                         <div class="w-12 h-12 rounded bg-blue-50 flex items-center justify-center dark:bg-blue-950/40">
                             <i data-lucide="chart-no-axes-combined" class="text-blue-600 dark:text-blue-400"></i>
                         </div>
@@ -204,7 +204,7 @@
                             View grades and academic results connected to your account.
                         </p>
                     </article>
-                    <article class="p-6 rounded-2xl border hover:shadow-lg transition dark:border-slate-800 dark:bg-slate-900">
+                    <article class="p-6 rounded-2xl hover:shadow-lg transition dark:border-slate-800 dark:bg-slate-900">
                         <div class="w-12 h-12 rounded bg-purple-50 flex items-center justify-center dark:bg-purple-950/40">
                             <i data-lucide="award" class="text-purple-600 dark:text-purple-400"></i>
                         </div>
@@ -244,7 +244,7 @@
                     </div>
                 </div>
                 <div class="grid sm:grid-cols-2 gap-5">
-                    <div class="bg-white border rounded-2xl p-6 shadow-sm dark:bg-slate-900 dark:border-slate-800">
+                    <div class="bg-white rounded-2xl p-6 shadow-sm dark:bg-slate-900 dark:border-slate-800">
                         <i data-lucide="graduation-cap" class="text-green-600 dark:text-green-400"></i>
                         <h3 class="mt-4 font-bold">Students</h3>
                         <p class="mt-2 text-sm text-slate-500 dark:text-slate-400">
@@ -252,18 +252,18 @@
                             competencies, profile.
                         </p>
                     </div>
-                    <div class="bg-white border rounded-2xl p-6 shadow-sm dark:bg-slate-900 dark:border-slate-800"><i data-lucide="presentation"
+                    <div class="bg-white rounded-2xl p-6 shadow-sm dark:bg-slate-900 dark:border-slate-800"><i data-lucide="presentation"
                             class="text-blue-600 dark:text-blue-400"></i>
                         <h3 class="mt-4 font-bold">Teachers</h3>
                         <p class="mt-2 text-sm text-slate-500 dark:text-slate-400">Assigned students, grades, competencies, and academic
                             information.</p>
                     </div>
-                    <div class="bg-white border rounded-2xl p-6 shadow-sm dark:bg-slate-900 dark:border-slate-800"><i data-lucide="shield-check"
+                    <div class="bg-white rounded-2xl p-6 shadow-sm dark:bg-slate-900 dark:border-slate-800"><i data-lucide="shield-check"
                             class="text-purple-600 dark:text-purple-400"></i>
                         <h3 class="mt-4 font-bold">Administrators</h3>
                         <p class="mt-2 text-sm text-slate-500 dark:text-slate-400">System-wide management and statistics.</p>
                     </div>
-                    <div class="bg-white border rounded-2xl p-6 shadow-sm dark:bg-slate-900 dark:border-slate-800"><i data-lucide="database"
+                    <div class="bg-white rounded-2xl p-6 shadow-sm dark:bg-slate-900 dark:border-slate-800"><i data-lucide="database"
                             class="text-amber-600 dark:text-amber-400"></i>
                         <h3 class="mt-4 font-bold">Secure Data</h3>
                         <p class="mt-2 text-sm text-slate-500 dark:text-slate-400">Persistent records stored in the portal database.</p>
@@ -350,7 +350,7 @@
                 </div>
             </div>
         </section>
-        <section id="contact" class="py-20 bg-white border-t dark:bg-slate-950 dark:border-slate-800">
+        <section id="contact" class="py-20 bg-white dark:bg-slate-950 dark:border-slate-800">
             <div class="max-w-7xl mx-auto px-4 text-center">
                 <p class="text-sm font-semibold text-green-600 uppercase tracking-wider dark:text-green-400">Request Account</p>
                 <h2 class="mt-3 text-3xl font-bold">Need a Portal Account?</h2>

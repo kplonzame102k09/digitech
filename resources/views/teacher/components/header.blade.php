@@ -1,4 +1,4 @@
-<header class="sticky top-0 z-30 h-16 border-b bg-white/90 dark:bg-slate-950/90 dark:border-slate-800 backdrop-blur flex items-center justify-between px-4 sm:px-6">
+<header class="sticky top-0 z-30 h-16 border-b border-slate-200 bg-white/90 dark:bg-slate-950/90 dark:border-slate-800 backdrop-blur flex items-center justify-between px-4 sm:px-6">
     <div class="flex min-w-0 items-center gap-3">
         <button id="open" class="lg:hidden p-2">
             <i data-lucide="menu"></i>

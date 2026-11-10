@@ -126,84 +126,120 @@
   };
 
   function renderMessage(m) {
-    const mine = isOwn(m);
-    const roleLabel =
-      m.sender?.role === "teacher" ? "Teacher" : m.sender?.role === "admin" ? "Admin" : "";
+  const mine = isOwn(m);
 
-    const wrap = document.createElement("div");
-    wrap.className = `flex gap-2 sm:gap-3 ${mine ? "flex-row-reverse" : ""}`;
-    wrap.dataset.msgId = m.id;
-    rendered.add(m.id);
+  const roleLabel =
+    m.sender?.role === "teacher"
+      ? "Teacher"
+      : m.sender?.role === "admin"
+        ? "Admin"
+        : "";
 
-    const avatarWrap = document.createElement("div");
-    avatarWrap.className = "shrink-0";
-    const avatar = document.createElement("div");
-    avatar.className =
-      "flex h-7 w-7 items-center justify-center rounded-full bg-slate-200 text-[11px] font-bold text-slate-600 sm:h-8 sm:w-8 sm:text-xs dark:bg-slate-700 dark:text-slate-200";
-    avatar.textContent = initialsOf(m);
-    avatarWrap.appendChild(avatar);
+  const wrap = document.createElement("div");
+  wrap.className = `flex w-full min-w-0 gap-2 sm:gap-3 ${
+    mine ? "flex-row-reverse" : ""
+  }`;
+  wrap.dataset.msgId = m.id;
+  rendered.add(m.id);
 
-    const col = document.createElement("div");
-    // A flex column so the bubble shrink-wraps to its own text and lines up on
-    // the correct side. As a plain block the column was sized by its widest
-    // child, which is the name/timestamp line, so a short message rendered as a
-    // bubble stretched to the width of that header. items-end/items-start are
-    // flex-child utilities and do nothing unless the parent is a flex container.
-    col.className = `flex min-w-0 max-w-[82%] flex-col sm:max-w-[85%] ${mine ? "items-end" : "items-start"}`;
+  // Avatar
+  const avatarWrap = document.createElement("div");
+  avatarWrap.className = "shrink-0";
 
-    const head = document.createElement("div");
-    head.className = `mb-0.5 flex flex-wrap items-center gap-x-2 gap-y-0.5 text-xs sm:mb-1 sm:gap-2 ${mine ? "justify-end" : ""}`;
-    const who = document.createElement("span");
-    who.className = "font-semibold text-slate-700 dark:text-slate-200";
-    who.textContent = senderName(m);
-    head.appendChild(who);
-    if (roleLabel) {
-      const tag = document.createElement("span");
-      tag.className =
-        "rounded-full bg-violet-100 px-1.5 py-0.5 text-[10px] font-semibold text-violet-700 dark:bg-violet-500/10 dark:text-violet-300";
-      tag.textContent = roleLabel;
-      head.appendChild(tag);
-    }
-    const when = document.createElement("span");
-    when.className = "text-slate-400 dark:text-slate-500";
-    when.textContent = timeOf(m.createdAt);
-    head.appendChild(when);
-    col.appendChild(head);
+  const avatar = document.createElement("div");
+  avatar.className =
+    "flex h-7 w-7 items-center justify-center rounded-full " +
+    "bg-slate-200 text-[11px] font-bold text-slate-600 " +
+    "sm:h-8 sm:w-8 sm:text-xs " +
+    "dark:bg-slate-700 dark:text-slate-200";
 
-    if (m.body) {
-      const body = document.createElement("p");
-      body.className =
-        "rounded-2xl px-3 py-1.5 text-sm leading-relaxed break-words whitespace-pre-wrap sm:px-3.5 sm:py-2 " +
-        (mine
-          ? "bg-violet-600 text-white dark:bg-violet-500"
-          : "bg-slate-100 text-slate-800 dark:bg-slate-800 dark:text-slate-100");
-      body.textContent = m.body;
-      col.appendChild(body);
-    }
+  avatar.textContent = initialsOf(m);
+  avatarWrap.appendChild(avatar);
 
-    if (m.fileUrl) {
-      const link = document.createElement("a");
-      link.href = m.fileUrl;
-      // Attachments are served by ClassroomFileController, which authorizes
-      // against the message's classroom, so this works for other members.
-      link.className =
-        "mt-1 inline-flex max-w-full items-center gap-2 rounded-2xl border border-slate-200 bg-white px-2.5 py-1.5 text-xs font-medium text-slate-700 hover:bg-slate-50 sm:px-3 sm:py-2 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200 dark:hover:bg-slate-700";
-      const icon = document.createElement("i");
-      icon.setAttribute("data-lucide", "paperclip");
-      icon.className = "h-3.5 w-3.5 shrink-0";
-      link.appendChild(icon);
-      const name = document.createElement("span");
-      name.className = "truncate";
-      name.textContent = m.fileName || "Attachment";
-      link.appendChild(name);
-      col.appendChild(link);
-    }
+  // Message column
+  const col = document.createElement("div");
+  col.className =
+    `flex min-w-0 max-w-[calc(100%-2.25rem)] flex-col sm:max-w-[85%] ${
+      mine ? "items-end" : "items-start"
+    }`;
 
-    wrap.appendChild(avatarWrap);
-    wrap.appendChild(col);
-    return wrap;
+  // Header
+  const head = document.createElement("div");
+  head.className =
+    `mb-0.5 flex min-w-0 max-w-full flex-wrap items-center gap-x-2 gap-y-0.5 ` +
+    `text-xs sm:mb-1 sm:gap-2 ${mine ? "justify-end" : ""}`;
+
+  const who = document.createElement("span");
+  who.className =
+    "min-w-0 max-w-full truncate font-semibold text-slate-700 dark:text-slate-200";
+  who.textContent = senderName(m);
+  head.appendChild(who);
+
+  if (roleLabel) {
+    const tag = document.createElement("span");
+    tag.className =
+      "shrink-0 rounded-full bg-violet-100 px-1.5 py-0.5 text-[10px] " +
+      "font-semibold text-violet-700 dark:bg-violet-500/10 dark:text-violet-300";
+    tag.textContent = roleLabel;
+    head.appendChild(tag);
   }
 
+  const when = document.createElement("span");
+  when.className = "shrink-0 text-slate-400 dark:text-slate-500";
+  when.textContent = timeOf(m.createdAt);
+  head.appendChild(when);
+
+  col.appendChild(head);
+
+  // Message bubble
+  if (m.body) {
+    const body = document.createElement("p");
+
+    body.className =
+      "max-w-full min-w-0 rounded-2xl px-3 py-1.5 text-sm leading-relaxed " +
+      "whitespace-pre-wrap break-words [overflow-wrap:anywhere] " +
+      "sm:px-3.5 sm:py-2 " +
+      (mine
+        ? "bg-violet-600 text-white dark:bg-violet-500"
+        : "bg-slate-100 text-slate-800 dark:bg-slate-800 dark:text-slate-100");
+
+    body.textContent = m.body;
+    col.appendChild(body);
+  }
+
+  // Attachment
+  if (m.fileUrl) {
+    const link = document.createElement("a");
+
+    link.href = m.fileUrl;
+
+    link.className =
+      "mt-1 inline-flex max-w-full min-w-0 items-center gap-2 " +
+      "rounded-2xl border border-slate-200 bg-white px-2.5 py-1.5 " +
+      "text-xs font-medium text-slate-700 hover:bg-slate-50 " +
+      "sm:px-3 sm:py-2 " +
+      "dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200 " +
+      "dark:hover:bg-slate-700";
+
+    const icon = document.createElement("i");
+    icon.setAttribute("data-lucide", "paperclip");
+    icon.className = "h-3.5 w-3.5 shrink-0";
+    link.appendChild(icon);
+
+    const name = document.createElement("span");
+    name.className =
+      "min-w-0 max-w-[12rem] truncate sm:max-w-[20rem]";
+    name.textContent = m.fileName || "Attachment";
+
+    link.appendChild(name);
+    col.appendChild(link);
+  }
+
+  wrap.appendChild(avatarWrap);
+  wrap.appendChild(col);
+
+  return wrap;
+}
   function setBadge(count) {
     const n = Number(count) || 0;
     badges.forEach((el) => {

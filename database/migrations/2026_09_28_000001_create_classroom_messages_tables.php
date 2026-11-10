@@ -25,9 +25,9 @@ return new class extends Migration
 
             // Public, URL-ciphered identifier in the PREFIX-YEAR-RANDOM form
             // the rest of the schema uses. Random, so it carries no ordering.
-            $table->string('id')->unique();
-            $table->string('classroom_id');
-            $table->string('userId');
+            $table->string('id', 191)->unique();
+            $table->string('classroom_id', 191);
+            $table->string('userId', 191);
             $table->text('body')->nullable();
             $table->text('fileUrl')->nullable();
             $table->string('fileName')->nullable();
@@ -41,9 +41,9 @@ return new class extends Migration
         });
 
         Schema::create('classroom_message_reads', function (Blueprint $table): void {
-            $table->string('id')->primary();
-            $table->string('classroom_id');
-            $table->string('userId');
+            $table->string('id', 191)->primary();
+            $table->string('classroom_id', 191);
+            $table->string('userId', 191);
             $table->timestamp('lastReadAt')->nullable();
             // Highest seq the person has actually read, rather than a wall
             // clock. Same reason as classroom_messages.seq: a timestamp pointer
