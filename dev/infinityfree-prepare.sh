@@ -59,8 +59,6 @@ RewriteEngine On
 # Deny direct access to dotfiles (e.g. .env, .git, backups)
 RewriteRule (^\.|/\.) - [F,L]
 
-# Public-disk uploads -> storage/app/public (INF has no symlinks)
-RewriteRule ^storage/(.+)$ storage/app/public/$1 [L]
 
 # Static assets live under public/
 RewriteCond %{REQUEST_FILENAME} !-f
