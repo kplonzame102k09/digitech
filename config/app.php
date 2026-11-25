@@ -56,6 +56,20 @@ return [
 
     /*
     |--------------------------------------------------------------------------
+    | Trusted Proxies and Hosts
+    |--------------------------------------------------------------------------
+    |
+    | Forwarded headers are only honoured from these proxy IPs/CIDRs, and the
+    | Host header must match one of these hosts. Both are comma-separated.
+    | Empty proxies means the app is reachable directly.
+    |
+    */
+
+    'trusted_proxies' => env('TRUSTED_PROXIES'),
+    'trusted_hosts' => env('TRUSTED_HOSTS'),
+
+    /*
+    |--------------------------------------------------------------------------
     | Application Timezone
     |--------------------------------------------------------------------------
     |

@@ -7,6 +7,18 @@ DEST="$ROOT/infinityfree"
 ZIP="$ROOT/infinityfree-deploy.zip"
 LIVE_ENV="$ROOT/live.env"
 FTP_INF="$ROOT/.ftp-inf"
+WITH_SEEDER=0
+
+for arg in "$@"; do
+    case "$arg" in
+        --with-seeder) WITH_SEEDER=1 ;;
+        -h|--help)
+            echo "Usage: dev/live-deploy.sh [--with-seeder]"
+            echo "  --with-seeder  include the one-shot public/setup_seed.php"
+            exit 0 ;;
+        *) echo "unknown option: $arg" >&2; exit 1 ;;
+    esac
+done
 
 echo "==> InfinityFree live deploy"
 
@@ -16,7 +28,11 @@ for bin in php zip curl composer; do
 done
 
 # ---- 1. Rebuild upload tree from current local source ----------------------
-"$ROOT/dev/infinityfree-prepare.sh"
+if [ "$WITH_SEEDER" = 1 ]; then
+    "$ROOT/dev/infinityfree-prepare.sh" --with-seeder
+else
+    "$ROOT/dev/infinityfree-prepare.sh"
+fi
 
 # ---- 2. Overlay the authoritative live .env (keeps real DB creds) ---------
 if [ -f "$LIVE_ENV" ]; then
@@ -80,9 +96,13 @@ echo "==> To go live:"
 echo "  1. INF File Manager: upload $ZIP"
 [ "$FTP_OK" = 1 ] && echo "     (already on the server at htdocs/infinityfree-deploy.zip)"
 echo "  2. Right-click it inside htdocs/ -> Extract (overwrites code, keeps storage/)"
-echo "  3. If DB tables are new/missing, open:"
-echo "     https://digitech-portal.freedev.app/setup_seed.php?token=$SETUP_TOKEN"
-echo "     (expect MIGRATE OK / SEED OK / DONE)"
-echo "  4. Delete public/setup_seed.php afterwards"
+if [ "$WITH_SEEDER" = 1 ]; then
+    echo "  3. Open once:"
+    echo "     https://digitech-portal.freedev.app/setup_seed.php?token=$SETUP_TOKEN"
+    echo "     (expect MIGRATE OK / SEED OK / DONE)"
+    echo "  4. Delete public/setup_seed.php from the server afterwards"
+else
+    echo "  3. If DB tables are new/missing, rebuild with --with-seeder, run it once, then delete it."
+fi
 echo ""
 echo "==> Done."

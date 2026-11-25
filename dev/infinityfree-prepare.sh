@@ -4,6 +4,23 @@ set -euo pipefail
 cd "$(dirname "$0")/.."
 ROOT="$(pwd)"
 DEST="$ROOT/infinityfree"
+WITH_SEEDER=0
+
+for arg in "$@"; do
+    case "$arg" in
+        --with-seeder) WITH_SEEDER=1 ;;
+        -h|--help)
+            cat <<'HELP'
+dev/infinityfree-prepare.sh - build the InfinityFree upload tree.
+
+Usage:
+  dev/infinityfree-prepare.sh                build without the setup seeder
+  dev/infinityfree-prepare.sh --with-seeder  include public/setup_seed.php
+HELP
+            exit 0 ;;
+        *) echo "unknown option: $arg" >&2; exit 1 ;;
+    esac
+done
 
 echo "==> Building InfinityFree upload tree at $DEST"
 
@@ -78,7 +95,10 @@ cat > "$DEST/index.php" << 'EOF'
 require __DIR__.'/public/index.php';
 EOF
 
-# Temporary, token-guarded one-shot seeder (migrate --force + db:seed over HTTPS)
+# Temporary, token-guarded one-shot seeder (migrate --force + db:seed over HTTPS).
+# Only emitted on request: the normal deployment flow must never leave this
+# privileged script on the live server.
+if [ "$WITH_SEEDER" = 1 ]; then
 cat > "$DEST/public/setup_seed.php" << 'EOF'
 <?php
 
@@ -109,6 +129,7 @@ try {
     echo 'ERROR: '.$e->getMessage()."\n";
 }
 EOF
+fi
 
 # INF-ready .env: real APP_KEY + SETUP_TOKEN, production URL, placeholder DB
 # (user fills in their InfinityFree MySQL details), LiveKit + mail from the
@@ -140,6 +161,11 @@ APP_KEY=$APP_KEY
 APP_DEBUG=false
 APP_URL=https://digitech-portal.freedev.app
 
+# Only set these when the site is actually behind a proxy/CDN. The app host
+# resolves directly to InfinityFree, so the safe default is no trusted proxy.
+TRUSTED_PROXIES=
+TRUSTED_HOSTS=digitech-portal.freedev.app,www.digitech-portal.freedev.app
+
 APP_LOCALE=en
 APP_FALLBACK_LOCALE=en
 APP_FAKER_LOCALE=en_US
@@ -148,10 +174,11 @@ APP_MAINTENANCE_DRIVER=file
 
 BCRYPT_ROUNDS=12
 
-# Admin account seeded by db:seed. Leave blank to use the config defaults.
+# Admin account seeded by db:seed. ADMIN_SEED_PASSWORD is required and must be
+# strong; seeding fails closed when it is blank or a known weak value.
 ADMIN_SEED_USER_ID=ADMIN-000001
 ADMIN_SEED_EMAIL=admin@gmail.com
-ADMIN_SEED_PASSWORD=password
+ADMIN_SEED_PASSWORD=
 
 LOG_CHANNEL=stack
 LOG_STACK=single
@@ -161,17 +188,20 @@ LOG_LEVEL=error
 # Guard for the one-shot seeder at public/setup_seed.php?token=
 SETUP_TOKEN=$SETUP_TOKEN
 
-# --- InfinityFree MySQL: fill in the values from your INF control panel ---
+# --- InfinityFree MySQL: real values live in the untracked live.env ---
 DB_CONNECTION=mysql
-DB_HOST=sql213.infinityfree.com
+DB_HOST=sqlXXX.infinityfree.com
 DB_PORT=3306
-DB_DATABASE=if0_42951315_digitech_db
-DB_USERNAME=if0_42951315
-DB_PASSWORD=WtRLbwoNF0t
+DB_DATABASE=if0_XXXXXXX_digitech_db
+DB_USERNAME=if0_XXXXXXX
+DB_PASSWORD=
 
 SESSION_DRIVER=database
 SESSION_LIFETIME=120
 SESSION_ENCRYPT=false
+SESSION_SECURE_COOKIE=true
+SESSION_HTTP_ONLY=true
+SESSION_SAME_SITE=lax
 SESSION_PATH=/
 SESSION_DOMAIN=null
 

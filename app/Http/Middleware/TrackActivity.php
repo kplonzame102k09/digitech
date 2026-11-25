@@ -90,19 +90,12 @@ class TrackActivity
     }
 
     /**
-     * The visitor's real IP: prefer Cloudflare's CF-Connecting-IP when the
-     * site is fronted by Cloudflare (it overwrites the header on origin,
-     * so it cannot be spoofed by the client), otherwise fall back to the
-     * proxy-trusted $request->ip() (X-Forwarded-For / REMOTE_ADDR).
+     * The visitor's IP as resolved by the proxy-trust configuration.
+     * Forwarded headers are only honoured for explicitly trusted proxies;
+     * trusting CF-Connecting-IP directly would let any client forge it.
      */
     protected function clientIp(Request $request): string
     {
-        $cfIp = trim((string) $request->header('CF-Connecting-IP', ''));
-
-        if (filter_var($cfIp, FILTER_VALIDATE_IP) !== false) {
-            return $cfIp;
-        }
-
         return (string) $request->ip();
     }
 

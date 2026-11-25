@@ -23,8 +23,12 @@ class LoginController extends Controller
      */
     private const PENDING_TTL = 30;
 
-    public function showLogin(): View
+    public function showLogin(Request $request): View|RedirectResponse
     {
+        if (Auth::check()) {
+            return $this->redirectToDashboard($request->user());
+        }
+
         return view('auth.login');
     }
 

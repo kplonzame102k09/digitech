@@ -12,7 +12,7 @@ capabilities:
 volumes:
 - name: data
   mount: /app/storage/app
-debug: true
+debug: false
 scaling:
   mode: single_concurrency
 jobs:

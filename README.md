@@ -341,9 +341,6 @@ corrupt it.
 - `users.childId` / `users.childIds` and the `*_request` uuid columns receive
   client-generated values (`ENR-*`, `GRD-*`, …) that do not match the column
   type, so ids are predictable by construction.
-- `bootstrap/app.php` sets `trustProxies(at: '*')`. Behind a proxy that rewrites
-  the client IP header this makes the request IP attacker-influenced, which
-  feeds `LoginAttemptGuard`'s per-IP lockout. Trust the real proxy instead.
 - `AccountRequestController` keeps the generated plaintext password in a
   Mailable property, so it stays in memory for the life of the request and can
   reach logs. Generate it inside the notification instead.
@@ -366,6 +363,9 @@ php artisan serve                     # http://localhost:8000
 
 MySQL is required (`DB_*`); SQLite is not supported by all migrations. The
 seeded admin logs in with `ADMIN_SEED_EMAIL`/`ADMIN_SEED_PASSWORD` from the env.
+When `ADMIN_SEED_PASSWORD` is blank locally, `db:seed` generates a random one,
+prints it once, and flags the account for a password change on first login.
+Production seeding fails closed unless a strong password is configured.
 
 ## Environment variables
 
@@ -375,7 +375,7 @@ See `.env.example` for the full list with defaults. Grouped reference:
 |--------------|------------------------------------------------------------------|
 | App          | `APP_NAME`, `APP_ENV`, `APP_DEBUG`, `APP_KEY`, `APP_URL`, `APP_MAINTENANCE_DRIVER` |
 | Admin seed   | `ADMIN_SEED_USER_ID`, `ADMIN_SEED_EMAIL`, `ADMIN_SEED_PASSWORD`  |
-| Security     | `SESSION_DRIVER`, `SESSION_LIFETIME`, `SESSION_SECURE_COOKIE`, `SETUP_TOKEN`, `URL_CIPHER_ENABLED` |
+| Security     | `SESSION_DRIVER`, `SESSION_LIFETIME`, `SESSION_SECURE_COOKIE`, `TRUSTED_PROXIES`, `TRUSTED_HOSTS`, `SETUP_TOKEN`, `URL_CIPHER_ENABLED` |
 | Database/queue | `DB_*`, `CACHE_STORE`, `QUEUE_CONNECTION`                       |
 | Video        | `LIVEKIT_URL`, `LIVEKIT_API_KEY`, `LIVEKIT_API_SECRET`           |
 | Mail         | `MAIL_*` (mailer, host, credentials, from)                        |
@@ -384,6 +384,9 @@ See `.env.example` for the full list with defaults. Grouped reference:
 Rules of thumb:
 
 - `APP_DEBUG=false` everywhere but local; `SESSION_SECURE_COOKIE=true` on HTTPS.
+- Leave `TRUSTED_PROXIES` empty unless the app is actually behind a proxy/CDN;
+  list its IPs/CIDRs when it is. Set `TRUSTED_HOSTS` to the production
+  hostname(s), comma-separated (include `www.` if it is used).
 - Production drivers: `SESSION_DRIVER=database`, `CACHE_STORE=database`,
   `QUEUE_CONNECTION=sync` (InfinityFree has no job worker/cron; the app never
   depends on a queue worker).
@@ -457,12 +460,14 @@ Safety guarantees:
 
 1. Enable MySQL in the INF control panel and copy the credentials into
    `live.env` (`DB_HOST` is `sql*.infinityfree.com`, **not** `localhost`).
-2. Run `dev/infinityfree-sync.sh`.
+2. Set a strong `ADMIN_SEED_PASSWORD` in `live.env` (production seeding fails
+   closed otherwise), then run `dev/infinityfree-sync.sh --with-seeder`.
 3. Open `https://<app-url>/setup_seed.php?token=<SETUP_TOKEN>` once — it runs
    `php artisan migrate --force` + `db:seed` over HTTPS.
-4. Delete `public/setup_seed.php` from the server and change
-   `ADMIN_SEED_PASSWORD` in `live.env` before real use.
-5. Any later schema change: push, re-run the seeder once, delete it again.
+4. Run `dev/infinityfree-sync.sh` again; normal syncs remove
+   `public/setup_seed.php` from the server. Verify it returns 404.
+5. Any later schema change: push, re-run `--with-seeder` once, then sync again
+   to delete it.
 
 ### Uploads on shared hosts
 

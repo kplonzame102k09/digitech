@@ -18,10 +18,11 @@ return Application::configure(basePath: dirname(__DIR__))
         health: '/up',
     )
     ->withMiddleware(function (Middleware $middleware): void {
-        // InfinityFree + any CDN/proxy in front send the visitor's real IP
-        // via X-Forwarded-For; trust it so $request->ip() stays accurate for
-        // activity logging, sessions, and login throttling.
-        $middleware->trustProxies(at: '*');
+        // Host header validation is enabled here, but the concrete host list is
+        // applied in AppServiceProvider once configuration is loaded. This
+        // callback can run before the environment is bootstrapped, so reading
+        // env()/config() here would see empty values during config caching.
+        $middleware->trustHosts();
 
         $middleware->alias([
             'role' => EnsureUserRole::class,

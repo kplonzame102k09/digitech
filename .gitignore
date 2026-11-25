@@ -38,6 +38,7 @@ digitech-portal-1.0.0.webc
 
 # Deploy bundle built by dev/live-deploy.sh (flat htdocs zip)
 /infinityfree-deploy.zip
+/infinityfree.zip
 
 # Live deploy secrets (dev/live-deploy.sh) - never commit
 /live.env
